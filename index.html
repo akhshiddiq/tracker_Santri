@@ -3525,11 +3525,16 @@
             // selalu sinkron, termasuk di HP.
             window.initInlineLiveReport();
 
-            // Load awal + sinkron otomatis lintas laptop setiap 5 detik.
+            // Load awal penuh hanya sekali.
+            // Sinkronisasi setoran/checklist memakai kanal Sync V2 yang jauh lebih ringan.
+            // Data lama tetap bisa dimuat ulang lewat menu/refresh yang sudah ada.
             window.fetchAllDataFromCloud(true);
+
+            // Refresh penuh dibuat jarang agar Google Sheet tidak dibaca seluruhnya setiap beberapa detik.
+            // Ini tidak mengubah fungsi laporan lama; hanya mengurangi polling yang boros.
             window._cloudSyncInterval = setInterval(() => {
                 if (document.visibilityState === 'visible') window.fetchAllDataFromCloud(false);
-            }, 5000);
+            }, 60000);
 
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') window.fetchAllDataFromCloud(false);
@@ -6831,7 +6836,9 @@ function renderOptions(){
   const RECORD_KEY='rq_tracking_tahfidz_local_v1';
   const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
   const PULL_KEY='rq_backend_sync_last_pull_v2';
-  const PULL_INTERVAL=30000;
+  // Sync V2 hanya membaca dua sheet sinkronisasi, bukan seluruh database lama.
+  // 5 detik dipilih agar perangkat lain cepat menerima setoran tanpa polling doGet penuh.
+  const PULL_INTERVAL=5000;
   let busy=false;
 
   function read(key,fallback){
