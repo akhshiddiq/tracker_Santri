@@ -6832,7 +6832,6 @@ function renderOptions(){
   const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
   const PULL_KEY='rq_backend_sync_last_pull_v2';
   const PULL_INTERVAL=30000;
-  const MAX_REMOTE_ROWS=1000;
   let busy=false;
 
   function read(key,fallback){
@@ -6840,9 +6839,10 @@ function renderOptions(){
   }
   function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){return false}}
   function records(){const x=read(RECORD_KEY,[]);return Array.isArray(x)?x:[]}
-  function checklist(){const x=read(CHECKLIST_KEY,{});return x&&typeof x==='object'?x:{}}
+  function checklist(){const x=read(CHECKLIST_KEY,{});return x&&typeof x==='object'?x:{} }
   function gsUrl(){return typeof window.getGsUrl==='function'?window.getGsUrl():''}
   function getDeviceId(){return localStorage.getItem('rq_backend_device_id_v2')||''}
+
   function notify(){
     try{window.renderTrackingDashboard?.();}catch(e){}
     try{window.renderTrackingHistory?.();}catch(e){}
@@ -6853,6 +6853,7 @@ function renderOptions(){
     try{window.generateTrackingReport?.();}catch(e){}
     try{window.generateWaReport?.();}catch(e){}
   }
+
   function setProgress(pct,text,state){
     try{window.__rqBackendSyncPullProgress?.(pct,text,state)}catch(e){}
     const el=document.getElementById('rqBackendSyncIndicator');
@@ -6864,49 +6865,60 @@ function renderOptions(){
     if(label)label.textContent=text||'Sinkronisasi';
     if(pctEl)pctEl.textContent=Math.max(0,Math.min(100,Math.round(pct)))+'%';
   }
+
   function toIso(v){
     if(v==null||v==='')return '';
     const d=new Date(v);
     return isNaN(d.getTime())?'':d.toISOString();
   }
-  function remoteTimestamp(row){return toIso(row?.timestamp||row?.clientTimestamp||'')}
+
+  function remoteTimestamp(row){
+    return toIso(row?.timestamp||row?.clientTimestamp||'');
+  }
 
   function mergeTracking(rows){
     const local=records();
     const bySync=new Map();
     local.forEach((r,i)=>{if(r?.syncId)bySync.set(String(r.syncId),i)});
     let added=0,updated=0;
+
     (Array.isArray(rows)?rows:[]).forEach(r=>{
       const syncId=String(r?.syncId||'').trim();
       if(!syncId)return;
+
       const item={
-        id: r.id || Date.now()+Math.random(),
+        id:r.id || Date.now()+Math.random(),
         syncId,
         syncStatus:'saved',
         syncUpdatedAt:new Date().toISOString(),
         timestamp:remoteTimestamp(r)||new Date().toISOString(),
         tanggal:r.tanggal||'',
         santri:r.name||'',
-        santriId:r.santriId||r.idSantri||'',
+        santriId:r.santriId||'',
         juz:String(r.juz||''),
         arah:r.arah||'depan',
         level:String(r.level||''),
         surat:r.surat||'',
         ayatDari:String(r.ayatDari||''),
-        ayatSampai:String(r.ayatSampai||''),
+        ayatSampai:String(r.ayatSampai||r.ayatTerakhir||''),
         penilaianBacaan:r.segiBacaan||'',
         penilaianHafalan:r.segiHafalan||'',
         catatan:r.catatan||'',
         remoteSource:'google_sheet'
       };
+
       const idx=bySync.get(syncId);
-      if(idx==null){local.push(item);bySync.set(syncId,local.length-1);added++;}
-      else{
+      if(idx==null){
+        local.push(item);
+        bySync.set(syncId,local.length-1);
+        added++;
+      }else{
         const old=local[idx]||{};
         local[idx]=Object.assign({},old,item,{id:old.id||item.id});
         updated++;
       }
     });
+
     if(added||updated)write(RECORD_KEY,local);
     return {added,updated};
   }
@@ -6914,49 +6926,99 @@ function renderOptions(){
   function mergeChecklist(rows){
     const data=checklist();
     let changed=0;
+
     (Array.isArray(rows)?rows:[]).forEach(r=>{
       const name=String(r?.name||'').trim();
       const juz=String(r?.juz||'').trim();
       const level=String(r?.level||'').trim();
       if(!name||!juz||!level)return;
+
       if(!data[name])data[name]={};
       if(!data[name][juz])data[name][juz]={};
-      const next = String(r?.status||'').toLowerCase() !== 'unchecked';
-      if(Boolean(data[name][juz][level]) !== next){data[name][juz][level]=next;changed++;}
+
+      const next=String(r?.status||'').toLowerCase()!=='unchecked';
+      if(Boolean(data[name][juz][level])!==next){
+        data[name][juz][level]=next;
+        changed++;
+      }
     });
+
     if(changed)write(CHECKLIST_KEY,data);
     return changed;
   }
 
   async function pull(){
     if(busy)return;
+
     const url=gsUrl();
     if(!url||!navigator.onLine)return;
+
     busy=true;
+
     try{
-      const since=localStorage.getItem(PULL_KEY)||'';
-      const params=new URLSearchParams({action:'sync_v2',limit:String(MAX_REMOTE_ROWS),deviceId:getDeviceId()});
-      if(since)params.set('since',since);
-      const res=await fetch(url+'?'+params.toString(),{method:'GET',mode:'cors',cache:'no-store'});
+      // Backend V2 menggunakan parameter "after", bukan "since".
+      const after=localStorage.getItem(PULL_KEY)||'';
+      const params=new URLSearchParams({
+        action:'sync_v2',
+        deviceId:getDeviceId()
+      });
+
+      if(after)params.set('after',after);
+
+      const res=await fetch(
+        url+'?'+params.toString(),
+        {
+          method:'GET',
+          mode:'cors',
+          cache:'no-store'
+        }
+      );
+
       if(!res.ok)throw new Error('HTTP '+res.status);
+
       const result=await res.json();
-      if(!result||result.status!=='success')throw new Error(result?.message||'Pull backend gagal.');
+
+      if(!result||result.status!=='success'){
+        throw new Error(result?.message||'Pull backend gagal.');
+      }
+
       setProgress(70,'Mengambil sinkronisasi','pending');
+
       const a=mergeTracking(result.tracking_setoran||[]);
       const c=mergeChecklist(result.level_checklist||[]);
-      const serverTs=toIso(result.serverTimestamp)||new Date().toISOString();
-      localStorage.setItem(PULL_KEY,serverTs);
+
+      // Cursor hanya digeser setelah response sukses dan data sudah diproses.
+      const serverTs=toIso(result.serverTimestamp);
+      if(serverTs)localStorage.setItem(PULL_KEY,serverTs);
+
       notify();
-      setProgress(100,`Sinkronisasi selesai · +${a.added} setoran · ${c} level`,'done');
+
+      setProgress(
+        100,
+        `Sinkronisasi selesai · +${a.added} setoran · ${c} level`,
+        'done'
+      );
+
     }catch(err){
       console.warn('Backend sync pull:',err);
-    }finally{busy=false}
+    }finally{
+      busy=false;
+    }
   }
 
   window.rqBackendSyncPull=pull;
   window.addEventListener('online',()=>setTimeout(pull,1500));
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(pull,2500),{once:true});
-  else setTimeout(pull,2500);
+
+  if(document.readyState==='loading'){
+    document.addEventListener(
+      'DOMContentLoaded',
+      ()=>setTimeout(pull,2500),
+      {once:true}
+    );
+  }else{
+    setTimeout(pull,2500);
+  }
+
   setInterval(pull,PULL_INTERVAL);
 })();
 </script>
