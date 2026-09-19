@@ -322,8 +322,18 @@
             { no: 112, name: "Al-Ikhlash", ayat: 4 }, { no: 113, name: "Al-Falaq", ayat: 5 }, { no: 114, name: "An-Nas", ayat: 6 }
         ];
 
+        const RQ_DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbxx_G_9jtvTFEam_Mrv9388mGDPb44rxmdyp3kj8IlJXZ5bXwIoyQ_LGmmHf1mB2L69FA/exec';
+        const RQ_OLD_GS_URL = 'https://script.google.com/macros/s/AKfycbyjKiIMh3shzdvkI9wOz8mzbjWoX6YANtpRm_jgwd5BlGZo-xZKNWgQlllH1_4ho4Jl/exec';
+
         window.getGsUrl = function() {
-            return localStorage.getItem('rq_gs_url') || 'https://script.google.com/macros/s/AKfycbyjKiIMh3shzdvkI9wOz8mzbjWoX6YANtpRm_jgwd5BlGZo-xZKNWgQlllH1_4ho4Jl/exec';
+            const saved = String(localStorage.getItem('rq_gs_url') || '').trim();
+            // Migrasikan URL bawaan lama ke Web App backend terbaru.
+            // URL custom lain milik operator tetap dipertahankan.
+            if (!saved || saved === RQ_OLD_GS_URL) {
+                localStorage.setItem('rq_gs_url', RQ_DEFAULT_GS_URL);
+                return RQ_DEFAULT_GS_URL;
+            }
+            return saved;
         };
 
         window.saveCustomGsUrl = function() {
@@ -332,6 +342,30 @@
                 localStorage.setItem('rq_gs_url', input.value.trim());
                 window.showToast("URL Endpoint GS berhasil diperbarui!", "success");
                 window.fetchAllDataFromCloud();
+            }
+        };
+
+        window.openBackendSettings = function() {
+            const modal = document.getElementById('backendSettingsModal');
+            const input = document.getElementById('backendGsUrlDisplay');
+            if (input) input.value = window.getGsUrl();
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        window.closeBackendSettings = function() {
+            const modal = document.getElementById('backendSettingsModal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.copyBackendGsUrl = async function() {
+            const url = window.getGsUrl();
+            try {
+                await navigator.clipboard.writeText(url);
+                window.showToast('URL Google Apps Script berhasil disalin.', 'success');
+            } catch (e) {
+                const input = document.getElementById('backendGsUrlDisplay');
+                if (input) { input.focus(); input.select(); document.execCommand('copy'); }
+                window.showToast('URL Google Apps Script berhasil disalin.', 'success');
             }
         };
 
@@ -3636,6 +3670,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <button class="tracker-menu-btn px-3 py-2 rounded-xl bg-white text-emerald-900 shadow text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-input" onclick="window.switchTrackerMenu('input')" type="button"><i class="fa-solid fa-pen-to-square mr-1"></i> Input Setoran</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Hafalan Santri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-history" onclick="window.switchTrackerMenu('history')" type="button"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat Setoran</button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-pengaturan" onclick="window.openBackendSettings()" type="button" title="Pengaturan Kode Skrip"><i class="fa-solid fa-gear mr-1"></i> Pengaturan</button>
 </div>
 </nav>
 <button class="p-2.5 bg-emerald-700 dark:bg-emerald-900 rounded-xl text-amber-300 hover:bg-emerald-600 transition shadow-xs shrink-0" onclick="window.toggleDarkMode()" title="Fitur Malam (Dark Mode)">
@@ -3643,6 +3678,30 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </button>
 </div>
 </header>
+
+<!-- Pengaturan Kode Skrip Google Apps Script -->
+<div id="backendSettingsModal" class="hidden fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="backendSettingsTitle">
+  <div class="w-full max-w-xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <div class="p-4 sm:p-5 bg-emerald-700 text-white flex items-center justify-between gap-3">
+      <div>
+        <h2 id="backendSettingsTitle" class="font-black text-base sm:text-lg">Pengaturan Kode Skrip</h2>
+        <p class="text-[10px] sm:text-xs text-emerald-100 font-bold mt-1">Google Apps Script yang digunakan untuk sinkronisasi.</p>
+      </div>
+      <button type="button" onclick="window.closeBackendSettings()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 font-black" aria-label="Tutup">×</button>
+    </div>
+    <div class="p-4 sm:p-5 space-y-3">
+      <label for="backendGsUrlDisplay" class="block text-[10px] font-black uppercase text-slate-500 dark:text-slate-300">URL Web App Google Apps Script</label>
+      <div class="flex gap-2">
+        <input id="backendGsUrlDisplay" type="text" readonly class="min-w-0 flex-1 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-200" />
+        <button type="button" onclick="window.copyBackendGsUrl()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-copy mr-1"></i> Salin</button>
+      </div>
+      <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px] sm:text-xs font-bold text-amber-800 dark:text-amber-200">
+        URL ini adalah alamat Web App backend. Jangan diubah kecuali Anda melakukan deployment Web App baru.
+      </div>
+    </div>
+  </div>
+</div>
+
 <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 lg:p-6 space-y-4 relative"><section class="space-y-4" id="section-tracking">
 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-emerald-200 dark:border-emerald-900/60 overflow-hidden">
 <div class="p-4 sm:p-5 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white">
@@ -7027,6 +7086,14 @@ function renderOptions(){
   }
 
   setInterval(pull,PULL_INTERVAL);
+})();
+</script>
+
+<script id="backend-settings-close-v1">
+(function(){
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape' && typeof window.closeBackendSettings==='function') window.closeBackendSettings();
+  });
 })();
 </script>
 
