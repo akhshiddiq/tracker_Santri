@@ -5346,6 +5346,26 @@ document.addEventListener('DOMContentLoaded',function(){
 (function(){
   let floating=null, original=null;
 
+  function formatBytes(bytes){
+    const n=Number(bytes)||0;
+    if(n<1024) return `${Math.round(n)} B`;
+    if(n<1024*1024) return `${(n/1024).toFixed(1)} KB`;
+    if(n<1024*1024*1024) return `${(n/1024/1024).toFixed(1)} MB`;
+    return `${(n/1024/1024/1024).toFixed(2)} GB`;
+  }
+
+  async function getLocalStorageInfo(){
+    try{
+      if(navigator.storage && typeof navigator.storage.estimate==='function'){
+        const e=await navigator.storage.estimate();
+        const usage=Number(e?.usage||0);
+        const quota=Number(e?.quota||0);
+        return {usage,quota,remaining:Math.max(0,quota-usage),supported:quota>0};
+      }
+    }catch(e){}
+    return {usage:0,quota:0,remaining:0,supported:false};
+  }
+
   function ensure(){
     if(!original){
       const list=document.querySelectorAll('button[onclick*="saveTrackingSetoran"]');
@@ -7181,10 +7201,11 @@ function renderOptions(){
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
-  function render(){
+  async function render(){
     if(!ensure())return;
     const el=document.getElementById('syncInfoContent');if(!el)return;
     const s=getState();
+    const storage=await getLocalStorageInfo();
     const pullAt=localStorage.getItem('rq_backend_sync_last_pull_v2')||'';
     const pullCount=Number(localStorage.getItem('rq_sync_info_pull_count')||0);
     const lastQueue=s.q.length?s.q[s.q.length-1]:null;
@@ -7203,11 +7224,19 @@ function renderOptions(){
           <div class="mt-2 flex justify-between text-[11px] font-black"><span>${localPct}% tracking lokal sudah berstatus tersimpan</span><span>${s.rows.length} total tracking lokal</span></div>
         </div>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">TRACKING LOKAL</div><div class="text-xl font-black mt-1">${s.rows.length}</div><div class="text-[10px] font-bold text-slate-500">${s.synced} tersimpan</div></div>
           <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">ANTREAN</div><div class="text-xl font-black mt-1">${s.pending}</div><div class="text-[10px] font-bold text-slate-500">menunggu proses</div></div>
           <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">RIWAYAT CLOUD</div><div class="text-xl font-black mt-1">${s.cloudRows}</div><div class="text-[10px] font-bold text-slate-500">Google Sheet</div></div>
           <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">BACKFILL</div><div class="text-xl font-black mt-1">${s.localPending}</div><div class="text-[10px] font-bold text-slate-500">lokal belum tersimpan</div></div>
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">SISA PENYIMPANAN LOKAL</div><div class="text-xl font-black mt-1">${storage.supported?esc(formatBytes(storage.remaining)):'Tidak tersedia'}</div><div class="text-[10px] font-bold text-slate-500">terpakai ${storage.supported?esc(formatBytes(storage.usage)):'-'}</div></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div class="flex items-center justify-between gap-3 flex-wrap"><div class="font-black text-sm">Detail Penyimpanan Lokal</div><span class="text-[11px] font-black">${storage.supported?`${((storage.usage/storage.quota)*100).toFixed(1)}% terpakai`:'Estimasi browser tidak tersedia'}</span></div>
+          <div class="mt-2 h-2.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-sky-500 transition-all" style="width:${storage.supported?Math.min(100,(storage.usage/storage.quota)*100):0}%"></div></div>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300"><div>Terpakai: <b>${storage.supported?esc(formatBytes(storage.usage)):'-'}</b></div><div>Sisa: <b>${storage.supported?esc(formatBytes(storage.remaining)):'-'}</b></div><div>Kapasitas: <b>${storage.supported?esc(formatBytes(storage.quota)):'-'}</b></div><div>Tracking: <b>${s.rows.length} data</b></div></div>
+          <div class="mt-2 text-[10px] font-bold text-slate-500">Ini adalah perkiraan kapasitas penyimpanan browser untuk situs ini, bukan kapasitas Google Sheet.</div>
         </div>
 
         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
@@ -7223,7 +7252,7 @@ function renderOptions(){
 
         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
           <div class="flex items-center justify-between gap-3 flex-wrap"><div class="font-black text-sm">Antrean lokal yang sedang dikirim</div><button type="button" id="syncInfoNowBtn" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-[11px] font-black">Sinkronkan Sekarang</button></div>
-          <div class="mt-3 space-y-2">${s.q.length?s.q.slice(-8).reverse().map((x,i)=>`<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700"><div class="flex justify-between gap-3"><span class="font-black text-xs">${esc(x.payload?.name||x.payload?.santriId||'Data')}</span><span class="text-[10px] font-black">Percobaan ${esc(x.attempt||0)}/5</span></div><div class="text-[10px] font-bold text-slate-500 mt-1">${esc(x.payload?.type||'-')} · ${esc(x.payload?.juz||'')} · Level ${esc(x.payload?.level||'-')} · ${esc(x.payload?.slots?.[0]?.item||'')}</div><div class="mt-1">${sourceBadge('Lokal')} <span class="text-[10px] font-bold text-slate-500">Sync ID: ${esc(x.syncId||'-')}</span></div></div>`).join(''):'<div class="text-xs font-bold text-slate-400">Tidak ada antrean lokal.</div>'}</div>
+          <div class="mt-3 space-y-2">${s.q.length?s.q.slice(-8).reverse().map((x,i)=>`<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700"><div class="flex justify-between gap-3"><span class="font-black text-xs">${esc(x.payload?.name||x.payload?.santriId||'Data')}</span><span class="text-[10px] font-black">Percobaan ${esc(x.attempt||0)}/5</span></div><div class="text-[10px] font-bold text-slate-500 mt-1">${esc(x.payload?.type||'-')} · ${esc(x.payload?.juz||'')} · Level ${esc(x.payload?.level||'-')} · ${esc(x.payload?.slots?.[0]?.item||'')}</div><div class="mt-1">${sourceBadge('Lokal')} <span class="text-[10px] font-bold text-slate-500">Sync ID: ${esc(x.syncId||'-')}</span></div>${x.lastError?`<div class="mt-1 text-[10px] font-bold text-rose-600 dark:text-rose-300">Percobaan terakhir: ${esc(x.lastError)}</div>`:''}</div>`).join(''):'<div class="text-xs font-bold text-slate-400">Tidak ada antrean lokal.</div>'}</div>
         </div>
 
         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
@@ -7232,7 +7261,31 @@ function renderOptions(){
           <div class="text-[10px] font-bold text-slate-500 mt-2">Data lokal tidak dihapus hanya karena proses Google Sheet belum selesai.</div>
         </div>
       </div>`;
-    const b=document.getElementById('syncInfoNowBtn');if(b)b.onclick=async()=>{if(typeof window.rqBackendSyncNow==='function')await window.rqBackendSyncNow();if(typeof window.rqBackendSyncPull==='function')await window.rqBackendSyncPull();render()};
+    const b=document.getElementById('syncInfoNowBtn');
+    if(b){
+      b.type='button';
+      b.disabled=false;
+      b.style.pointerEvents='auto';
+      b.onclick=async function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(b.dataset.running==='1') return;
+        b.dataset.running='1';
+        const oldText=b.textContent;
+        b.textContent='Sedang sinkron...';
+        b.disabled=true;
+        try{
+          if(typeof window.rqBackendSyncNow==='function') await window.rqBackendSyncNow();
+          if(typeof window.rqBackendSyncPull==='function') await window.rqBackendSyncPull();
+        }catch(e){ console.warn('Sinkronisasi manual:',e); }
+        finally{
+          b.dataset.running='0';
+          b.disabled=false;
+          b.textContent=oldText||'Sinkronkan Sekarang';
+          await render();
+        }
+      };
+    }
   }
 
   function queueOneLocal(record){
@@ -7289,6 +7342,29 @@ function renderOptions(){
   window.addEventListener('online',()=>setTimeout(backfill,1500));
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
   window.openSyncInformation=open;
+
+  // Fallback: tombol tetap dapat ditekan walau panel dibuat ulang oleh innerHTML.
+  document.addEventListener('click',function(e){
+    const b=e.target?.closest?.('#syncInfoNowBtn');
+    if(!b || b.dataset.running==='1') return;
+    if(typeof window.rqBackendSyncNow!=='function') return;
+    b.dataset.running='1';
+    const oldText=b.textContent;
+    b.textContent='Sedang sinkron...';
+    b.disabled=true;
+    Promise.resolve().then(async()=>{
+      try{
+        await window.rqBackendSyncNow();
+        if(typeof window.rqBackendSyncPull==='function') await window.rqBackendSyncPull();
+      }catch(err){ console.warn('Sinkronisasi manual:',err); }
+      finally{
+        b.dataset.running='0';
+        b.disabled=false;
+        b.textContent=oldText||'Sinkronkan Sekarang';
+        await render();
+      }
+    });
+  });
 })();
 </script>
 
