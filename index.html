@@ -7495,7 +7495,7 @@ function renderOptions(){
 </script>
 
 
-<style id="input-sync-read-write-v79-style">
+<style id="input-sync-read-write-v80-style">
 .rq-input-sync-status{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -7527,7 +7527,7 @@ function renderOptions(){
   .rq-input-sync-status{grid-template-columns:1fr}
 }
 </style>
-<script id="input-sync-read-write-v79">
+<script id="input-sync-read-write-v80">
 (function(){
   'use strict';
 
@@ -7563,15 +7563,45 @@ function renderOptions(){
     return state[k][direction];
   }
 
-  function chip(direction,part){
+  function getInputProgressPercent(name,cat){
+    try{
+      // Tracking sudah memiliki persentase resmi di UI; gunakan nilai yang sama.
+      if(cat==='tracking'){
+        const el=document.getElementById('trackingProgressText');
+        const m=String(el?.textContent||'').match(/(\d+(?:\.\d+)?)%/);
+        return m ? Math.max(0,Math.min(100,Math.round(Number(m[1])))) : 0;
+      }
+
+      const map={bacaan:'bac',hafalan:'haf',murojaah:'mur'};
+      const prefix=map[cat];
+      if(!prefix || typeof window.extractSlotsStructured!=='function') return 0;
+      const slots=window.extractSlotsStructured(prefix,String(name||''))||[];
+      const values=[];
+      slots.forEach(slot=>{
+        if(String(slot?.mode||'quran').toLowerCase()==='iqro') return;
+        const surat=String(slot?.item||'').trim();
+        const sampai=Number(slot?.end||0);
+        if(!surat || !sampai || typeof window.surahInfo!=='function') return;
+        const total=Number(window.surahInfo(surat)?.ayat||0);
+        if(total) values.push(Math.max(0,Math.min(100,Math.round((sampai/total)*100))));
+      });
+      // Bila ada beberapa slot, tampilkan progres tertinggi yang sedang diinput.
+      return values.length ? Math.max(...values) : 0;
+    }catch(e){
+      return 0;
+    }
+  }
+
+  function chip(direction,part,name,cat){
     const isRead=direction==='read';
     const icon=isRead?'fa-cloud-arrow-down':'fa-cloud-arrow-up';
     const label=isRead?'READ':'WRITE';
     const cls=part.state==='success'?'rq-sync-success':part.state==='pending'?'rq-sync-pending':part.state==='error'?'rq-sync-error':'rq-sync-idle';
     const spin=part.state==='pending'?' animate-pulse':'';
+    const progress=getInputProgressPercent(name,cat);
     return `<div class="rq-sync-chip ${cls}" data-rq-sync-chip="${direction}">
       <i class="fa-solid ${icon}${spin}"></i>
-      <span class="rq-sync-text"><b>${label}</b> · ${String(part.text||'')}</span>
+      <span class="rq-sync-text"><b>${label}</b> · ${String(part.text||'')} - Progres · ${progress}%</span>
     </div>`;
   }
 
@@ -7607,8 +7637,26 @@ function renderOptions(){
       content.parentElement.insertBefore(bar,content);
     }
     const r=getPart(name,cat,'read'), w=getPart(name,cat,'write');
-    bar.innerHTML=chip('read',r)+chip('write',w);
+    bar.innerHTML=chip('read',r,name,cat)+chip('write',w,name,cat);
   }
+
+  window.refreshAllInputSyncStatus=function(){
+    try{
+      document.querySelectorAll('[id^="rqInputSyncStatus_"]').forEach(el=>{
+        const parts=String(el.id).split('_');
+        if(parts.length<3)return;
+        const cat=decodeURIComponent(parts[1]||'');
+        const name=decodeURIComponent(parts.slice(2).join('_')||'');
+        const r=getPart(name,cat,'read'), w=getPart(name,cat,'write');
+        el.innerHTML=chip('read',r,name,cat)+chip('write',w,name,cat);
+      });
+      const trackingBox=document.getElementById('rqTrackingInputSyncStatus');
+      if(trackingBox){
+        const name=document.getElementById('trackingSantri')?.value||'';
+        trackingBox.innerHTML=chip('read',getPart(name,'tracking','read'),name,'tracking')+chip('write',getPart(name,'tracking','write'),name,'tracking');
+      }
+    }catch(e){}
+  };
 
   window.ensureAllInputSyncStatus=function(){
     ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
@@ -7627,9 +7675,10 @@ function renderOptions(){
       }
       const name=document.getElementById('trackingSantri')?.value||'';
       const r=getPart(name,'tracking','read'), w=getPart(name,'tracking','write');
-      box.innerHTML=chip('read',r)+chip('write',w);
+      box.innerHTML=chip('read',r,name,'tracking')+chip('write',w,name,'tracking');
     }
     saveState();
+    window.refreshAllInputSyncStatus?.();
   };
 
   function markReadAll(){
@@ -7651,6 +7700,18 @@ function renderOptions(){
   }
 
   window.rqMarkInputReadSuccess=markReadAll;
+
+  // Hanya menyegarkan tampilan persentase; tidak mengubah penyimpanan atau rumus progres.
+  document.addEventListener('input',function(e){
+    if(e.target?.id?.startsWith('bac_')||e.target?.id?.startsWith('haf_')||e.target?.id?.startsWith('mur_')||e.target?.id==='trackingAyatDari'||e.target?.id==='trackingAyatSampai'){
+      setTimeout(()=>window.refreshAllInputSyncStatus?.(),0);
+    }
+  },true);
+  document.addEventListener('change',function(e){
+    if(e.target?.id?.startsWith('bac_')||e.target?.id?.startsWith('haf_')||e.target?.id?.startsWith('mur_')||e.target?.id==='trackingSurat'||e.target?.id==='trackingAyatDari'||e.target?.id==='trackingAyatSampai'||e.target?.id==='trackingSantri'){
+      setTimeout(()=>window.refreshAllInputSyncStatus?.(),0);
+    }
+  },true);
 
   window.rqMarkInputWrite=function(name,cat,status,text){
     const p=getPart(name,cat,'write');
