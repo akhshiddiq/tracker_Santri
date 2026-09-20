@@ -7386,6 +7386,108 @@ function renderOptions(){
 })();
 </script>
 
+
+<script id="sync-hardening-v77">
+(function(){
+  'use strict';
+  let running=false;
+  let uiTimer=null;
+
+  function queue(){
+    try{const v=JSON.parse(localStorage.getItem('rq_backend_sync_queue_v2')||'[]');return Array.isArray(v)?v:[];}catch(e){return []}
+  }
+  function setButtonState(active){
+    document.querySelectorAll('#syncInfoNowBtn').forEach(function(b){
+      b.disabled=!!active;
+      b.style.pointerEvents='auto';
+      b.style.cursor=active?'wait':'pointer';
+      b.style.position='relative';
+      b.style.zIndex='50';
+      b.textContent=active?'Sedang sinkron...':'Sinkronkan Sekarang';
+    });
+  }
+  function showError(message){
+    try{
+      if(typeof window.showToast==='function') window.showToast(message,'error');
+    }catch(e){}
+    const box=document.getElementById('syncInfoContent');
+    if(!box)return;
+    const old=box.querySelector('[data-rq-sync-hard-error]');
+    if(old)old.remove();
+    const div=document.createElement('div');
+    div.setAttribute('data-rq-sync-hard-error','1');
+    div.className='mt-3 p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 text-[11px] font-black';
+    div.textContent=message;
+    box.prepend(div);
+  }
+  async function manualSync(){
+    if(running)return;
+    if(typeof window.rqBackendSyncNow!=='function'){
+      showError('Fungsi sinkronisasi belum tersedia pada halaman ini.');
+      return;
+    }
+    running=true;
+    setButtonState(true);
+    try{
+      try{window.__rqBackendSyncManual=true;}catch(e){}
+      const before=queue();
+      if(!before.length){
+        try{window.__rqBackendSyncPull?.();}catch(e){}
+        if(typeof window.showToast==='function') window.showToast('Tidak ada data yang menunggu sinkronisasi.','success');
+        return;
+      }
+      await window.rqBackendSyncNow();
+      if(typeof window.rqBackendSyncPull==='function') await window.rqBackendSyncPull();
+      const after=queue();
+      const failed=after.find(x=>String(x?.lastError||'').toLowerCase().includes('jenis post tidak dikenal'));
+      if(failed){
+        showError('Backend Google Apps Script yang aktif belum mengenali Sync V2. Perbarui/deploy backend V77 terlebih dahulu. Data lokal tetap aman.');
+      }else if(after.length===0){
+        if(typeof window.showToast==='function') window.showToast('Sinkronisasi selesai dan antrean kosong.','success');
+      }else{
+        const err=after[0]?.lastError||'Masih ada data menunggu.';
+        showError('Sinkronisasi belum selesai: '+err);
+      }
+    }catch(err){
+      showError('Sinkronisasi gagal: '+String(err?.message||err));
+    }finally{
+      running=false;
+      try{window.__rqBackendSyncManual=false;}catch(e){}
+      setButtonState(false);
+      if(uiTimer){clearInterval(uiTimer);uiTimer=null;}
+      try{window.rqBackendSyncQueue?.();}catch(e){}
+    }
+  }
+
+  window.rqManualSyncV77=manualSync;
+
+  // Delegasi capture: tombol tetap aktif walaupun panel Informasi Sinkronisasi
+  // dibuat ulang oleh renderer setiap beberapa detik.
+  document.addEventListener('click',function(e){
+    const b=e.target?.closest?.('#syncInfoNowBtn');
+    if(!b)return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    manualSync();
+  },true);
+
+  function harden(){
+    const b=document.getElementById('syncInfoNowBtn');
+    if(b){
+      b.type='button';
+      b.disabled=running;
+      b.style.pointerEvents='auto';
+      b.style.cursor=running?'wait':'pointer';
+      b.style.position='relative';
+      b.style.zIndex='50';
+      if(!running)b.textContent='Sinkronkan Sekarang';
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',harden,{once:true});else harden();
+  setInterval(harden,500);
+})();
+</script>
+
 </body>
 
 <script id="sync-information-menu-stability-v1">
