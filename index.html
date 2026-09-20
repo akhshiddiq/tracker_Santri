@@ -7145,6 +7145,24 @@ function renderOptions(){
   function tracking(){const x=read(TRACKING_KEY,[]);return Array.isArray(x)?x:[]}
   function deviceId(){return localStorage.getItem(DEVICE_KEY)||'-'}
   function gsUrl(){return typeof window.getGsUrl==='function'?window.getGsUrl():''}
+  async function getLocalStorageInfo(){
+    try{
+      if(navigator.storage && typeof navigator.storage.estimate==='function'){
+        const e=await navigator.storage.estimate();
+        const usage=Number(e?.usage||0);
+        const quota=Number(e?.quota||0);
+        return {usage,quota,remaining:Math.max(0,quota-usage),supported:quota>0};
+      }
+    }catch(e){}
+    return {usage:0,quota:0,remaining:0,supported:false};
+  }
+  function formatBytes(bytes){
+    const n=Number(bytes)||0;
+    if(n<1024) return `${Math.round(n)} B`;
+    if(n<1024*1024) return `${(n/1024).toFixed(1)} KB`;
+    if(n<1024*1024*1024) return `${(n/1024/1024).toFixed(1)} MB`;
+    return `${(n/1024/1024/1024).toFixed(2)} GB`;
+  }
   function fmtDate(v){if(!v)return '-';const d=new Date(v);if(isNaN(d.getTime()))return String(v);return d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function sourceBadge(source){
     return source==='Google Sheet'
