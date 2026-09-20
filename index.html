@@ -3905,7 +3905,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <button class="w-full min-h-[58px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md active:scale-[.99] transition" onclick="window.saveTrackingSetoran()" type="button">
 <i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN SETORAN
                     </button>
-<p class="text-[9px] text-slate-400 font-bold text-center">Data modul ini disimpan di Local Storage browser dan tidak dikirim ke Google Sheet.</p>
+<p class="text-[9px] text-slate-400 font-bold text-center">Data modul ini tersimpan di Local Storage browser dan akan disinkronkan ke Google Sheet secara bertahap.</p>
 </div></div></div>
 </div>
 
@@ -7494,6 +7494,353 @@ function renderOptions(){
 })();
 </script>
 
+
+<style id="input-sync-read-write-v79-style">
+.rq-input-sync-status{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:.5rem;
+  margin:.15rem 0 .75rem;
+  padding:.55rem;
+  border:1px solid rgba(148,163,184,.28);
+  border-radius:.9rem;
+  background:rgba(248,250,252,.72);
+}
+.dark .rq-input-sync-status{background:rgba(15,23,42,.55);border-color:rgba(71,85,105,.55)}
+.rq-sync-chip{
+  display:flex;align-items:center;gap:.45rem;min-width:0;
+  padding:.45rem .55rem;border-radius:.7rem;
+  font-size:10px;font-weight:900;line-height:1.15;
+  border:1px solid rgba(148,163,184,.25);
+}
+.rq-sync-chip i{width:15px;text-align:center;flex:0 0 15px}
+.rq-sync-chip .rq-sync-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rq-sync-idle{color:#64748b;background:rgba(148,163,184,.08)}
+.rq-sync-pending{color:#b45309;background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25)}
+.rq-sync-success{color:#047857;background:rgba(16,185,129,.10);border-color:rgba(16,185,129,.25)}
+.rq-sync-error{color:#be123c;background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.22)}
+.dark .rq-sync-idle{color:#94a3b8}
+.dark .rq-sync-pending{color:#fbbf24}
+.dark .rq-sync-success{color:#6ee7b7}
+.dark .rq-sync-error{color:#fda4af}
+@media(max-width:480px){
+  .rq-input-sync-status{grid-template-columns:1fr}
+}
+</style>
+<script id="input-sync-read-write-v79">
+(function(){
+  'use strict';
+
+  const STATE_KEY='rq_input_sync_rw_v79';
+  const CATS={
+    bacaan:{label:'Bacaan'},
+    hafalan:{label:'Hafalan'},
+    murojaah:{label:"Muroja'ah"},
+    tugas:{label:'Tugas'},
+    tracking:{label:'Setoran Tracking'}
+  };
+
+  function loadState(){
+    try{
+      const v=JSON.parse(localStorage.getItem(STATE_KEY)||'{}');
+      return v&&typeof v==='object'?v:{};
+    }catch(e){return {}}
+  }
+  const state=loadState();
+  function saveState(){
+    try{localStorage.setItem(STATE_KEY,JSON.stringify(state));}catch(e){}
+  }
+  function key(name,cat){return String(cat)+'|'+String(name||'');}
+
+  function defaultPart(direction){
+    return {state:'idle',text:direction==='read'?'Belum membaca Google Sheet':'Belum ada upload'};
+  }
+
+  function getPart(name,cat,direction){
+    const k=key(name,cat);
+    state[k]=state[k]||{};
+    state[k][direction]=state[k][direction]||defaultPart(direction);
+    return state[k][direction];
+  }
+
+  function chip(direction,part){
+    const isRead=direction==='read';
+    const icon=isRead?'fa-cloud-arrow-down':'fa-cloud-arrow-up';
+    const label=isRead?'READ':'WRITE';
+    const cls=part.state==='success'?'rq-sync-success':part.state==='pending'?'rq-sync-pending':part.state==='error'?'rq-sync-error':'rq-sync-idle';
+    const spin=part.state==='pending'?' animate-pulse':'';
+    return `<div class="rq-sync-chip ${cls}" data-rq-sync-chip="${direction}">
+      <i class="fa-solid ${icon}${spin}"></i>
+      <span class="rq-sync-text"><b>${label}</b> · ${String(part.text||'')}</span>
+    </div>`;
+  }
+
+  window.rqInputSyncStatus={
+    set:function(name,cat,direction,status,text){
+      const p=getPart(name,cat,direction);
+      p.state=status||'idle';
+      p.text=text||'';
+      saveState();
+      renderOne(name,cat);
+    },
+    get:function(name,cat,direction){return getPart(name,cat,direction)}
+  };
+
+  function renderOne(name,cat){
+    const id='rqInputSyncStatus_'+encodeURIComponent(String(cat))+'_'+encodeURIComponent(String(name||''));
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML=chip('read',getPart(name,cat,'read'))+chip('write',getPart(name,cat,'write'));
+  }
+
+  function ensureForCard(content,cat){
+    if(!content || !content.parentElement)return;
+    const prefix='card_section_content_'+cat+'_';
+    if(!content.id.startsWith(prefix))return;
+    const name=content.id.slice(prefix.length);
+    const id='rqInputSyncStatus_'+encodeURIComponent(String(cat))+'_'+encodeURIComponent(String(name));
+    let bar=document.getElementById(id);
+    if(!bar){
+      bar=document.createElement('div');
+      bar.id=id;
+      bar.className='rq-input-sync-status';
+      content.parentElement.insertBefore(bar,content);
+    }
+    const r=getPart(name,cat,'read'), w=getPart(name,cat,'write');
+    bar.innerHTML=chip('read',r)+chip('write',w);
+  }
+
+  window.ensureAllInputSyncStatus=function(){
+    ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
+      document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>ensureForCard(el,cat));
+    });
+
+    // Form Input Setoran Tracking utama: satu indikator untuk seluruh form.
+    const saveBtn=document.querySelector('button[onclick="window.saveTrackingSetoran()"]');
+    if(saveBtn){
+      let box=document.getElementById('rqTrackingInputSyncStatus');
+      if(!box){
+        box=document.createElement('div');
+        box.id='rqTrackingInputSyncStatus';
+        box.className='rq-input-sync-status';
+        saveBtn.parentElement.insertBefore(box,saveBtn);
+      }
+      const name=document.getElementById('trackingSantri')?.value||'';
+      const r=getPart(name,'tracking','read'), w=getPart(name,'tracking','write');
+      box.innerHTML=chip('read',r)+chip('write',w);
+    }
+    saveState();
+  };
+
+  function markReadAll(){
+    ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
+      document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>{
+        const prefix='card_section_content_'+cat+'_';
+        const name=el.id.slice(prefix.length);
+        const p=getPart(name,cat,'read');
+        p.state='success'; p.text='Berhasil';
+      });
+    });
+    const name=document.getElementById('trackingSantri')?.value||'';
+    if(name){
+      const p=getPart(name,'tracking','read');
+      p.state='success'; p.text='Berhasil';
+    }
+    saveState();
+    window.ensureAllInputSyncStatus();
+  }
+
+  window.rqMarkInputReadSuccess=markReadAll;
+
+  window.rqMarkInputWrite=function(name,cat,status,text){
+    const p=getPart(name,cat,'write');
+    p.state=status;
+    p.text=text||(
+      status==='pending'?'Mengirim...':
+      status==='success'?'Selesai':
+      status==='error'?'Gagal':'Belum ada upload'
+    );
+    saveState();
+    window.ensureAllInputSyncStatus();
+  };
+
+  // Tandai WRITE ketika fungsi upload lama dipanggil.
+  const originalSync=window.syncToCloud;
+  if(typeof originalSync==='function' && !originalSync.__rqReadWriteV79){
+    async function wrappedSync(payload){
+      const p=payload||{};
+      let cat=String(p.type||'');
+      if(cat==='murojaah')cat='murojaah';
+      if(!CATS[cat]) return originalSync.apply(this,arguments);
+
+      const name=String(p.name||'');
+      window.rqMarkInputWrite(name,cat,'pending','Mengirim...');
+      try{
+        const result=await originalSync.apply(this,arguments);
+        // syncToCloud memakai no-cors pada kanal lama, sehingga browser hanya
+        // memastikan request selesai dikirim. Verifikasi penyimpanan dilakukan
+        // oleh READ berikutnya dari Google Sheet.
+        window.rqMarkInputWrite(name,cat,'success','Selesai');
+        return result;
+      }catch(err){
+        window.rqMarkInputWrite(name,cat,'error','Gagal');
+        throw err;
+      }
+    }
+    wrappedSync.__rqReadWriteV79=true;
+    window.syncToCloud=wrappedSync;
+  }
+
+  // READ: setiap fetch Google Sheet yang berhasil menyalakan READ.
+  const originalFetch=window.fetchAllDataFromCloud;
+  if(typeof originalFetch==='function' && !originalFetch.__rqReadWriteV79){
+    async function wrappedFetch(){
+      // Jika pembacaan cloud sedang berjalan, fungsi asli dapat langsung return
+      // tanpa melakukan READ baru. Jangan menyalakan indikator READ Berhasil
+      // untuk pemanggilan yang sebenarnya tidak membaca Google Sheet.
+      const alreadyBusy=!!window._cloudPollingBusy;
+      if(alreadyBusy){
+        return originalFetch.apply(this,arguments);
+      }
+      let lastSyncState='pending';
+      const oldSetSync=window.setSyncIndicator;
+      if(typeof oldSetSync==='function'){
+        window.setSyncIndicator=function(status){
+          lastSyncState=status||lastSyncState;
+          return oldSetSync.apply(this,arguments);
+        };
+      }
+      try{
+        const result=await originalFetch.apply(this,arguments);
+        if(lastSyncState==='error'){
+          ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
+            document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>{
+              const prefix='card_section_content_'+cat+'_';
+              const name=el.id.slice(prefix.length);
+              const p=getPart(name,cat,'read');
+              p.state='error'; p.text='Gagal';
+            });
+          });
+          saveState();
+          window.ensureAllInputSyncStatus();
+        }else{
+          markReadAll();
+        }
+        return result;
+      }catch(err){
+        ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
+          document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>{
+            const prefix='card_section_content_'+cat+'_';
+            const name=el.id.slice(prefix.length);
+            const p=getPart(name,cat,'read');
+            p.state='error'; p.text='Gagal';
+          });
+        });
+        saveState();
+        window.ensureAllInputSyncStatus();
+        throw err;
+      }finally{
+        if(typeof oldSetSync==='function') window.setSyncIndicator=oldSetSync;
+      }
+    }
+    wrappedFetch.__rqReadWriteV79=true;
+    window.fetchAllDataFromCloud=wrappedFetch;
+  }
+
+  // Tracking V2: tandai WRITE berdasarkan status antrean lokal.
+  const originalBackendSync=window.rqBackendSyncNow;
+  if(typeof originalBackendSync==='function' && !originalBackendSync.__rqReadWriteV79){
+    async function wrappedBackendSync(){
+      try{
+        const q=typeof window.rqBackendSyncQueue==='function'?window.rqBackendSyncQueue():[];
+        q.forEach(item=>{
+          const p=item?.payload||{};
+          if(p.type==='tracking_setoran' || p.type==='level_checklist'){
+            window.rqMarkInputWrite(p.name||document.getElementById('trackingSantri')?.value||'','tracking','pending','Mengirim...');
+          }
+        });
+        const result=await originalBackendSync.apply(this,arguments);
+        const left=typeof window.rqBackendSyncQueue==='function'?window.rqBackendSyncQueue():[];
+        if(left.length===0){
+          const name=document.getElementById('trackingSantri')?.value||'';
+          if(name) window.rqMarkInputWrite(name,'tracking','success','Selesai');
+        }else{
+          left.forEach(item=>{
+            const p=item?.payload||{};
+            if(p.type==='tracking_setoran' || p.type==='level_checklist'){
+              window.rqMarkInputWrite(p.name||document.getElementById('trackingSantri')?.value||'','tracking','error','Menunggu');
+            }
+          });
+        }
+        return result;
+      }catch(err){
+        const name=document.getElementById('trackingSantri')?.value||'';
+        if(name) window.rqMarkInputWrite(name,'tracking','error','Gagal');
+        throw err;
+      }
+    }
+    wrappedBackendSync.__rqReadWriteV79=true;
+    window.rqBackendSyncNow=wrappedBackendSync;
+  }
+
+  // Tracking Setoran: tandai WRITE saat data masuk antrean/diunggah.
+  const originalTrackingSave=window.saveTrackingSetoran;
+  if(typeof originalTrackingSave==='function' && !originalTrackingSave.__rqReadWriteV79){
+    async function wrappedTrackingSave(){
+      const name=String(document.getElementById('trackingSantri')?.value||'').trim();
+      let beforeCount=0;
+      try{beforeCount=JSON.parse(localStorage.getItem('rq_tracking_tahfidz_local_v1')||'[]').length}catch(e){}
+      try{
+        const result=await originalTrackingSave.apply(this,arguments);
+        let afterRows=[];
+        try{afterRows=JSON.parse(localStorage.getItem('rq_tracking_tahfidz_local_v1')||'[]')}catch(e){afterRows=[]}
+        // Jika validasi input lama menolak penyimpanan, jangan mengubah indikator WRITE.
+        if(afterRows.length===beforeCount) return result;
+        if(name) window.rqMarkInputWrite(name,'tracking','pending','Menunggu upload');
+        const q=typeof window.rqBackendSyncQueue==='function'?window.rqBackendSyncQueue():[];
+        const own=q.filter(item=>{
+          const p=item?.payload||{};
+          return (p.type==='tracking_setoran'||p.type==='level_checklist') && String(p.name||'')===name;
+        });
+        if(!own.length && name){
+          const latest=afterRows.find(r=>String(r?.santri||'')===name && String(r?.syncStatus||'').toLowerCase()==='saved');
+          if(latest) window.rqMarkInputWrite(name,'tracking','success','Selesai');
+        }
+        return result;
+      }catch(err){
+        if(name) window.rqMarkInputWrite(name,'tracking','error','Gagal');
+        throw err;
+      }
+    }
+    wrappedTrackingSave.__rqReadWriteV79=true;
+    window.saveTrackingSetoran=wrappedTrackingSave;
+  }
+
+  // Setelah render kartu/form, pasang indikator tanpa mengubah form.
+  function refresh(){window.ensureAllInputSyncStatus();}
+  const oldRender=window.renderSantriCardsAndTable;
+  if(typeof oldRender==='function' && !oldRender.__rqReadWriteV79){
+    function wrappedRender(){
+      const out=oldRender.apply(this,arguments);
+      setTimeout(refresh,0);
+      return out;
+    }
+    wrappedRender.__rqReadWriteV79=true;
+    window.renderSantriCardsAndTable=wrappedRender;
+  }
+
+  // Event delegasi: membantu form yang dirender ulang/dibuka dari menu.
+  document.addEventListener('click',function(){
+    setTimeout(refresh,0);
+  },true);
+  document.addEventListener('change',function(){
+    setTimeout(refresh,0);
+  },true);
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh,{once:true});
+  else setTimeout(refresh,0);
+})();
+</script>
 </body>
 
 <script id="sync-information-menu-stability-v1">
