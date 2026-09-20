@@ -337,9 +337,14 @@
         };
 
         window.saveCustomGsUrl = function() {
-            const input = document.getElementById('customGsUrlInput');
+            const input = document.getElementById('backendGsUrlDisplay');
             if (input && input.value.trim()) {
-                localStorage.setItem('rq_gs_url', input.value.trim());
+                const value = input.value.trim();
+                if (!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec(?:\?[^\s]*)?$/.test(value)) {
+                    window.showToast("Format URL Web App Google Apps Script tidak valid.", "error");
+                    return;
+                }
+                localStorage.setItem('rq_gs_url', value);
                 window.showToast("URL Endpoint GS berhasil diperbarui!", "success");
                 window.fetchAllDataFromCloud();
             }
@@ -3692,11 +3697,12 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
     <div class="p-4 sm:p-5 space-y-3">
       <label for="backendGsUrlDisplay" class="block text-[10px] font-black uppercase text-slate-500 dark:text-slate-300">URL Web App Google Apps Script</label>
       <div class="flex gap-2">
-        <input id="backendGsUrlDisplay" type="text" readonly class="min-w-0 flex-1 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-200" />
-        <button type="button" onclick="window.copyBackendGsUrl()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-copy mr-1"></i> Salin</button>
+        <input id="backendGsUrlDisplay" type="url" autocomplete="off" spellcheck="false" class="min-w-0 flex-1 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" />
+        <button type="button" onclick="window.saveCustomGsUrl()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-floppy-disk mr-1"></i> Simpan</button>
+        <button type="button" onclick="window.copyBackendGsUrl()" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-copy mr-1"></i> Salin</button>
       </div>
       <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px] sm:text-xs font-bold text-amber-800 dark:text-amber-200">
-        URL ini adalah alamat Web App backend. Jangan diubah kecuali Anda melakukan deployment Web App baru.
+        URL ini adalah alamat Web App backend. Anda boleh menggantinya jika menggunakan deployment Web App Google Apps Script yang lain. Setelah mengganti, tekan Simpan.
       </div>
     </div>
   </div>
