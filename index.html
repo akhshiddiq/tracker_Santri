@@ -7097,7 +7097,216 @@ function renderOptions(){
 })();
 </script>
 
+
+
+<!-- ============================================================
+     INFORMASI SINKRONISASI V1
+     ADDITIVE ONLY: tidak mengganti fungsi lama.
+     Menampilkan status lokal -> Google Sheet, antrean, pull cloud,
+     dan backfill bertahap riwayat tracking lokal.
+============================================================ -->
+<script id="sync-information-v1">
+(function(){
+  'use strict';
+
+  const QUEUE_KEY='rq_backend_sync_queue_v2';
+  const TRACKING_KEY='rq_tracking_tahfidz_local_v1';
+  const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
+  const DEVICE_KEY='rq_backend_device_id_v2';
+  const INFO_REFRESH=2000;
+  const BACKFILL_BATCH=3;
+  const BACKFILL_INTERVAL=12000;
+  let backfillBusy=false;
+
+  function read(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}}
+  function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){return false}}
+  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
+  function queue(){const q=read(QUEUE_KEY,[]);return Array.isArray(q)?q:[]}
+  function tracking(){const x=read(TRACKING_KEY,[]);return Array.isArray(x)?x:[]}
+  function deviceId(){return localStorage.getItem(DEVICE_KEY)||'-'}
+  function gsUrl(){return typeof window.getGsUrl==='function'?window.getGsUrl():''}
+  function fmtDate(v){if(!v)return '-';const d=new Date(v);if(isNaN(d.getTime()))return String(v);return d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+  function sourceBadge(source){
+    return source==='Google Sheet'
+      ? '<span class="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 text-[10px] font-black">Google Sheet</span>'
+      : '<span class="px-2 py-1 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 text-[10px] font-black">Lokal</span>';
+  }
+
+  function getState(){
+    const q=queue();
+    const rows=tracking();
+    const pending=q.length;
+    const synced=rows.filter(r=>String(r?.syncStatus||'').toLowerCase()==='saved').length;
+    const localPending=rows.filter(r=>String(r?.syncStatus||'').toLowerCase()!=='saved').length;
+    const cloudRows=Array.isArray(window._riwayatInputCloud)?window._riwayatInputCloud.length:0;
+    return {q,rows,pending,synced,localPending,cloudRows};
+  }
+
+  function ensure(){
+    const nav=document.querySelector('#appHeader nav > div');
+    const content=document.getElementById('trackerPageContent');
+    if(!nav||!content)return false;
+
+    let btn=document.getElementById('trackerMenu-sync-info');
+    if(!btn){
+      btn=document.createElement('button');
+      btn.type='button';
+      btn.id='trackerMenu-sync-info';
+      btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap';
+      btn.innerHTML='<i class="fa-solid fa-cloud-arrow-up mr-1"></i> Informasi Sinkronisasi';
+      nav.appendChild(btn);
+    }
+    let panel=document.getElementById('tracker-panel-sync-info');
+    if(!panel){
+      panel=document.createElement('div');
+      panel.id='tracker-panel-sync-info';
+      panel.className='tracker-menu-panel';
+      panel.dataset.panelHidden='1';
+      panel.style.display='none';
+      panel.innerHTML='<div id="syncInfoContent"></div>';
+      content.appendChild(panel);
+    }
+    btn.onclick=open;
+    return true;
+  }
+
+  function open(e){
+    if(e)e.preventDefault();
+    if(!ensure())return;
+    const target='tracker-panel-sync-info';
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{const a=p.id===target;p.dataset.panelHidden=a?'0':'1';p.style.display=a?'block':'none'});
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(b=>{const a=b.id==='trackerMenu-sync-info';b.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(a)b.classList.add('bg-white','text-emerald-900','shadow');else b.classList.add('text-emerald-50','hover:bg-emerald-700')});
+    document.body.classList.remove('tracker-hafalan-active');
+    render();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function render(){
+    if(!ensure())return;
+    const el=document.getElementById('syncInfoContent');if(!el)return;
+    const s=getState();
+    const pullAt=localStorage.getItem('rq_backend_sync_last_pull_v2')||'';
+    const pullCount=Number(localStorage.getItem('rq_sync_info_pull_count')||0);
+    const lastQueue=s.q.length?s.q[s.q.length-1]:null;
+    const online=navigator.onLine;
+    const backend=gsUrl();
+    const localPct=s.rows.length?Math.round((s.synced/s.rows.length)*100):100;
+    const statusText=!online?'Offline — antrean lokal tetap disimpan':s.pending?'Ada data menunggu dikirim ke Google Sheet':'Lokal dan antrean saat ini tidak memiliki data tertunda';
+    el.innerHTML=`
+      <div class="space-y-4">
+        <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div><h3 class="font-black text-base text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Informasi Sinkronisasi</h3><p class="text-[11px] font-bold text-slate-500 mt-1">Semua proses lokal dan Google Sheet ditampilkan di sini.</p></div>
+            <span class="px-3 py-1.5 rounded-xl text-[11px] font-black ${online?'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200':'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'}">${online?'ONLINE':'OFFLINE'}</span>
+          </div>
+          <div class="mt-4 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 transition-all" style="width:${Math.max(0,Math.min(100,localPct))}%"></div></div>
+          <div class="mt-2 flex justify-between text-[11px] font-black"><span>${localPct}% tracking lokal sudah berstatus tersimpan</span><span>${s.rows.length} total tracking lokal</span></div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">TRACKING LOKAL</div><div class="text-xl font-black mt-1">${s.rows.length}</div><div class="text-[10px] font-bold text-slate-500">${s.synced} tersimpan</div></div>
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">ANTREAN</div><div class="text-xl font-black mt-1">${s.pending}</div><div class="text-[10px] font-bold text-slate-500">menunggu proses</div></div>
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">RIWAYAT CLOUD</div><div class="text-xl font-black mt-1">${s.cloudRows}</div><div class="text-[10px] font-bold text-slate-500">Google Sheet</div></div>
+          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">BACKFILL</div><div class="text-xl font-black mt-1">${s.localPending}</div><div class="text-[10px] font-bold text-slate-500">lokal belum tersimpan</div></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div class="font-black text-sm text-slate-800 dark:text-slate-200 mb-3">Status proses terakhir</div>
+          <div class="space-y-2 text-xs font-bold">
+            <div class="flex justify-between gap-3"><span>Status jaringan</span><span>${online?'Terhubung':'Tidak terhubung'}</span></div>
+            <div class="flex justify-between gap-3"><span>Status antrean</span><span>${esc(statusText)}</span></div>
+            <div class="flex justify-between gap-3"><span>Pull Sync V2 terakhir</span><span>${pullAt?esc(fmtDate(pullAt)):'Belum ada'}</span></div>
+            <div class="flex justify-between gap-3"><span>Jumlah pull</span><span>${pullCount}</span></div>
+            <div class="flex justify-between gap-3"><span>Device ID</span><span class="font-mono text-[10px] break-all">${esc(deviceId())}</span></div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div class="flex items-center justify-between gap-3 flex-wrap"><div class="font-black text-sm">Antrean lokal yang sedang dikirim</div><button type="button" id="syncInfoNowBtn" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-[11px] font-black">Sinkronkan Sekarang</button></div>
+          <div class="mt-3 space-y-2">${s.q.length?s.q.slice(-8).reverse().map((x,i)=>`<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700"><div class="flex justify-between gap-3"><span class="font-black text-xs">${esc(x.payload?.name||x.payload?.santriId||'Data')}</span><span class="text-[10px] font-black">Percobaan ${esc(x.attempt||0)}/5</span></div><div class="text-[10px] font-bold text-slate-500 mt-1">${esc(x.payload?.type||'-')} · ${esc(x.payload?.juz||'')} · Level ${esc(x.payload?.level||'-')} · ${esc(x.payload?.slots?.[0]?.item||'')}</div><div class="mt-1">${sourceBadge('Lokal')} <span class="text-[10px] font-bold text-slate-500">Sync ID: ${esc(x.syncId||'-')}</span></div></div>`).join(''):'<div class="text-xs font-bold text-slate-400">Tidak ada antrean lokal.</div>'}</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div class="font-black text-sm">Backend Google Apps Script</div>
+          <div class="mt-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-[10px] break-all">${esc(backend||'Belum ada URL')}</div>
+          <div class="text-[10px] font-bold text-slate-500 mt-2">Data lokal tidak dihapus hanya karena proses Google Sheet belum selesai.</div>
+        </div>
+      </div>`;
+    const b=document.getElementById('syncInfoNowBtn');if(b)b.onclick=async()=>{if(typeof window.rqBackendSyncNow==='function')await window.rqBackendSyncNow();if(typeof window.rqBackendSyncPull==='function')await window.rqBackendSyncPull();render()};
+  }
+
+  function queueOneLocal(record){
+    const student=(window.santriList||[]).find(x=>String(x.name||'')===String(record.santri||''))||{};
+    const syncId=String(record.syncId||'').trim()||('LOCAL-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8));
+    const payload={type:'tracking_setoran',clientTimestamp:record.timestamp||new Date().toISOString(),tanggal:record.tanggal||'',santriId:student.id||record.santriId||'',name:record.santri||record.name||'',class:student.class||record.class||'',teacher:student.teacher||record.teacher||'',juz:String(record.juz||''),arah:record.arah||'depan',level:String(record.level||''),slots:[{item:record.surat||'',mode:'quran',start:String(record.ayatDari||''),end:String(record.ayatSampai||'')}],segiBacaan:record.penilaianBacaan||'',segiHafalan:record.penilaianHafalan||'',catatan:record.catatan||'',deviceId:deviceId()};
+    return {syncId,payload,attempt:0,backfill:true};
+  }
+
+  async function backfill(){
+    if(backfillBusy||!navigator.onLine)return;
+    if(typeof window.rqBackendSyncNow!=='function')return;
+    const rows=tracking();
+    const existing=new Set(queue().map(x=>String(x.syncId||'')));
+    const candidates=rows.filter(r=>String(r?.syncStatus||'').toLowerCase()!=='saved'&&!existing.has(String(r?.syncId||''))).slice(0,BACKFILL_BATCH);
+    if(!candidates.length)return;
+    backfillBusy=true;
+    try{
+      const q=queue();
+      const updates=tracking();
+      const ids=[];
+      candidates.forEach(r=>{const item=queueOneLocal(r);r.syncId=item.syncId;r.syncStatus='pending';r.syncUpdatedAt=new Date().toISOString();q.push(item);ids.push(item.syncId)});
+      write(QUEUE_KEY,q);write(TRACKING_KEY,updates);
+      await window.rqBackendSyncNow();
+      const q2=queue();const pending=new Set(q2.map(x=>String(x.syncId||'')));
+      const now=tracking();now.forEach(r=>{if(ids.includes(String(r.syncId||''))&&!pending.has(String(r.syncId||''))){r.syncStatus='saved';r.syncUpdatedAt=new Date().toISOString()}});write(TRACKING_KEY,now);
+      if(typeof window.showToast==='function')window.showToast('Sinkronisasi riwayat lokal berjalan bertahap.','success');
+    }catch(e){console.warn('Backfill tracking lokal:',e)}finally{backfillBusy=false;render()}
+  }
+
+  function addLocalHistoryInfo(){
+    const container=document.getElementById('riwayatInputList');
+    if(!container)return;
+    let box=document.getElementById('riwayatLocalTrackingInfo');
+    if(!box){box=document.createElement('div');box.id='riwayatLocalTrackingInfo';container.parentNode?.insertBefore(box,container);}
+    const rows=tracking().slice().sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0));
+    const latest=rows.slice(0,12);
+    box.innerHTML=`<div class="mb-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-2xl p-4"><div class="flex items-center justify-between gap-3 flex-wrap"><div><div class="font-black text-sm text-blue-900 dark:text-blue-200"><i class="fa-solid fa-database mr-1"></i> Riwayat Tracking Lokal</div><div class="text-[10px] font-bold text-blue-700 dark:text-blue-300 mt-1">Semua riwayat lokal tetap dipertahankan dan akan masuk ke Google Sheet secara bertahap.</div></div><div class="text-[11px] font-black">${rows.filter(r=>String(r?.syncStatus||'').toLowerCase()==='saved').length}/${rows.length} tersinkron</div></div><div class="mt-3 space-y-2">${latest.length?latest.map(r=>`<div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/70"><div class="flex justify-between gap-2"><span class="text-xs font-black">${esc(r.santri||'-')}</span>${sourceBadge(String(r.syncStatus||'').toLowerCase()==='saved'?'Google Sheet':'Lokal')}</div><div class="text-[10px] font-bold text-slate-500 mt-1">${esc(r.surat||'-')} · Juz ${esc(r.juz||'-')} · Level ${esc(r.level||'-')} · ${esc(fmtDate(r.timestamp||r.tanggal))}</div></div>`).join(''):'<div class="text-xs font-bold text-slate-400">Belum ada tracking lokal.</div>'}</div></div>`;
+  }
+
+  function refresh(){
+    if(document.getElementById('tracker-panel-sync-info')?.style.display==='block')render();
+    addLocalHistoryInfo();
+  }
+
+  // Tambahkan label sumber pada riwayat Google Sheet tanpa mengubah data aslinya.
+  const originalRender=window.renderRiwayatInputMenu;
+  if(typeof originalRender==='function'&&!originalRender.__syncInfoWrapped){
+    const wrapped=function(){originalRender.apply(this,arguments);setTimeout(addLocalHistoryInfo,0)};
+    wrapped.__syncInfoWrapped=true;window.renderRiwayatInputMenu=wrapped;
+  }
+
+  function init(){ensure();refresh();setInterval(refresh,INFO_REFRESH);setInterval(backfill,BACKFILL_INTERVAL);setTimeout(backfill,4000);}
+  window.addEventListener('online',()=>setTimeout(backfill,1500));
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  window.openSyncInformation=open;
+})();
+</script>
+
 </body>
+
+<script id="sync-information-menu-stability-v1">
+(function(){
+  function patch(){
+    if(!window.openSyncInformation)return;
+    const nav=document.querySelector('#appHeader nav > div');
+    const content=document.getElementById('trackerPageContent');
+    if(!nav||!content)return;
+    const btn=document.getElementById('trackerMenu-sync-info');
+    if(btn)btn.onclick=window.openSyncInformation;
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch,{once:true});else patch();
+})();
+</script>
 </html>
 
 <script id="laporan-level-perkelas-v1">
