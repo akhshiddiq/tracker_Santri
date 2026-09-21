@@ -25,7 +25,7 @@
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://cdnjs.lokalflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
 <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; }
         @media (min-width: 640px) { body { font-size: 13.5px; } }
@@ -322,56 +322,27 @@
             { no: 112, name: "Al-Ikhlash", ayat: 4 }, { no: 113, name: "Al-Falaq", ayat: 5 }, { no: 114, name: "An-Nas", ayat: 6 }
         ];
 
-        const RQ_DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbxx_G_9jtvTFEam_Mrv9388mGDPb44rxmdyp3kj8IlJXZ5bXwIoyQ_LGmmHf1mB2L69FA/exec';
-        const RQ_OLD_GS_URL = 'https://script.google.com/macros/s/AKfycbyjKiIMh3shzdvkI9wOz8mzbjWoX6YANtpRm_jgwd5BlGZo-xZKNWgQlllH1_4ho4Jl/exec';
-
-        window.getGsUrl = function() {
-            const saved = String(localStorage.getItem('rq_gs_url') || '').trim();
-            // Migrasikan URL bawaan lama ke Web App backend terbaru.
-            // URL custom lain milik operator tetap dipertahankan.
-            if (!saved || saved === RQ_OLD_GS_URL) {
-                localStorage.setItem('rq_gs_url', RQ_DEFAULT_GS_URL);
-                return RQ_DEFAULT_GS_URL;
-            }
-            return saved;
-        };
-
-        window.saveCustomGsUrl = function() {
-            const input = document.getElementById('backendGsUrlDisplay');
-            if (input && input.value.trim()) {
-                const value = input.value.trim();
-                if (!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec(?:\?[^\s]*)?$/.test(value)) {
-                    window.showToast("Format URL Web App Google Apps Script tidak valid.", "error");
-                    return;
-                }
-                localStorage.setItem('rq_gs_url', value);
-                window.showToast("URL Endpoint GS berhasil diperbarui!", "success");
-                window.fetchAllDataFromCloud();
-            }
-        };
-
+        // ============================================================
+        // PENYIMPANAN LOKAL — 100% OFFLINE
+        // Semua data disimpan di Local Storage browser pada perangkat ini.
+        // ============================================================
+        // ============================================================
+        // PENYIMPANAN LOKAL — 100% LOCAL / OFFLINE
+        // ============================================================
         window.openBackendSettings = function() {
             const modal = document.getElementById('backendSettingsModal');
-            const input = document.getElementById('backendGsUrlDisplay');
-            if (input) input.value = window.getGsUrl();
             if (modal) modal.classList.remove('hidden');
+            const info = document.getElementById('localStorageInfoText');
+            if (info && navigator.storage?.estimate) {
+                navigator.storage.estimate().then(e => {
+                    const used = Number(e.usage || 0), quota = Number(e.quota || 0);
+                    info.textContent = quota ? `Penyimpanan lokal terpakai: ${(used/1024/1024).toFixed(2)} MB dari ${(quota/1024/1024).toFixed(0)} MB` : 'Data tersimpan di Local Storage browser.';
+                }).catch(() => {});
+            }
         };
-
         window.closeBackendSettings = function() {
             const modal = document.getElementById('backendSettingsModal');
             if (modal) modal.classList.add('hidden');
-        };
-
-        window.copyBackendGsUrl = async function() {
-            const url = window.getGsUrl();
-            try {
-                await navigator.clipboard.writeText(url);
-                window.showToast('URL Google Apps Script berhasil disalin.', 'success');
-            } catch (e) {
-                const input = document.getElementById('backendGsUrlDisplay');
-                if (input) { input.focus(); input.select(); document.execCommand('copy'); }
-                window.showToast('URL Google Apps Script berhasil disalin.', 'success');
-            }
         };
 
         window.cleanReportDetail = function(detailStr) {
@@ -468,8 +439,7 @@
             if (tabId === 'laporan') window.switchLaporanSubTab('wa');
             if (tabId === 'riwayat') window.renderRiwayatInputMenu();
             if (tabId === 'export') {
-                const urlInput = document.getElementById('customGsUrlInput');
-                if (urlInput) urlInput.value = window.getGsUrl();
+                window.openBackendSettings();
             }
         };
 
@@ -601,340 +571,77 @@
             else dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 inline-block shadow-sm";
         };
 
-        // Sinkronisasi cloud: setelah Save, perangkat lain akan mengambil versi terakhir dari Google Sheet.
+        // ============================================================
+        // LOCAL STORAGE SYNC
+        // Nama fungsi lama dipertahankan agar fitur lain tidak rusak,
+        // tetapi sekarang TIDAK melakukan request jaringan.
+        // ============================================================
         window.syncToCloud = async function(payload) {
             window.setSyncIndicator('pending');
-            const url = window.getGsUrl();
             try {
-                await fetch(url, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
+                const log = JSON.parse(localStorage.getItem('rq_local_save_log') || '[]');
+                log.unshift({ timestamp: new Date().toISOString(), type: payload?.type || '', name: payload?.name || '', mode: 'local' });
+                localStorage.setItem('rq_local_save_log', JSON.stringify(log.slice(0, 200)));
                 window.setSyncIndicator('success');
-                // Ambil kembali data setelah server selesai menerima Save agar perangkat ini
-                // juga memakai data yang benar-benar tersimpan di Google Sheet.
-                setTimeout(() => window.fetchAllDataFromCloud(true), 250);
+                window.fetchAllDataFromCloud(true);
+                return { ok: true, local: true };
             } catch (err) {
-                console.error("Cloud sync error:", err);
+                console.error('Local save error:', err);
                 window.setSyncIndicator('error');
+                throw err;
             }
         };
 
-        window._cloudFingerprint = '';
-        window._cloudPollingBusy = false;
-
-        // Terapkan satu baris Cloud sebagai nilai TERAKHIR untuk form santri.
-        // Ini sengaja menghapus cache lokal untuk field yang sudah disimpan, sehingga
-        // hasil Save dari laptop lain benar-benar menggantikan nilai yang tampil.
-        window.applyLatestCloudRowToFormCache = function(row, category) {
-            const name = row[3];
-            if (!name) return;
-            const prefix = category === 'bacaan' ? 'bac' : category === 'hafalan' ? 'haf' : category === 'murojaah' ? 'mur' : null;
-            if (prefix) {
-                for (let slot = 1; slot <= 3; slot++) {
-                    const base = (slot === 1 ? 6 : slot === 2 ? 9 : 12);
-                    const cell = row[base] || '-';
-                    const parts = String(cell).split('|');
-                    const item = parts[0] && parts[0] !== '-' ? parts[0] : '';
-                    const mode = parts[1] || (item.toLowerCase().includes('iqro') ? 'iqro' : 'quran');
-                    const start = row[base + 1] && row[base + 1] !== '-' ? row[base + 1] : '';
-                    const end = row[base + 2] && row[base + 2] !== '-' ? row[base + 2] : '';
-                    window.localFormCache[`${name}_${prefix}_surah_${slot}`] = mode === 'quran' ? item : '';
-                    window.localFormCache[`${name}_${prefix}_iqro_${slot}`] = mode === 'iqro' ? item : '';
-                    window.localFormCache[`${name}_${prefix}_start_${slot}`] = start;
-                    window.localFormCache[`${name}_${prefix}_end_${slot}`] = end;
-                    window.localFormCache[`${name}_${prefix}_mode_${slot}`] = mode;
-                    window.localFormCache[`${name}_${prefix}_status_${slot}`] = row[15] || '';
-                }
-                window.localFormCache[`${name}_${prefix}_status_1`] = row[15] || '';
-                window.localFormCache[`${name}_${prefix}_progress_status`] = (String(row[18] || '').trim() === 'Lanjut' || String(row[18] || '').trim() === 'Ulangi') ? String(row[18]).trim() : ((String(row[17] || '').trim() === 'Lanjut' || String(row[17] || '').trim() === 'Ulangi') ? String(row[17]).trim() : '');
-            } else if (category === 'tugas') {
-                window.localFormCache[`${name}_tug_detail`] = row[6] || '';
-                window.localFormCache[`${name}_tug_cat`] = row[8] || '';
-            }
-        };
+        window._lokalFingerprint = '';
+        window._lokalPollingBusy = false;
 
         window.fetchAllDataFromCloud = async function(forceRender = false) {
-            if (window._cloudPollingBusy) return;
-            window._cloudPollingBusy = true;
+            if (window._lokalPollingBusy) return;
+            window._lokalPollingBusy = true;
             window.setSyncIndicator('pending');
-            const url = window.getGsUrl();
             try {
-                const res = await fetch(url);
-                const cloudData = await res.json();
-
-                if (cloudData) {
-                    // Urutkan berdasarkan waktu server/Sheet. Baris paling akhir adalah Save terbaru.
-                    const sortByTimestamp = (a, b) => new Date(a?.[0] || 0).getTime() - new Date(b?.[0] || 0).getTime();
-                    ['input_bacaan', 'input_hafalan', 'input_murojaah_dikelas', 'input_tugas'].forEach(key => {
-                        if (Array.isArray(cloudData[key])) cloudData[key].sort(sortByTimestamp);
-                    });
-                    // Rekap khusus Laporan Grup WA dari Google Sheet.
-                    // Sumber ini menjadi prioritas untuk laporan Grup WA agar
-                    // hasilnya sama di semua laptop/HP dan selalu memakai input terakhir.
-                    window._laporanGrupWaCloud = Array.isArray(cloudData.laporan_grup_wa)
-                        ? cloudData.laporan_grup_wa
-                        : [];
-                    // Sumber stabil Laporan WA Personal dari Google Sheet.
-                    window._laporanWaPersonalCloud = Array.isArray(cloudData.laporan_wa_personal)
-                        ? cloudData.laporan_wa_personal
-                        : [];
-
-                    const fingerprint = JSON.stringify({
-                        b: cloudData.input_bacaan || [],
-                        h: cloudData.input_hafalan || [],
-                        m: cloudData.input_murojaah_dikelas || [],
-                        t: cloudData.input_tugas || [],
-                        lg: cloudData.laporan_grup_wa || [],
-                        lp: cloudData.laporan_wa_personal || [],
-                        mu: cloudData.materi || [],
-                        mt: cloudData.materi_tambahan || [],
-                        r: cloudData.riwayat_input || []
-                    });
-                    const cloudChanged = forceRender || fingerprint !== window._cloudFingerprint;
-                    window._cloudFingerprint = fingerprint;
-                    window._riwayatInputCloud = Array.isArray(cloudData.riwayat_input) ? cloudData.riwayat_input : [];
-                    if (cloudData.santri && cloudData.santri.length > 0) {
-                        window.santriList = cloudData.santri;
-                        localStorage.setItem('rq_santri_master', JSON.stringify(cloudData.santri));
-                    }
-
-                    const parseCloudSlots = (row) => {
-                        const parseSlotStr = (cellStr, rowStatus) => {
-                            if (!cellStr || cellStr === '-') return { item: '-', start: '-', end: '-', mode: 'quran' };
-                            const parts = cellStr.split('|');
-                            let item = parts[0] || '-';
-
-                            // Data lama mungkin pernah menyimpan nilai di dalam detail.
-                            // Jika ada, hapus hanya bagian [nilai] yang sama dengan Status row.
-                            const status = String(rowStatus || '').trim();
-                            if (status) {
-                                const escapedStatus = status.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                item = item.replace(new RegExp('\\\\s*\\\\[' + escapedStatus + '\\\\]\\\\s*$', 'i'), '').trim() || '-';
-                            }
-
-                            return {
-                                item: item,
-                                start: '-',
-                                end: '-',
-                                mode: parts[1] || 'quran'
-                            };
-                        };
-                        const s1 = parseSlotStr(row[6]); s1.start = row[7] || '-'; s1.end = row[8] || '-';
-                        const s2 = parseSlotStr(row[9]); s2.start = row[10] || '-'; s2.end = row[11] || '-';
-                        const s3 = parseSlotStr(row[12]); s3.start = row[13] || '-'; s3.end = row[14] || '-';
-                        return [s1, s2, s3];
-                    };
-
-                    const formatDetailSlot = (sl) => {
-                        if (!sl.item || sl.item === '-') return '';
-                        const isIqro = (sl.mode === 'iqro' || sl.item.toLowerCase().includes('iqro'));
-                        const unitName = isIqro ? 'halaman' : 'ayat';
-                        let count = 0;
-                        if (sl.start && sl.end && sl.start !== '-' && sl.end !== '-') {
-                            const sNum = parseInt(sl.start);
-                            const eNum = parseInt(sl.end);
-                            if (!isNaN(sNum) && !isNaN(eNum) && eNum >= sNum) count = (eNum - sNum + 1);
-                        } else if (sl.start && sl.start !== '-') {
-                            count = 1;
-                        }
-                        const rangeLabel = isIqro ? `Hlm ${sl.start !== '-' ? sl.start : ''}${sl.end !== '-' && sl.end !== sl.start ? '-' + sl.end : ''}` : `${sl.start !== '-' ? sl.start : ''}${sl.end !== '-' && sl.end !== sl.start ? '-' + sl.end : ''}`;
-                        const countStr = count > 0 ? ` (bertambah ${count} ${unitName})` : '';
-                        return `${sl.item} ${rangeLabel}${countStr}`.trim();
-                    };
-
-                    const getCloudProgressStatus = (row) => {
-                        // Format terbaru: col 18 = Group ID, col 19 = Status Setoran (zero-based 17/18).
-                        // Kompatibilitas: bila versi lama pernah menaruh status di col 18, tetap dibaca.
-                        const c18 = String(row?.[18] || '').trim();
-                        const c17 = String(row?.[17] || '').trim();
-                        if (c18 === 'Lanjut' || c18 === 'Ulangi') return c18;
-                        if (c17 === 'Lanjut' || c17 === 'Ulangi') return c17;
-                        return '';
-                    };
-                    const getCloudGroupId = (row) => {
-                        const c17 = String(row?.[17] || '').trim();
-                        const c18 = String(row?.[18] || '').trim();
-                        if (c17 && c17 !== 'Lanjut' && c17 !== 'Ulangi') return c17;
-                        if (c18 && c18 !== 'Lanjut' && c18 !== 'Ulangi') return c18;
-                        return '';
-                    };
-                    const processInputRowsToHistory = (inputRows, typeName) => {
-                        return inputRows.map(row => {
-                            const slots = parseCloudSlots(row);
-                            const detailStr = [formatDetailSlot(slots[0]), formatDetailSlot(slots[1]), formatDetailSlot(slots[2])].filter(Boolean).join(', ') || '-';
-                            return {
-                                timestamp: row[0] ? window.formatTimestampCustom(row[0]) : '-',
-                                tanggal: row[1] || new Date().toISOString().split('T')[0],
-                                rawTime: new Date(row[0] || 0).getTime(),
-                                name: row[3],
-                                detail: detailStr,
-                                status: row[15] || '-',
-                                progressStatus: getCloudProgressStatus(row),
-                                catatan: row[16] || '',
-                                type: typeName,
-                                groupId: getCloudGroupId(row)
-                            };
-                        });
-                    };
-
-                    if (cloudData.input_bacaan && cloudData.input_bacaan.length > 0) {
-                        const bacHist = processInputRowsToHistory(cloudData.input_bacaan, 'bacaan');
-                        localStorage.setItem('rq_history_bacaan', JSON.stringify(bacHist));
-
-                        cloudData.input_bacaan.forEach(row => {
-                            const nameSantri = row[3];
-                            const sObj = window.santriList.find(s => s.name === nameSantri);
-                            if (sObj) {
-                                const slots = parseCloudSlots(row);
-                                sObj.cloudBacSlots = slots;
-                                sObj.lastBacaan = [formatDetailSlot(slots[0]), formatDetailSlot(slots[1]), formatDetailSlot(slots[2])].filter(Boolean).join(', ') || '-';
-                                sObj.lastBacaanDate = row[1] || '';
-                                if (row[15]) sObj.cloudBacStat = row[15];
-                                if (row[18]) sObj.cloudBacProgressStatus = getCloudProgressStatus(row);
-                                 if (row[16]) sObj.cloudBacCat = row[16];
-                            }
-                        });
-                        const latestByName = {};
-                        (cloudData.input_bacaan || []).forEach(r => {
-                            const n = r?.[3];
-                            if (n) latestByName[n] = r;
-                        });
-                        Object.values(latestByName).forEach(r => window.applyLatestCloudRowToFormCache(r, 'bacaan'));
-                    }
-
-                    if (cloudData.input_hafalan && cloudData.input_hafalan.length > 0) {
-                        const hafHist = processInputRowsToHistory(cloudData.input_hafalan, 'hafalan');
-                        localStorage.setItem('rq_history_hafalan', JSON.stringify(hafHist));
-
-                        cloudData.input_hafalan.forEach(row => {
-                            const nameSantri = row[3];
-                            const sObj = window.santriList.find(s => s.name === nameSantri);
-                            if (sObj) {
-                                const slots = parseCloudSlots(row);
-                                sObj.cloudHafSlots = slots;
-                                sObj.lastHafalan = [formatDetailSlot(slots[0]), formatDetailSlot(slots[1]), formatDetailSlot(slots[2])].filter(Boolean).join(', ') || '-';
-                                sObj.lastHafalanDate = row[1] || '';
-                                if (row[15]) sObj.cloudHafStat = row[15];
-                                if (row[18]) sObj.cloudHafProgressStatus = getCloudProgressStatus(row);
-                                 if (row[16]) sObj.cloudHafCat = row[16];
-                            }
-                        });
-                        const latestByName = {};
-                        (cloudData.input_hafalan || []).forEach(r => {
-                            const n = r?.[3];
-                            if (n) latestByName[n] = r;
-                        });
-                        Object.values(latestByName).forEach(r => window.applyLatestCloudRowToFormCache(r, 'hafalan'));
-                    }
-
-                    if (cloudData.input_murojaah_dikelas && cloudData.input_murojaah_dikelas.length > 0) {
-                        const murHist = processInputRowsToHistory(cloudData.input_murojaah_dikelas, 'murojaah');
-                        localStorage.setItem('rq_history_murojaah', JSON.stringify(murHist));
-
-                        cloudData.input_murojaah_dikelas.forEach(row => {
-                            const nameSantri = row[3];
-                            const sObj = window.santriList.find(s => s.name === nameSantri);
-                            if (sObj) {
-                                const slots = parseCloudSlots(row);
-                                sObj.cloudMurSlots = slots;
-                                sObj.lastMurojaah = [formatDetailSlot(slots[0]), formatDetailSlot(slots[1]), formatDetailSlot(slots[2])].filter(Boolean).join(', ') || '-';
-                                sObj.lastMurojaahDate = row[1] || '';
-                                if (row[15]) sObj.cloudMurStat = row[15];
-                                if (row[18]) sObj.cloudMurProgressStatus = getCloudProgressStatus(row);
-                                 if (row[16]) sObj.cloudMurCat = row[16];
-                            }
-                        });
-                        const latestByName = {};
-                        (cloudData.input_murojaah_dikelas || []).forEach(r => {
-                            const n = r?.[3];
-                            if (n) latestByName[n] = r;
-                        });
-                        Object.values(latestByName).forEach(r => window.applyLatestCloudRowToFormCache(r, 'murojaah'));
-                    }
-
-                    if (cloudData.input_tugas && cloudData.input_tugas.length > 0) {
-                        const tugHist = cloudData.input_tugas.map(row => ({
-                            timestamp: row[0] ? window.formatTimestampCustom(row[0]) : '-',
-                            tanggal: row[1] || new Date().toISOString().split('T')[0],
-                            rawTime: new Date(row[0] || 0).getTime(),
-                            name: row[3],
-                            detail: row[6] || '-',
-                            status: '-',
-                            catatan: row[8] || '',
-                            type: 'tugas',
-                            groupId: row[9] || ''
-                        }));
-                        localStorage.setItem('rq_history_tugas', JSON.stringify(tugHist));
-
-                        cloudData.input_tugas.forEach(row => {
-                            const nameSantri = row[3];
-                            const sObj = window.santriList.find(s => s.name === nameSantri);
-                            if (sObj) {
-                                sObj.lastTugas = row[6] || '-';
-                                sObj.lastTugasDate = row[1] || '';
-                                if (row[8]) sObj.cloudTugCat = row[8];
-                            }
-                        });
-                        const latestByName = {};
-                        (cloudData.input_tugas || []).forEach(r => {
-                            const n = r?.[3];
-                            if (n) latestByName[n] = r;
-                        });
-                        Object.values(latestByName).forEach(r => window.applyLatestCloudRowToFormCache(r, 'tugas'));
-                    }
-                    
-                    // Bangun ulang riwayat khusus fitur Bersama dari Group ID di Sheet.
-                    const buildMassalHistory = (rows, modalType) => {
-                        const groups = {};
-                        (rows || []).forEach(row => {
-                            const gid = modalType === 'murojaah' ? getCloudGroupId(row) : row[9];
-                            if (!gid) return;
-                            if (!groups[gid]) groups[gid] = { groupId: gid, timestamp: row[0] ? window.formatTimestampCustom(row[0]) : '-', tanggal: row[1] || '-', names: [], detail: modalType === 'murojaah' ? '-' : (row[6] || '-'), status: row[15] || '', catatan: row[16] || '', mode: 'quran' };
-                            if (row[3] && !groups[gid].names.includes(row[3])) groups[gid].names.push(row[3]);
-                            if (modalType === 'murojaah') {
-                                const slots = parseCloudSlots(row);
-                                if (slots[0] && slots[0].item && slots[0].item !== '-') {
-                                    groups[gid].item = slots[0].item;
-                                    groups[gid].detail = [formatDetailSlot(slots[0]), formatDetailSlot(slots[1]), formatDetailSlot(slots[2])].filter(Boolean).join(', ');
-                                    groups[gid].range = '';
-                                    groups[gid].mode = slots[0].mode || 'quran';
-                                }
-                            }
-                        });
-                        const arr = Object.values(groups).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                        window.massalWriteHistory(modalType, arr);
-                    };
-                    buildMassalHistory(cloudData.input_murojaah_dikelas, 'murojaah');
-                    buildMassalHistory(cloudData.input_tugas, 'tugas');
-
-                    if (cloudData.materi) {
-                        const formattedMateri = cloudData.materi.map(row => ({ kelas: row[0], judul: row[1], bab: row[2], tanggal: row[3], ket: row[4], tampilWa: row[5] !== false && row[5] !== 'false' && row[5] !== 'FALSE' }));
-                        localStorage.setItem('rq_materi_utama', JSON.stringify(formattedMateri));
-                    }
-                    if (cloudData.materi_tambahan) {
-                        const formattedTambahan = cloudData.materi_tambahan.map(row => ({ kelas: row[0], judul: row[1], bab: row[2], tanggal: row[3], ket: row[4], tampilWa: row[5] !== false && row[5] !== 'false' && row[5] !== 'FALSE' }));
-                        localStorage.setItem('rq_materi_tambahan', JSON.stringify(formattedTambahan));
-                    }
-                    
-                    if (cloudChanged) {
-                        window.renderSantriCardsAndTable();
-                        window.renderMateriList('utama');
-                        window.renderMateriList('tambahan');
-                    }
-                    window.setSyncIndicator('success');
-                }
-            } catch (err) {
-                window.setSyncIndicator('error');
                 const cached = localStorage.getItem('rq_santri_master');
                 if (cached) {
-                    window.santriList = JSON.parse(cached);
-                    window.renderSantriCardsAndTable();
+                    try {
+                        const list = JSON.parse(cached);
+                        if (Array.isArray(list) && list.length) window.santriList = list;
+                    } catch (e) {}
                 }
+                const histories = {
+                    bacaan: JSON.parse(localStorage.getItem('rq_history_bacaan') || '[]'),
+                    hafalan: JSON.parse(localStorage.getItem('rq_history_hafalan') || '[]'),
+                    murojaah: JSON.parse(localStorage.getItem('rq_history_murojaah') || '[]'),
+                    tugas: JSON.parse(localStorage.getItem('rq_history_tugas') || '[]')
+                };
+                window._laporanWaPersonalCloud = [];
+                window._laporanGrupWaCloud = [];
+                window._riwayatInputCloud = [];
+                Object.entries(histories).forEach(([type, rows]) => {
+                    (Array.isArray(rows) ? rows : []).forEach(r => {
+                        const student = (window.santriList || []).find(x => String(x.name || '') === String(r.name || '')) || {};
+                        window._riwayatInputCloud.push({
+                            kelas: student.class || r.class || '',
+                            nama: r.name || '', name: r.name || '',
+                            jenis: type, type, tanggal: r.tanggal || '',
+                            detail: r.detail || '', status: r.status || '',
+                            catatan: r.catatan || '', timestamp: r.timestamp || '', rawTime: r.rawTime || 0
+                        });
+                    });
+                });
+                if (typeof window.rqMarkInputReadSuccess === 'function') window.rqMarkInputReadSuccess();
+                try { window.renderSantriCardsAndTable?.(); } catch (e) {}
+                try { window.renderMateriList?.('utama'); } catch (e) {}
+                try { window.renderMateriList?.('tambahan'); } catch (e) {}
+                try { window.renderRiwayatInputMenu?.(); } catch (e) {}
+                try { window.generateWaReport?.(); } catch (e) {}
+                window.setSyncIndicator('success');
+                return { local: true };
+            } catch (err) {
+                console.error('Local read error:', err);
+                window.setSyncIndicator('error');
+                throw err;
             } finally {
-                window._cloudPollingBusy = false;
+                window._lokalPollingBusy = false;
             }
         };
 
@@ -957,7 +664,7 @@
             list.unshift({ kelas, judul, bab, tanggal, ket, tampilWa });
             localStorage.setItem(key, JSON.stringify(list));
 
-            window.showToast("Materi berhasil disimpan & disinkronkan!", "success");
+            window.showToast("Materi berhasil disimpan di perangkat!", "success");
             window.renderMateriList(type);
 
             window.syncToCloud({ type: 'materi', subType: type, kelas, judul, bab, tanggal, ket, tampilWa });
@@ -1105,7 +812,7 @@
                 if (btnUlangi) btnUlangi.className = "flex-1 py-3 px-3 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition min-h-[50px]";
             }
 
-            // STATUS LANGSUNG DISIMPAN KE RIWAYAT + GOOGLE SHEET.
+            // STATUS LANGSUNG DISIMPAN KE RIWAYAT LOKAL.
             // Jadi setelah Bacaan/Hafalan/Muroja'ah sudah diinput, menekan
             // Lanjut/Ulangi langsung membuat rekaman status dan laporan orang tua.
             if (category === 'bac' || category === 'haf' || category === 'mur') {
@@ -1118,7 +825,7 @@
                         window.saveSectionData(santriName, sectionType);
                     }, 60);
                 } else {
-                    window.showToast('Status dipilih. Isi setoran lalu tekan Simpan & Sinkron.', 'success');
+                    window.showToast('Status dipilih. Isi setoran lalu tekan Simpan Lokal.', 'success');
                 }
             }
         };
@@ -1204,15 +911,15 @@
         window.renderTripleInputSlot = function(category, santriName, borderClass) {
             const slots = [1, 2, 3];
             const sObj = window.santriList.find(x => x.name === santriName);
-            let cloudSlots = null;
-            if (category === 'bac' && sObj?.cloudBacSlots) cloudSlots = sObj.cloudBacSlots;
-            if (category === 'haf' && sObj?.cloudHafSlots) cloudSlots = sObj.cloudHafSlots;
-            if (category === 'mur' && sObj?.cloudMurSlots) cloudSlots = sObj.cloudMurSlots;
+            let lokalSlots = null;
+            if (category === 'bac' && sObj?.lokalBacSlots) lokalSlots = sObj.lokalBacSlots;
+            if (category === 'haf' && sObj?.lokalHafSlots) lokalSlots = sObj.lokalHafSlots;
+            if (category === 'mur' && sObj?.lokalMurSlots) lokalSlots = sObj.lokalMurSlots;
 
             const slotsHtml = slots.map(slot => {
                 const isFirst = slot === 1;
                 const stateKey = `${santriName}_${category}_slot_${slot}`;
-                const slotData = cloudSlots && cloudSlots[slot-1] ? cloudSlots[slot-1] : null;
+                const slotData = lokalSlots && lokalSlots[slot-1] ? lokalSlots[slot-1] : null;
                 const isCloudActive = slotData && slotData.item && slotData.item !== '-';
                 const isVisible = isFirst || !!window.activeSlotState[stateKey] || isCloudActive;
 
@@ -1228,10 +935,10 @@
                 const slotEnd = slotData ? (slotData.end || '') : '';
                 const slotStatus = '';
                 
-                let cloudMode = slotData && slotData.mode ? slotData.mode : 'quran';
-                if (!slotData && slotItem.toLowerCase().includes('iqro')) cloudMode = 'iqro';
+                let lokalMode = slotData && slotData.mode ? slotData.mode : 'quran';
+                if (!slotData && slotItem.toLowerCase().includes('iqro')) lokalMode = 'iqro';
                 
-                const cachedMode = window.getFormCache(cacheKeyMode, cloudMode);
+                const cachedMode = window.getFormCache(cacheKeyMode, lokalMode);
                 window.itemSourceMode[`${santriName}_${category}_${slot}`] = cachedMode;
 
                 const cachedStatus = window.getFormCache(statusKey, slotStatus);
@@ -1407,48 +1114,48 @@
                 const badgeMur = isTodayMur ? '<span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-[11px] font-black rounded-lg">Alhamdulillah hari ini sudah di input</span>' : '<span class="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-black rounded-lg">Belum di input</span>';
                 const badgeTug = isTodayTug ? '<span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-[11px] font-black rounded-lg">Alhamdulillah hari ini sudah di input</span>' : '<span class="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-black rounded-lg">Belum di input</span>';
 
-                const defaultBacStat = s.cloudBacStat || '';
-                const defaultHafStat = s.cloudHafStat || '';
-                const defaultMurStat = s.cloudMurStat || '';
+                const defaultBacStat = s.lokalBacStat || '';
+                const defaultHafStat = s.lokalHafStat || '';
+                const defaultMurStat = s.lokalMurStat || '';
                 
                 let parsedBacCatType = '';
-                let parsedBacCatDesc = s.cloudBacCat || '';
-                if (s.cloudBacCat && s.cloudBacCat.startsWith('[')) {
-                    const matchType = s.cloudBacCat.match(/\[(.*?)\]/);
+                let parsedBacCatDesc = s.lokalBacCat || '';
+                if (s.lokalBacCat && s.lokalBacCat.startsWith('[')) {
+                    const matchType = s.lokalBacCat.match(/\[(.*?)\]/);
                     if (matchType) {
                         parsedBacCatType = matchType[1];
-                        parsedBacCatDesc = s.cloudBacCat.replace(`[${parsedBacCatType}]`, '').trim();
+                        parsedBacCatDesc = s.lokalBacCat.replace(`[${parsedBacCatType}]`, '').trim();
                     }
-                } else if (s.cloudBacCat) {
-                    parsedBacCatDesc = s.cloudBacCat;
+                } else if (s.lokalBacCat) {
+                    parsedBacCatDesc = s.lokalBacCat;
                 }
 
                 let parsedHafCatType = '';
-                let parsedHafCatDesc = s.cloudHafCat || '';
-                if (s.cloudHafCat && s.cloudHafCat.startsWith('[')) {
-                    const matchType = s.cloudHafCat.match(/\[(.*?)\]/);
+                let parsedHafCatDesc = s.lokalHafCat || '';
+                if (s.lokalHafCat && s.lokalHafCat.startsWith('[')) {
+                    const matchType = s.lokalHafCat.match(/\[(.*?)\]/);
                     if (matchType) {
                         parsedHafCatType = matchType[1];
-                        parsedHafCatDesc = s.cloudHafCat.replace(`[${parsedHafCatType}]`, '').trim();
+                        parsedHafCatDesc = s.lokalHafCat.replace(`[${parsedHafCatType}]`, '').trim();
                     }
-                } else if (s.cloudHafCat) {
-                    parsedHafCatDesc = s.cloudHafCat;
+                } else if (s.lokalHafCat) {
+                    parsedHafCatDesc = s.lokalHafCat;
                 }
 
                 let parsedMurCatType = '';
-                let parsedMurCatDesc = s.cloudMurCat || '';
-                if (s.cloudMurCat && s.cloudMurCat.startsWith('[')) {
-                    const matchType = s.cloudMurCat.match(/\[(.*?)\]/);
+                let parsedMurCatDesc = s.lokalMurCat || '';
+                if (s.lokalMurCat && s.lokalMurCat.startsWith('[')) {
+                    const matchType = s.lokalMurCat.match(/\[(.*?)\]/);
                     if (matchType) {
                         parsedMurCatType = matchType[1];
-                        parsedMurCatDesc = s.cloudMurCat.replace(`[${parsedMurCatType}]`, '').trim();
+                        parsedMurCatDesc = s.lokalMurCat.replace(`[${parsedMurCatType}]`, '').trim();
                     }
-                } else if (s.cloudMurCat) {
-                    parsedMurCatDesc = s.cloudMurCat;
+                } else if (s.lokalMurCat) {
+                    parsedMurCatDesc = s.lokalMurCat;
                 }
 
                 const defaultTugDetail = s.lastTugas && s.lastTugas !== '-' ? s.lastTugas : '';
-                const defaultTugCat = s.cloudTugCat || '';
+                const defaultTugCat = s.lokalTugCat || '';
 
                 const isBacaanOpen = !!window.cardSectionToggleState[`${s.name}_section_bacaan`];
                 const isHafalanOpen = !!window.cardSectionToggleState[`${s.name}_section_hafalan`];
@@ -1538,7 +1245,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button type="button" onclick="window.saveSectionData('${s.name}', 'bacaan')" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2 active:scale-95">
-                                            <i class="fa-solid fa-paper-plane"></i> Simpan &amp; Sinkron Bacaan (${s.name})
+                                            <i class="fa-solid fa-paper-plane"></i> Simpan Lokal Bacaan (${s.name})
                                         </button>
                                     </div>
                                 </div>
@@ -1606,7 +1313,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button type="button" onclick="window.saveSectionData('${s.name}', 'hafalan')" class="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2 active:scale-95">
-                                            <i class="fa-solid fa-paper-plane"></i> Simpan &amp; Sinkron Hafalan Baru (${s.name})
+                                            <i class="fa-solid fa-paper-plane"></i> Simpan Lokal Hafalan Baru (${s.name})
                                         </button>
                                     </div>
                                 </div>
@@ -1673,7 +1380,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button type="button" onclick="window.saveSectionData('${s.name}', 'murojaah')" class="flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2 active:scale-95">
-                                            <i class="fa-solid fa-paper-plane"></i> Simpan &amp; Sinkron Muroja'ah (${s.name})
+                                            <i class="fa-solid fa-paper-plane"></i> Simpan Lokal Muroja'ah (${s.name})
                                         </button>
                                     </div>
                                 </div>
@@ -1711,7 +1418,7 @@
                                     <input type="text" id="tug_cat_${s.name}" oninput="window.cacheFormInput(this, '${s.name}_tug_cat')" placeholder="Catatan Tugas..." value="${defaultTugCat}" class="w-full p-4 bg-transparent border-2 border-slate-300 dark:border-slate-700 rounded-2xl font-black text-sm sm:text-base min-h-[60px]">
                                     <div class="flex items-center gap-2">
                                         <button type="button" onclick="window.saveSectionData('${s.name}', 'tugas')" class="flex-1 py-4 bg-amber-700 hover:bg-amber-800 text-white rounded-2xl font-black text-sm sm:text-base shadow-md transition flex items-center justify-center gap-2 active:scale-95">
-                                            <i class="fa-solid fa-paper-plane"></i> Simpan &amp; Sinkron Tugas (${s.name})
+                                            <i class="fa-solid fa-paper-plane"></i> Simpan Lokal Tugas (${s.name})
                                         </button>
                                     </div>
                                 </div>
@@ -1736,7 +1443,7 @@
                 window.selectInlineWaSantri(activeName, true);
             }
 
-            // Kartu baru saja dirender ulang; sinkronkan lagi dengan kartu yang
+            // Kartu baru saja dirender ulang; perbarui tampilan kartu yang
             // sedang terlihat setelah posisi/layout halaman stabil.
             if (typeof window.syncLiveReportToVisibleSantri === 'function') {
                 setTimeout(window.syncLiveReportToVisibleSantri, 80);
@@ -1831,9 +1538,9 @@
 
                 s.lastBacaan = bacaanFormatted;
                 s.lastBacaanDate = tanggalVal;
-                s.cloudBacSlots = structuredSlots;
-                s.cloudBacStat = bacaanStat;
-                s.cloudBacCat = bacaanCatCombined;
+                s.lokalBacSlots = structuredSlots;
+                s.lokalBacStat = bacaanStat;
+                s.lokalBacCat = bacaanCatCombined;
 
                 const hist = JSON.parse(localStorage.getItem('rq_history_bacaan') || '[]');
                 hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: bacaanFormatted, status: bacaanStat, progressStatus: bacaanProgressStatus, catatan: bacaanCatCombined, type: 'bacaan' });
@@ -1879,9 +1586,9 @@
 
                 s.lastHafalan = hafalanFormatted;
                 s.lastHafalanDate = tanggalVal;
-                s.cloudHafSlots = structuredSlotsHaf;
-                s.cloudHafStat = hafalanStat;
-                s.cloudHafCat = hafalanCatCombined;
+                s.lokalHafSlots = structuredSlotsHaf;
+                s.lokalHafStat = hafalanStat;
+                s.lokalHafCat = hafalanCatCombined;
 
                 const hist = JSON.parse(localStorage.getItem('rq_history_hafalan') || '[]');
                 hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: hafalanFormatted, status: hafalanStat, progressStatus: hafalanProgressStatus, catatan: hafalanCatCombined, type: 'hafalan' });
@@ -1927,9 +1634,9 @@
 
                 s.lastMurojaah = murojaahFormatted;
                 s.lastMurojaahDate = tanggalVal;
-                s.cloudMurSlots = structuredSlotsMur;
-                s.cloudMurStat = murojaahStat;
-                s.cloudMurCat = murojaahCatCombined;
+                s.lokalMurSlots = structuredSlotsMur;
+                s.lokalMurStat = murojaahStat;
+                s.lokalMurCat = murojaahCatCombined;
 
                 const hist = JSON.parse(localStorage.getItem('rq_history_murojaah') || '[]');
                 hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: murojaahFormatted, status: murojaahStat, progressStatus: murojaahProgressStatus, catatan: murojaahCatCombined, type: 'murojaah' });
@@ -1970,7 +1677,7 @@
 
                 s.lastTugas = tugasVal;
                 s.lastTugasDate = tanggalVal;
-                s.cloudTugCat = tugasCat;
+                s.lokalTugCat = tugasCat;
 
                 const hist = JSON.parse(localStorage.getItem('rq_history_tugas') || '[]');
                 hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: tugasVal, status: '-', catatan: tugasCat, type: 'tugas' });
@@ -2083,7 +1790,7 @@
             const personal = personalRows.find(r => String(r?.id || '').trim().toLowerCase() === targetKeyId) ||
                 personalRows.find(r => String(r?.name || '').trim().toLowerCase() === targetKeyName && String(r?.class || '').trim() === String(s.class || '').trim()) || null;
 
-            // Fallback ke histori lokal hanya jika backend personal belum tersedia.
+            // Gunakan histori lokal perangkat.
             const bacaanHistoryList = JSON.parse(localStorage.getItem('rq_history_bacaan') || '[]');
             const hafalanHistoryList = JSON.parse(localStorage.getItem('rq_history_hafalan') || '[]');
             const murojaahHistoryList = JSON.parse(localStorage.getItem('rq_history_murojaah') || '[]');
@@ -2099,22 +1806,22 @@
             const liveMur = window.extractSlotEntries('mur', s.name);
 
             const bacaanVal = window.cleanReportDetail(personal?.bacaan || ((liveBac && liveBac !== '-') ? liveBac : (lastBacObj?.detail || (s.lastBacaan !== '-' ? s.lastBacaan : ''))));
-            const bacaanStat = String(personal?.bacaanNilai || lastBacObj?.status || s.cloudBacStat || '').trim();
-            const bacaanProgressStatus = String(personal?.bacaanStatus || lastBacObj?.progressStatus || s.cloudBacProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('bac', s.name)) || '').trim();
-            const bacaanCat = window.cleanReportCatatan(personal?.bacaanKeterangan || lastBacObj?.catatan || s.cloudBacCat || '');
+            const bacaanStat = String(personal?.bacaanNilai || lastBacObj?.status || s.lokalBacStat || '').trim();
+            const bacaanProgressStatus = String(personal?.bacaanStatus || lastBacObj?.progressStatus || s.lokalBacProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('bac', s.name)) || '').trim();
+            const bacaanCat = window.cleanReportCatatan(personal?.bacaanKeterangan || lastBacObj?.catatan || s.lokalBacCat || '');
 
             const hafalanVal = window.cleanReportDetail(personal?.hafalan || ((liveHaf && liveHaf !== '-') ? liveHaf : (lastHafObj?.detail || (s.lastHafalan !== '-' ? s.lastHafalan : ''))));
-            const hafalanStat = String(personal?.hafalanNilai || lastHafObj?.status || s.cloudHafStat || '').trim();
-            const hafalanProgressStatus = String(personal?.hafalanStatus || lastHafObj?.progressStatus || s.cloudHafProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('haf', s.name)) || '').trim();
-            const hafalanCat = window.cleanReportCatatan(personal?.hafalanKeterangan || lastHafObj?.catatan || s.cloudHafCat || '');
+            const hafalanStat = String(personal?.hafalanNilai || lastHafObj?.status || s.lokalHafStat || '').trim();
+            const hafalanProgressStatus = String(personal?.hafalanStatus || lastHafObj?.progressStatus || s.lokalHafProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('haf', s.name)) || '').trim();
+            const hafalanCat = window.cleanReportCatatan(personal?.hafalanKeterangan || lastHafObj?.catatan || s.lokalHafCat || '');
 
             const murojaahVal = window.cleanReportDetail(personal?.murojaah || ((liveMur && liveMur !== '-') ? liveMur : (lastMurObj?.detail || (s.lastMurojaah !== '-' ? s.lastMurojaah : ''))));
-            const murojaahStat = String(personal?.murojaahNilai || lastMurObj?.status || s.cloudMurStat || '').trim();
-            const murojaahProgressStatus = String(personal?.murojaahStatus || lastMurObj?.progressStatus || s.cloudMurProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('mur', s.name)) || '').trim();
-            const murojaahCat = window.cleanReportCatatan(personal?.murojaahKeterangan || lastMurObj?.catatan || s.cloudMurCat || '');
+            const murojaahStat = String(personal?.murojaahNilai || lastMurObj?.status || s.lokalMurStat || '').trim();
+            const murojaahProgressStatus = String(personal?.murojaahStatus || lastMurObj?.progressStatus || s.lokalMurProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('mur', s.name)) || '').trim();
+            const murojaahCat = window.cleanReportCatatan(personal?.murojaahKeterangan || lastMurObj?.catatan || s.lokalMurCat || '');
 
             const tugasVal = window.cleanReportDetail(personal?.tugas || lastTugObj?.detail || (s.lastTugas !== '-' ? s.lastTugas : ''));
-            const tugasCat = window.cleanReportCatatan(personal?.tugasKeterangan || lastTugObj?.catatan || s.cloudTugCat || '');
+            const tugasCat = window.cleanReportCatatan(personal?.tugasKeterangan || lastTugObj?.catatan || s.lokalTugCat || '');
 
             const isValidText = (txt) => {
                 if (!txt) return false;
@@ -2347,7 +2054,7 @@
                     btn.innerHTML = `<i class="fa-solid fa-rotate"></i> Refresh Data`;
                 }, 2000);
             }
-            window.showToast("Data laporan WA diperbarui dari Google Sheet!", "success");
+            window.showToast("Data laporan WA diperbarui dari penyimpanan lokal!", "success");
         };
 
         window.copyWaReportText = function() {
@@ -2380,7 +2087,7 @@
             const latestMateri = includeMateriClass ? reportMateri.utama : null;
             const latestTambahan = includeTambahanClass ? reportMateri.tambahan : null;
 
-            // Untuk Laporan Grup WA, gunakan snapshot dari Google Sheet sebagai
+            // Untuk Laporan Grup WA, gunakan snapshot dari penyimpanan lokal sebagai
             // sumber utama. Snapshot sudah menyimpan input TERAKHIR per kategori
             // (Bacaan, Hafalan, Muroja'ah, Tugas) dan tidak menyimpan Nilai/Keterangan.
             const laporanGrupWa = Array.isArray(window._laporanGrupWaCloud)
@@ -2396,8 +2103,8 @@
                 if (name) laporanByNameClass[name + '|' + cls] = item;
             });
 
-            // Fallback hanya untuk kompatibilitas apabila backend lama belum
-            // mengirim laporan_grup_wa. Setelah backend baru aktif, bagian ini
+            // Gunakan data lokal apabila data utama belum
+            // mengirim laporan_grup_wa. Bagian ini
             // tidak menjadi sumber utama.
             const bacaanHistoryList = JSON.parse(localStorage.getItem('rq_history_bacaan') || '[]');
             const hafalanHistoryList = JSON.parse(localStorage.getItem('rq_history_hafalan') || '[]');
@@ -2422,7 +2129,7 @@
                 const sId = String(s?.id || '').trim().toLowerCase();
                 const sName = String(s?.name || '').trim().toLowerCase();
                 const sClass = String(s?.class || className).trim().toLowerCase();
-                const cloudReport = (sId && laporanById[sId])
+                const lokalReport = (sId && laporanById[sId])
                     || laporanByNameClass[sName + '|' + sClass]
                     || null;
 
@@ -2431,19 +2138,19 @@
                 const sMur = latestLocalByName(murojaahHistoryList, s.name);
                 const sTug = latestLocalByName(tugasHistoryList, s.name);
 
-                // Prioritas: Google Sheet snapshot. Fallback: cache lama.
+                // Prioritas: penyimpanan lokal snapshot. Fallback: cache lama.
                 // Hanya empat field ini yang dibaca; Nilai/Keterangan tidak ikut.
                 const bacaanVal = window.cleanReportDetail(
-                    cloudReport?.bacaan || (sBac ? sBac.detail : (s.lastBacaan !== '-' ? s.lastBacaan : ''))
+                    lokalReport?.bacaan || (sBac ? sBac.detail : (s.lastBacaan !== '-' ? s.lastBacaan : ''))
                 );
                 const hafalanVal = window.cleanReportDetail(
-                    cloudReport?.hafalan || (sHaf ? sHaf.detail : (s.lastHafalan !== '-' ? s.lastHafalan : ''))
+                    lokalReport?.hafalan || (sHaf ? sHaf.detail : (s.lastHafalan !== '-' ? s.lastHafalan : ''))
                 );
                 const murojaahVal = window.cleanReportDetail(
-                    cloudReport?.murojaah || (sMur ? sMur.detail : (s.lastMurojaah !== '-' ? s.lastMurojaah : ''))
+                    lokalReport?.murojaah || (sMur ? sMur.detail : (s.lastMurojaah !== '-' ? s.lastMurojaah : ''))
                 );
                 const tugasVal = window.cleanReportDetail(
-                    cloudReport?.tugas || (sTug ? sTug.detail : (s.lastTugas !== '-' ? s.lastTugas : ''))
+                    lokalReport?.tugas || (sTug ? sTug.detail : (s.lastTugas !== '-' ? s.lastTugas : ''))
                 );
 
                 let hasAnySetoran = (bacaanVal && bacaanVal !== '-') || (hafalanVal && hafalanVal !== '-') || (murojaahVal && murojaahVal !== '-') || (tugasVal && tugasVal !== '-');
@@ -2482,7 +2189,7 @@
                     btn.innerHTML = `<i class="fa-solid fa-rotate"></i> Refresh Data`;
                 }, 2000);
             }
-            window.showToast("Data laporan kelas diperbarui dari Google Sheet!", "success");
+            window.showToast("Data laporan kelas diperbarui dari penyimpanan lokal!", "success");
         };
 
         window.copyClassReportText = function() {
@@ -2524,9 +2231,9 @@
                     s.lastHafalan = '-';
                     s.lastMurojaah = '-';
                     s.lastTugas = '-';
-                    s.cloudBacSlots = null;
-                    s.cloudHafSlots = null;
-                    s.cloudMurSlots = null;
+                    s.lokalBacSlots = null;
+                    s.lokalHafSlots = null;
+                    s.lokalMurSlots = null;
                 });
                 localStorage.removeItem('rq_history_bacaan');
                 localStorage.removeItem('rq_history_hafalan');
@@ -2699,28 +2406,28 @@
             const liveMur = window.extractSlotEntries('mur', s.name);
 
             const bacaanVal = window.cleanReportDetail((liveBac && liveBac !== '-') ? liveBac : (lastBacObj ? lastBacObj.detail : (s.lastBacaan !== '-' ? s.lastBacaan : '')));
-            const rawBacStat = lastBacObj ? lastBacObj.status : (s.cloudBacStat || '');
+            const rawBacStat = lastBacObj ? lastBacObj.status : (s.lokalBacStat || '');
             const bacaanStat = (rawBacStat && rawBacStat !== '-' && rawBacStat !== 'undefined') ? rawBacStat : '';
-            const bacaanProgressStatus = (lastBacObj?.progressStatus || s.cloudBacProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('bac', s.name)) || '').trim();
-            const rawBacC = lastBacObj ? lastBacObj.catatan : (s.cloudBacCat || '');
+            const bacaanProgressStatus = (lastBacObj?.progressStatus || s.lokalBacProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('bac', s.name)) || '').trim();
+            const rawBacC = lastBacObj ? lastBacObj.catatan : (s.lokalBacCat || '');
             const bacaanCat = window.cleanReportCatatan(rawBacC);
 
             const hafalanVal = window.cleanReportDetail((liveHaf && liveHaf !== '-') ? liveHaf : (lastHafObj ? lastHafObj.detail : (s.lastHafalan !== '-' ? s.lastHafalan : '')));
-            const rawHafStat = lastHafObj ? lastHafObj.status : (s.cloudHafStat || '');
+            const rawHafStat = lastHafObj ? lastHafObj.status : (s.lokalHafStat || '');
             const hafalanStat = (rawHafStat && rawHafStat !== '-' && rawHafStat !== 'undefined') ? rawHafStat : '';
-            const hafalanProgressStatus = (lastHafObj?.progressStatus || s.cloudHafProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('haf', s.name)) || '').trim();
-            const rawHafC = lastHafObj ? lastHafObj.catatan : (s.cloudHafCat || '');
+            const hafalanProgressStatus = (lastHafObj?.progressStatus || s.lokalHafProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('haf', s.name)) || '').trim();
+            const rawHafC = lastHafObj ? lastHafObj.catatan : (s.lokalHafCat || '');
             const hafalanCat = window.cleanReportCatatan(rawHafC);
 
             const murojaahVal = window.cleanReportDetail((liveMur && liveMur !== '-') ? liveMur : (lastMurObj ? lastMurObj.detail : (s.lastMurojaah !== '-' ? s.lastMurojaah : '')));
-            const rawMurStat = lastMurObj ? lastMurObj.status : (s.cloudMurStat || '');
+            const rawMurStat = lastMurObj ? lastMurObj.status : (s.lokalMurStat || '');
             const murojaahStat = (rawMurStat && rawMurStat !== '-' && rawMurStat !== 'undefined') ? rawMurStat : '';
-            const murojaahProgressStatus = (lastMurObj?.progressStatus || s.cloudMurProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('mur', s.name)) || '').trim();
-            const rawMurC = lastMurObj ? lastMurObj.catatan : (s.cloudMurCat || '');
+            const murojaahProgressStatus = (lastMurObj?.progressStatus || s.lokalMurProgressStatus || window.getProgressStatusFromSlots(window.extractSlotsStructured('mur', s.name)) || '').trim();
+            const rawMurC = lastMurObj ? lastMurObj.catatan : (s.lokalMurCat || '');
             const murojaahCat = window.cleanReportCatatan(rawMurC);
 
             const tugasVal = window.cleanReportDetail(lastTugObj ? lastTugObj.detail : (s.lastTugas !== '-' ? s.lastTugas : ''));
-            const rawTugC = lastTugObj ? lastTugObj.catatan : (s.cloudTugCat || '');
+            const rawTugC = lastTugObj ? lastTugObj.catatan : (s.lokalTugCat || '');
             const tugasCat = window.cleanReportCatatan(rawTugC);
 
             const currentDateStr = window.formatIndonesianDate(new Date().toISOString().split('T')[0]);
@@ -2874,19 +2581,13 @@
             const list = window.massalReadHistory(modalType);
             const item = list.find(x => String(x.groupId) === String(groupId));
             if (!item) { window.showToast('Riwayat sudah tidak ada.', 'error'); return; }
-            if (!confirm('Hapus riwayat input bersama ini? Data yang terkait pada santri yang dipilih juga akan dihapus dari Google Sheet.')) return;
+            if (!confirm('Hapus riwayat input bersama ini? Data yang terkait pada santri yang dipilih juga akan dihapus dari penyimpanan lokal perangkat.')) return;
             window.setSyncIndicator('pending');
             try {
-                const url = window.getGsUrl();
-                await fetch(url, {
-                    method: 'POST', mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ type: 'delete_massal_history', category: modalType, groupId: groupId })
-                });
                 window.massalWriteHistory(modalType, list.filter(x => String(x.groupId) !== String(groupId)));
                 window.showToast(modalType === 'murojaah' ? '🗑️ Riwayat Muroja\'ah Bersama sudah dihapus.' : '🗑️ Riwayat Tugas Bersama sudah dihapus.', 'success');
                 window.renderMassalHistory(modalType);
-                setTimeout(() => window.fetchAllDataFromCloud(true), 500);
+                window.setSyncIndicator('success');
             } catch (err) {
                 console.error(err);
                 window.setSyncIndicator('error');
@@ -3210,8 +2911,8 @@
                     if (!s) return null;
                     s.lastMurojaah = detailStr;
                     s.lastMurojaahDate = tanggal;
-                    s.cloudMurStat = stat;
-                    s.cloudMurCat = catatan;
+                    s.lokalMurStat = stat;
+                    s.lokalMurCat = catatan;
                     hist.unshift({ timestamp: formattedTimeStr, tanggal, rawTime: nowObj.getTime(), name: s.name, detail: detailStr, status: stat, catatan, type: 'murojaah' });
                     return window.syncToCloud({
                         type: 'murojaah', timestamp: nowObj.toISOString(), tanggal,
@@ -3284,7 +2985,7 @@
                     if (!s) return null;
                     s.lastTugas = detail;
                     s.lastTugasDate = tanggal;
-                    s.cloudTugCat = catatan;
+                    s.lokalTugCat = catatan;
                     hist.unshift({ timestamp: formattedTimeStr, tanggal, rawTime: nowObj.getTime(), name: s.name, detail, status: '-', catatan, type: 'tugas' });
                     return window.syncToCloud({
                         type: 'tugas', timestamp: nowObj.toISOString(), tanggal,
@@ -3326,7 +3027,7 @@
 
         // ============================================================
         // RIWAYAT INPUT PER NAMA
-        // Data utama diambil dari Google Sheet melalui cloudData.riwayat_input.
+        // Data utama diambil dari riwayat lokal perangkat.
         // Filter kelas dan nama hanya memfilter tampilan, tidak mengubah data Sheet.
         // ============================================================
         window.riwayatInputEsc = function(value) {
@@ -3469,7 +3170,7 @@
                     <div class="p-6 text-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700">
                         <div class="text-3xl mb-2">📭</div>
                         <div class="font-black text-sm text-slate-600 dark:text-slate-300">Belum ada riwayat input sesuai filter.</div>
-                        <div class="text-xs font-bold text-slate-400 mt-1">Data ditarik langsung dari Google Sheet saat sinkronisasi.</div>
+                        <div class="text-xs font-bold text-slate-400 mt-1">Data dibaca langsung dari penyimpanan lokal perangkat.</div>
                     </div>`;
                 return;
             }
@@ -3561,17 +3262,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             window.initSantriStickyHeader();
             // Pastikan status awal Live Laporan dan tombol Buka/Tutup
-            // selalu sinkron, termasuk di HP.
+            // selalu diperbarui, termasuk di HP.
             window.initInlineLiveReport();
 
             // Load awal penuh hanya sekali.
-            // Sinkronisasi setoran/checklist memakai kanal Sync V2 yang jauh lebih ringan.
+            // Setoran dan checklist tersimpan langsung di perangkat.
             // Data lama tetap bisa dimuat ulang lewat menu/refresh yang sudah ada.
             window.fetchAllDataFromCloud(true);
 
-            // Refresh penuh dibuat jarang agar Google Sheet tidak dibaca seluruhnya setiap beberapa detik.
+            // Refresh penuh dibuat jarang agar penyimpanan lokal tidak dibaca seluruhnya setiap beberapa detik.
             // Ini tidak mengubah fungsi laporan lama; hanya mengurangi polling yang boros.
-            window._cloudSyncInterval = setInterval(() => {
+            window._lokalSyncInterval = setInterval(() => {
                 if (document.visibilityState === 'visible') window.fetchAllDataFromCloud(false);
             }, 60000);
 
@@ -3675,7 +3376,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <button class="tracker-menu-btn px-3 py-2 rounded-xl bg-white text-emerald-900 shadow text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-input" onclick="window.switchTrackerMenu('input')" type="button"><i class="fa-solid fa-pen-to-square mr-1"></i> Input Setoran</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Hafalan Santri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-history" onclick="window.switchTrackerMenu('history')" type="button"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat Setoran</button>
-<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-pengaturan" onclick="window.openBackendSettings()" type="button" title="Pengaturan Kode Skrip"><i class="fa-solid fa-gear mr-1"></i> Pengaturan</button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-pengaturan" onclick="window.openBackendSettings()" type="button" title="Penyimpanan Lokal"><i class="fa-solid fa-gear mr-1"></i> Penyimpanan Lokal</button>
 </div>
 </nav>
 <button class="p-2.5 bg-emerald-700 dark:bg-emerald-900 rounded-xl text-amber-300 hover:bg-emerald-600 transition shadow-xs shrink-0" onclick="window.toggleDarkMode()" title="Fitur Malam (Dark Mode)">
@@ -3684,28 +3385,19 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 </header>
 
-<!-- Pengaturan Kode Skrip Google Apps Script -->
+<!-- Pengaturan Penyimpanan Lokal -->
 <div id="backendSettingsModal" class="hidden fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="backendSettingsTitle">
   <div class="w-full max-w-xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
     <div class="p-4 sm:p-5 bg-emerald-700 text-white flex items-center justify-between gap-3">
-      <div>
-        <h2 id="backendSettingsTitle" class="font-black text-base sm:text-lg">Pengaturan Kode Skrip</h2>
-        <p class="text-[10px] sm:text-xs text-emerald-100 font-bold mt-1">Google Apps Script yang digunakan untuk sinkronisasi.</p>
-      </div>
+      <div><h2 id="backendSettingsTitle" class="font-black text-base sm:text-lg">Penyimpanan Lokal</h2><p class="text-[10px] sm:text-xs text-emerald-100 font-bold mt-1">Semua data disimpan langsung di browser/perangkat ini.</p></div>
       <button type="button" onclick="window.closeBackendSettings()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 font-black" aria-label="Tutup">×</button>
     </div>
     <div class="p-4 sm:p-5 space-y-3">
-      <label for="backendGsUrlDisplay" class="block text-[10px] font-black uppercase text-slate-500 dark:text-slate-300">URL Web App Google Apps Script</label>
-      <div class="flex gap-2">
-        <input id="backendGsUrlDisplay" type="url" autocomplete="off" spellcheck="false" class="min-w-0 flex-1 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-[10px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" />
-        <button type="button" onclick="window.saveCustomGsUrl()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-floppy-disk mr-1"></i> Simpan</button>
-        <button type="button" onclick="window.copyBackendGsUrl()" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-copy mr-1"></i> Salin</button>
-      </div>
-      <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px] sm:text-xs font-bold text-amber-800 dark:text-amber-200">
-        URL ini adalah alamat Web App backend. Anda boleh menggantinya jika menggunakan deployment Web App Google Apps Script yang lain. Setelah mengganti, tekan Simpan.
-      </div>
+      <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-[10px] sm:text-xs font-bold text-emerald-800 dark:text-emerald-200">Mode <b>100% Lokal</b> aktif. Semua data disimpan langsung di perangkat ini dan tidak dikirim ke server eksternal.</div>
+      <div id="localStorageInfoText" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-[10px] font-bold text-slate-600 dark:text-slate-300">Data tersimpan di Local Storage browser.</div>
     </div>
   </div>
+</div>
 </div>
 
 <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 lg:p-6 space-y-4 relative"><section class="space-y-4" id="section-tracking">
@@ -3905,7 +3597,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <button class="w-full min-h-[58px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md active:scale-[.99] transition" onclick="window.saveTrackingSetoran()" type="button">
 <i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN SETORAN
                     </button>
-<p class="text-[9px] text-slate-400 font-bold text-center">Data modul ini tersimpan di Local Storage browser dan akan disinkronkan ke Google Sheet secara bertahap.</p>
+<p class="text-[9px] text-slate-400 font-bold text-center">Data modul ini tersimpan di Local Storage browser pada perangkat ini.</p>
 </div></div></div>
 </div>
 
@@ -4151,7 +3843,7 @@ if(initialDarkIcon){
 
 /* ==========================================================
    TRACKING TAHFIDZ SANTRI — LOCAL/OFFLINE MODULE
-   Tidak menggunakan Google Apps Script / Google Sheet.
+   Semua data modul tersimpan di perangkat ini.
    ========================================================== */
 (function(){
   'use strict';
@@ -4439,7 +4131,7 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
     window.updateTrackingMurojaahInfo();
     window.updateTrackingProgress();
 
-    // Pengaman: ulangi sinkronisasi setelah browser selesai memproses event change.
+    // Pengaman: perbarui tampilan setelah browser selesai memproses event change.
     // Nilai selalu dibaca ulang dari select TERKINI, sehingga kartu surat tidak
     // dapat tertinggal pada Juz/Level sebelumnya.
     const syncAgain = function(){
@@ -6592,529 +6284,16 @@ function renderOptions(){
 </script>
 
 <!-- =========================================================
-     BACKEND SYNC V2 — TAHAP 3
-     ADDITIVE ONLY: tidak mengganti fungsi penyimpanan lokal V68.
-     Setoran baru dikirim ke Google Apps Script dengan Sync ID unik.
-     Retry maksimal 5x menggunakan Sync ID yang sama agar aman dari duplikasi.
+     LOCAL STORAGE ONLY
+     Semua fungsi sinkronisasi server telah dihapus; tracking tersimpan lokal.
 ========================================================= -->
 <script>
 (function(){
-  'use strict';
-
-  const QUEUE_KEY = 'rq_backend_sync_queue_v2';
-  const DEVICE_KEY = 'rq_backend_device_id_v2';
-  const MAX_RETRY = 5;
-  const RETRY_DELAYS = [500, 1000, 2000, 4000, 6000];
-  const TRACKING_KEY = 'rq_tracking_tahfidz_local_v1';
-
-  function getDeviceId(){
-    let id = localStorage.getItem(DEVICE_KEY);
-    if(!id){
-      id = 'DEV-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,8).toUpperCase();
-      localStorage.setItem(DEVICE_KEY,id);
-    }
-    return id;
-  }
-
-  function readQueue(){
-    try{
-      const x = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      return Array.isArray(x) ? x : [];
-    }catch(e){ return []; }
-  }
-
-  function writeQueue(q){
-    try{ localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }catch(e){ console.error('Sync queue write error',e); }
-  }
-
-  function makeSyncId(){
-    const d = new Date();
-    const pad = n => String(n).padStart(2,'0');
-    const stamp = d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds());
-    const rnd = Math.random().toString(36).slice(2,10).toUpperCase();
-    return 'SYNC-'+stamp+'-'+rnd;
-  }
-
-  function getStudent(name){
-    try{
-      const list = Array.isArray(window.santriList) ? window.santriList : [];
-      return list.find(s => String(s?.name||'') === String(name||'')) || {};
-    }catch(e){ return {}; }
-  }
-
-  function getLocalRecords(){
-    try{
-      const x = JSON.parse(localStorage.getItem(TRACKING_KEY) || '[]');
-      return Array.isArray(x) ? x : [];
-    }catch(e){ return []; }
-  }
-
-  function saveLocalRecords(rows){
-    try{ localStorage.setItem(TRACKING_KEY, JSON.stringify(rows)); }catch(e){ console.error('Tracking local update error',e); }
-  }
-
-  function ensureIndicator(){
-    let el = document.getElementById('rqBackendSyncIndicator');
-    if(el) return el;
-    el = document.createElement('div');
-    el.id = 'rqBackendSyncIndicator';
-    el.className = 'fixed right-3 bottom-20 z-[9998] w-[190px] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 shadow-xl px-3 py-2.5 hidden';
-    el.innerHTML = '<div class="flex items-center gap-2"><span id="rqBackendSyncIcon" class="text-slate-500"><i class="fa-solid fa-cloud-arrow-up"></i></span><div class="min-w-0 flex-1"><div id="rqBackendSyncText" class="text-[10px] font-black text-slate-700 dark:text-slate-200">Sinkronisasi</div><div class="mt-1 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"><div id="rqBackendSyncBar" class="h-full rounded-full transition-all duration-300" style="width:0%"></div></div></div><span id="rqBackendSyncPct" class="text-[10px] font-black text-slate-500">0%</span></div>';
-    document.body.appendChild(el);
-    return el;
-  }
-
-  function setProgress(pct, text, state){
-    const el = ensureIndicator();
-    el.classList.remove('hidden');
-    const bar = document.getElementById('rqBackendSyncBar');
-    const label = document.getElementById('rqBackendSyncText');
-    const pctEl = document.getElementById('rqBackendSyncPct');
-    const icon = document.getElementById('rqBackendSyncIcon');
-    const n = Math.max(0,Math.min(100,Math.round(Number(pct)||0)));
-    if(bar) bar.style.width = n+'%';
-    if(label) label.textContent = text || 'Sinkronisasi';
-    if(pctEl) pctEl.textContent = n+'%';
-    if(icon){
-      icon.innerHTML = state === 'error'
-        ? '<i class="fa-solid fa-triangle-exclamation text-rose-500"></i>'
-        : state === 'done'
-          ? '<i class="fa-solid fa-circle-check text-emerald-500"></i>'
-          : '<i class="fa-solid fa-cloud-arrow-up animate-pulse text-amber-500"></i>';
-    }
-    if(typeof window.setSyncIndicator === 'function') window.setSyncIndicator(state === 'done' ? 'success' : state === 'error' ? 'error' : 'pending');
-    if(state === 'done') setTimeout(()=>{ if(el) el.classList.add('hidden'); },1800);
-  }
-
-  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-  async function postOne(item){
-    const url = typeof window.getGsUrl === 'function' ? window.getGsUrl() : '';
-    if(!url) throw new Error('URL Google Apps Script belum tersedia.');
-
-    const payload = Object.assign({}, item.payload, {
-      syncId: item.syncId,
-      deviceId: item.payload.deviceId || getDeviceId(),
-      attempt: item.attempt || 1
-    });
-
-    // text/plain menjaga request tetap sederhana dan mengikuti pola backend V68.
-    const res = await fetch(url, {
-      method:'POST',
-      mode:'cors',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify(payload)
-    });
-
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const text = await res.text();
-    let result = null;
-    try{ result = JSON.parse(text); }catch(e){ throw new Error('Balasan backend bukan JSON.'); }
-    if(!result || (result.status !== 'success' && result.success !== true)){
-      throw new Error(result?.message || 'Backend belum mengonfirmasi penyimpanan.');
-    }
-    return result;
-  }
-
-  async function sendWithRetry(item){
-    for(let attempt=1; attempt<=MAX_RETRY; attempt++){
-      item.attempt = attempt;
-      try{
-        const result = await postOne(item);
-        return {ok:true,result};
-      }catch(err){
-        item.lastError = String(err?.message || err);
-        if(attempt < MAX_RETRY) await sleep(RETRY_DELAYS[attempt-1] || 1000);
-      }
-    }
-    return {ok:false,error:item.lastError || 'Gagal sinkronisasi.'};
-  }
-
-  async function flushQueue(){
-    if(window.__rqBackendSyncBusy) return;
-    const queue = readQueue();
-    if(!queue.length) return;
-    window.__rqBackendSyncBusy = true;
-    try{
-      let done = 0;
-      setProgress(5,'Menyiapkan sinkronisasi','pending');
-      const remaining = [];
-      for(const item of queue){
-        const result = await sendWithRetry(item);
-        if(result.ok){
-          done++;
-          setProgress(Math.max(10,Math.round((done/queue.length)*100)), result.result?.status === 'already_exists' ? 'Data sudah tersimpan' : 'Data tersimpan','pending');
-        }else{
-          remaining.push(item);
-          setProgress(Math.max(10,Math.round((done/queue.length)*100)), 'Menunggu koneksi / percobaan ulang','error');
-        }
-      }
-      writeQueue(remaining);
-      if(remaining.length===0) setProgress(100,'Sinkronisasi selesai','done');
-      else setProgress(Math.max(10,Math.round((done/queue.length)*100)), remaining.length+' data masih menunggu','error');
-    }finally{
-      window.__rqBackendSyncBusy = false;
-    }
-  }
-
-  function queueTrackingRecord(record){
-    const student = getStudent(record.santri);
-    const payload = {
-      type:'tracking_setoran',
-      clientTimestamp: record.timestamp || new Date().toISOString(),
-      tanggal: record.tanggal || '',
-      santriId: student.id || '',
-      name: record.santri || '',
-      class: student.class || '',
-      teacher: student.teacher || '',
-      juz: String(record.juz || ''),
-      arah: record.arah || 'depan',
-      level: String(record.level || ''),
-      slots:[{
-        item: record.surat || '',
-        mode:'quran',
-        start: String(record.ayatDari || ''),
-        end: String(record.ayatSampai || '')
-      }],
-      segiBacaan: record.penilaianBacaan || '',
-      segiHafalan: record.penilaianHafalan || '',
-      catatan: record.catatan || '',
-      deviceId:getDeviceId()
-    };
-    const item = {syncId:record.syncId || makeSyncId(), payload, attempt:0};
-    record.syncId = item.syncId;
-    record.syncStatus = 'pending';
-    record.syncUpdatedAt = new Date().toISOString();
-    return item;
-  }
-
-  function markRecordsSynced(syncIds, status){
-    if(!syncIds.size) return;
-    const rows = getLocalRecords();
-    let changed = false;
-    rows.forEach(r=>{
-      if(r && syncIds.has(String(r.syncId||''))){
-        r.syncStatus = status;
-        r.syncUpdatedAt = new Date().toISOString();
-        changed = true;
-      }
-    });
-    if(changed) saveLocalRecords(rows);
-  }
-
-  // Simpan fungsi V68 yang sudah stabil, lalu tambahkan sinkronisasi setelahnya.
-  function install(){
-    const original = window.saveTrackingSetoran;
-    if(typeof original !== 'function' || original.__rqBackendV2Wrapped) return;
-
-    async function wrappedSave(){
-      const before = getLocalRecords();
-      const beforeIds = new Set(before.map(r=>String(r?.id||'')));
-      original.apply(this, arguments);
-      const after = getLocalRecords();
-      const newRecords = after.filter(r=>r && !beforeIds.has(String(r.id||'')));
-      if(!newRecords.length) return;
-
-      const queue = readQueue();
-      const items = [];
-      const levelItems = new Map();
-      newRecords.forEach(r=>{
-        const item = queueTrackingRecord(r);
-        items.push(item);
-        queue.push(item);
-
-        const student = getStudent(r.santri);
-        const levelKey = [String(r.santri||''),String(r.juz||''),String(r.level||'')].join('|');
-        if(!levelItems.has(levelKey)){
-          const levelSyncId = makeSyncId();
-          levelItems.set(levelKey,{
-            syncId:levelSyncId,
-            payload:{
-              type:'level_checklist',
-              clientTimestamp:new Date().toISOString(),
-              santriId:student.id || '',
-              name:r.santri || '',
-              class:student.class || '',
-              juz:String(r.juz || ''),
-              level:String(r.level || ''),
-              status:'saved',
-              teacher:student.teacher || '',
-              deviceId:getDeviceId()
-            },
-            attempt:0
-          });
-        }
-      });
-      levelItems.forEach(item=>{ items.push(item); queue.push(item); });
-      saveLocalRecords(after);
-      writeQueue(queue);
-      setProgress(8,'Setoran masuk antrean sinkronisasi','pending');
-
-      await flushQueue();
-
-      const latestQueue = readQueue();
-      const pendingIds = new Set(latestQueue.map(x=>String(x.syncId||'')));
-      const synced = new Set(items.map(x=>String(x.syncId)).filter(id=>!pendingIds.has(id)));
-      markRecordsSynced(synced,'saved');
-    }
-
-    wrappedSave.__rqBackendV2Wrapped = true;
-    window.saveTrackingSetoran = wrappedSave;
-
-    // Sinkronkan perubahan checklist level manual tanpa mengubah fungsi V68.
-    const originalToggle = window.toggleTrackingLevelChecked;
-    if(typeof originalToggle === 'function' && !originalToggle.__rqBackendV2Wrapped){
-      function wrappedToggle(juz, level, checked){
-        originalToggle.apply(this, arguments);
-        try{
-          const name = String(document.getElementById('trackingSantri')?.value || '').trim();
-          if(!name) return;
-          const student = getStudent(name);
-          const item = {
-            syncId: makeSyncId(),
-            payload:{
-              type:'level_checklist',
-              clientTimestamp:new Date().toISOString(),
-              santriId:student.id || '',
-              name,
-              class:student.class || '',
-              juz:String(juz || ''),
-              level:String(level || ''),
-              status:checked ? 'saved' : 'unchecked',
-              teacher:student.teacher || '',
-              deviceId:getDeviceId()
-            },
-            attempt:0
-          };
-          const q=readQueue(); q.push(item); writeQueue(q);
-          setProgress(8,'Checklist level masuk antrean','pending');
-          flushQueue();
-        }catch(e){ console.warn('Checklist sync:',e); }
-      }
-      wrappedToggle.__rqBackendV2Wrapped=true;
-      window.toggleTrackingLevelChecked=wrappedToggle;
-    }
-  }
-
-  window.rqBackendSyncNow = flushQueue;
-  window.rqBackendSyncQueue = readQueue;
-  window.rqBackendSyncDeviceId = getDeviceId();
-
-  window.addEventListener('online', flushQueue);
-  setInterval(flushQueue,30000);
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true});
-  else install();
-  setTimeout(flushQueue,1200);
 })();
 </script>
 
 
-<!-- =========================================================
-     BACKEND SYNC V2 — TAHAP 4
-     ADDITIVE ONLY: sinkronisasi dua arah dari Google Sheet ke HTML.
-     Tidak mengganti penyimpanan lokal V68/V69.
-========================================================= -->
-<script id="backend-sync-v2-stage4">
-(function(){
-  'use strict';
-
-  const RECORD_KEY='rq_tracking_tahfidz_local_v1';
-  const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
-  const PULL_KEY='rq_backend_sync_last_pull_v2';
-  // Sync V2 hanya membaca dua sheet sinkronisasi, bukan seluruh database lama.
-  // 5 detik dipilih agar perangkat lain cepat menerima setoran tanpa polling doGet penuh.
-  const PULL_INTERVAL=5000;
-  let busy=false;
-
-  function read(key,fallback){
-    try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}
-  }
-  function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){return false}}
-  function records(){const x=read(RECORD_KEY,[]);return Array.isArray(x)?x:[]}
-  function checklist(){const x=read(CHECKLIST_KEY,{});return x&&typeof x==='object'?x:{} }
-  function gsUrl(){return typeof window.getGsUrl==='function'?window.getGsUrl():''}
-  function getDeviceId(){return localStorage.getItem('rq_backend_device_id_v2')||''}
-
-  function notify(){
-    try{window.renderTrackingDashboard?.();}catch(e){}
-    try{window.renderTrackingHistory?.();}catch(e){}
-    try{window.renderHafalanTracker?.();}catch(e){}
-    try{window.renderTrackingPerSurat?.();}catch(e){}
-    try{window.renderTrackingLevelChecklist?.();}catch(e){}
-    try{window.refreshTrackingLevelChecklistProgress?.();}catch(e){}
-    try{window.generateTrackingReport?.();}catch(e){}
-    try{window.generateWaReport?.();}catch(e){}
-  }
-
-  function setProgress(pct,text,state){
-    try{window.__rqBackendSyncPullProgress?.(pct,text,state)}catch(e){}
-    const el=document.getElementById('rqBackendSyncIndicator');
-    if(!el)return;
-    const bar=document.getElementById('rqBackendSyncBar');
-    const label=document.getElementById('rqBackendSyncText');
-    const pctEl=document.getElementById('rqBackendSyncPct');
-    if(bar)bar.style.width=Math.max(0,Math.min(100,Math.round(pct)))+'%';
-    if(label)label.textContent=text||'Sinkronisasi';
-    if(pctEl)pctEl.textContent=Math.max(0,Math.min(100,Math.round(pct)))+'%';
-  }
-
-  function toIso(v){
-    if(v==null||v==='')return '';
-    const d=new Date(v);
-    return isNaN(d.getTime())?'':d.toISOString();
-  }
-
-  function remoteTimestamp(row){
-    return toIso(row?.timestamp||row?.clientTimestamp||'');
-  }
-
-  function mergeTracking(rows){
-    const local=records();
-    const bySync=new Map();
-    local.forEach((r,i)=>{if(r?.syncId)bySync.set(String(r.syncId),i)});
-    let added=0,updated=0;
-
-    (Array.isArray(rows)?rows:[]).forEach(r=>{
-      const syncId=String(r?.syncId||'').trim();
-      if(!syncId)return;
-
-      const item={
-        id:r.id || Date.now()+Math.random(),
-        syncId,
-        syncStatus:'saved',
-        syncUpdatedAt:new Date().toISOString(),
-        timestamp:remoteTimestamp(r)||new Date().toISOString(),
-        tanggal:r.tanggal||'',
-        santri:r.name||'',
-        santriId:r.santriId||'',
-        juz:String(r.juz||''),
-        arah:r.arah||'depan',
-        level:String(r.level||''),
-        surat:r.surat||'',
-        ayatDari:String(r.ayatDari||''),
-        ayatSampai:String(r.ayatSampai||r.ayatTerakhir||''),
-        penilaianBacaan:r.segiBacaan||'',
-        penilaianHafalan:r.segiHafalan||'',
-        catatan:r.catatan||'',
-        remoteSource:'google_sheet'
-      };
-
-      const idx=bySync.get(syncId);
-      if(idx==null){
-        local.push(item);
-        bySync.set(syncId,local.length-1);
-        added++;
-      }else{
-        const old=local[idx]||{};
-        local[idx]=Object.assign({},old,item,{id:old.id||item.id});
-        updated++;
-      }
-    });
-
-    if(added||updated)write(RECORD_KEY,local);
-    return {added,updated};
-  }
-
-  function mergeChecklist(rows){
-    const data=checklist();
-    let changed=0;
-
-    (Array.isArray(rows)?rows:[]).forEach(r=>{
-      const name=String(r?.name||'').trim();
-      const juz=String(r?.juz||'').trim();
-      const level=String(r?.level||'').trim();
-      if(!name||!juz||!level)return;
-
-      if(!data[name])data[name]={};
-      if(!data[name][juz])data[name][juz]={};
-
-      const next=String(r?.status||'').toLowerCase()!=='unchecked';
-      if(Boolean(data[name][juz][level])!==next){
-        data[name][juz][level]=next;
-        changed++;
-      }
-    });
-
-    if(changed)write(CHECKLIST_KEY,data);
-    return changed;
-  }
-
-  async function pull(){
-    if(busy)return;
-
-    const url=gsUrl();
-    if(!url||!navigator.onLine)return;
-
-    busy=true;
-
-    try{
-      // Backend V2 menggunakan parameter "after", bukan "since".
-      const after=localStorage.getItem(PULL_KEY)||'';
-      const params=new URLSearchParams({
-        action:'sync_v2',
-        deviceId:getDeviceId()
-      });
-
-      if(after)params.set('after',after);
-
-      const res=await fetch(
-        url+'?'+params.toString(),
-        {
-          method:'GET',
-          mode:'cors',
-          cache:'no-store'
-        }
-      );
-
-      if(!res.ok)throw new Error('HTTP '+res.status);
-
-      const result=await res.json();
-
-      if(!result||result.status!=='success'){
-        throw new Error(result?.message||'Pull backend gagal.');
-      }
-
-      setProgress(70,'Mengambil sinkronisasi','pending');
-
-      const a=mergeTracking(result.tracking_setoran||[]);
-      const c=mergeChecklist(result.level_checklist||[]);
-
-      // Cursor hanya digeser setelah response sukses dan data sudah diproses.
-      const serverTs=toIso(result.serverTimestamp);
-      if(serverTs)localStorage.setItem(PULL_KEY,serverTs);
-
-      notify();
-
-      setProgress(
-        100,
-        `Sinkronisasi selesai · +${a.added} setoran · ${c} level`,
-        'done'
-      );
-
-    }catch(err){
-      console.warn('Backend sync pull:',err);
-    }finally{
-      busy=false;
-    }
-  }
-
-  window.rqBackendSyncPull=pull;
-  window.addEventListener('online',()=>setTimeout(pull,1500));
-
-  if(document.readyState==='loading'){
-    document.addEventListener(
-      'DOMContentLoaded',
-      ()=>setTimeout(pull,2500),
-      {once:true}
-    );
-  }else{
-    setTimeout(pull,2500);
-  }
-
-  setInterval(pull,PULL_INTERVAL);
-})();
-</script>
-
+<!-- PENYIMPANAN LOKAL SAJA -->
 <script id="backend-settings-close-v1">
 (function(){
   document.addEventListener('keydown',function(e){
@@ -7125,781 +6304,48 @@ function renderOptions(){
 
 
 
-<!-- ============================================================
-     INFORMASI SINKRONISASI V1
-     ADDITIVE ONLY: tidak mengganti fungsi lama.
-     Menampilkan status lokal -> Google Sheet, antrean, pull cloud,
-     dan backfill bertahap riwayat tracking lokal.
-============================================================ -->
-<script id="sync-information-v1">
-(function(){
-  'use strict';
-
-  const QUEUE_KEY='rq_backend_sync_queue_v2';
-  const TRACKING_KEY='rq_tracking_tahfidz_local_v1';
-  const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
-  const DEVICE_KEY='rq_backend_device_id_v2';
-  const INFO_REFRESH=2000;
-  const BACKFILL_BATCH=3;
-  const BACKFILL_INTERVAL=12000;
-  let backfillBusy=false;
-
-  function read(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}}
-  function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){return false}}
-  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
-  function queue(){const q=read(QUEUE_KEY,[]);return Array.isArray(q)?q:[]}
-  function tracking(){const x=read(TRACKING_KEY,[]);return Array.isArray(x)?x:[]}
-  function deviceId(){return localStorage.getItem(DEVICE_KEY)||'-'}
-  function gsUrl(){return typeof window.getGsUrl==='function'?window.getGsUrl():''}
-  async function getLocalStorageInfo(){
-    try{
-      if(navigator.storage && typeof navigator.storage.estimate==='function'){
-        const e=await navigator.storage.estimate();
-        const usage=Number(e?.usage||0);
-        const quota=Number(e?.quota||0);
-        return {usage,quota,remaining:Math.max(0,quota-usage),supported:quota>0};
-      }
-    }catch(e){}
-    return {usage:0,quota:0,remaining:0,supported:false};
-  }
-  function formatBytes(bytes){
-    const n=Number(bytes)||0;
-    if(n<1024) return `${Math.round(n)} B`;
-    if(n<1024*1024) return `${(n/1024).toFixed(1)} KB`;
-    if(n<1024*1024*1024) return `${(n/1024/1024).toFixed(1)} MB`;
-    return `${(n/1024/1024/1024).toFixed(2)} GB`;
-  }
-  function fmtDate(v){if(!v)return '-';const d=new Date(v);if(isNaN(d.getTime()))return String(v);return d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'})}
-  function sourceBadge(source){
-    return source==='Google Sheet'
-      ? '<span class="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 text-[10px] font-black">Google Sheet</span>'
-      : '<span class="px-2 py-1 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 text-[10px] font-black">Lokal</span>';
-  }
-
-  function getState(){
-    const q=queue();
-    const rows=tracking();
-    const pending=q.length;
-    const synced=rows.filter(r=>String(r?.syncStatus||'').toLowerCase()==='saved').length;
-    const localPending=rows.filter(r=>String(r?.syncStatus||'').toLowerCase()!=='saved').length;
-    const cloudRows=Array.isArray(window._riwayatInputCloud)?window._riwayatInputCloud.length:0;
-    return {q,rows,pending,synced,localPending,cloudRows};
-  }
-
-  function ensure(){
-    const nav=document.querySelector('#appHeader nav > div');
-    const content=document.getElementById('trackerPageContent');
-    if(!nav||!content)return false;
-
-    let btn=document.getElementById('trackerMenu-sync-info');
-    if(!btn){
-      btn=document.createElement('button');
-      btn.type='button';
-      btn.id='trackerMenu-sync-info';
-      btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap';
-      btn.innerHTML='<i class="fa-solid fa-cloud-arrow-up mr-1"></i> Informasi Sinkronisasi';
-      nav.appendChild(btn);
-    }
-    let panel=document.getElementById('tracker-panel-sync-info');
-    if(!panel){
-      panel=document.createElement('div');
-      panel.id='tracker-panel-sync-info';
-      panel.className='tracker-menu-panel';
-      panel.dataset.panelHidden='1';
-      panel.style.display='none';
-      panel.innerHTML='<div id="syncInfoContent"></div>';
-      content.appendChild(panel);
-    }
-    btn.onclick=open;
-    return true;
-  }
-
-  function open(e){
-    if(e)e.preventDefault();
-    if(!ensure())return;
-    const target='tracker-panel-sync-info';
-    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{const a=p.id===target;p.dataset.panelHidden=a?'0':'1';p.style.display=a?'block':'none'});
-    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(b=>{const a=b.id==='trackerMenu-sync-info';b.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(a)b.classList.add('bg-white','text-emerald-900','shadow');else b.classList.add('text-emerald-50','hover:bg-emerald-700')});
-    document.body.classList.remove('tracker-hafalan-active');
-    render();
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
-
-  async function render(){
-    if(!ensure())return;
-    const el=document.getElementById('syncInfoContent');if(!el)return;
-    const s=getState();
-    const storage=await getLocalStorageInfo();
-    const pullAt=localStorage.getItem('rq_backend_sync_last_pull_v2')||'';
-    const pullCount=Number(localStorage.getItem('rq_sync_info_pull_count')||0);
-    const lastQueue=s.q.length?s.q[s.q.length-1]:null;
-    const online=navigator.onLine;
-    const backend=gsUrl();
-    const localPct=s.rows.length?Math.round((s.synced/s.rows.length)*100):100;
-    const statusText=!online?'Offline — antrean lokal tetap disimpan':s.pending?'Ada data menunggu dikirim ke Google Sheet':'Lokal dan antrean saat ini tidak memiliki data tertunda';
-    el.innerHTML=`
-      <div class="space-y-4">
-        <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <div class="flex items-start justify-between gap-3 flex-wrap">
-            <div><h3 class="font-black text-base text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Informasi Sinkronisasi</h3><p class="text-[11px] font-bold text-slate-500 mt-1">Semua proses lokal dan Google Sheet ditampilkan di sini.</p></div>
-            <span class="px-3 py-1.5 rounded-xl text-[11px] font-black ${online?'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200':'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'}">${online?'ONLINE':'OFFLINE'}</span>
-          </div>
-          <div class="mt-4 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 transition-all" style="width:${Math.max(0,Math.min(100,localPct))}%"></div></div>
-          <div class="mt-2 flex justify-between text-[11px] font-black"><span>${localPct}% tracking lokal sudah berstatus tersimpan</span><span>${s.rows.length} total tracking lokal</span></div>
-        </div>
-
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">TRACKING LOKAL</div><div class="text-xl font-black mt-1">${s.rows.length}</div><div class="text-[10px] font-bold text-slate-500">${s.synced} tersimpan</div></div>
-          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">ANTREAN</div><div class="text-xl font-black mt-1">${s.pending}</div><div class="text-[10px] font-bold text-slate-500">menunggu proses</div></div>
-          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">RIWAYAT CLOUD</div><div class="text-xl font-black mt-1">${s.cloudRows}</div><div class="text-[10px] font-bold text-slate-500">Google Sheet</div></div>
-          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">BACKFILL</div><div class="text-xl font-black mt-1">${s.localPending}</div><div class="text-[10px] font-bold text-slate-500">lokal belum tersimpan</div></div>
-          <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700"><div class="text-[10px] font-black text-slate-400">SISA PENYIMPANAN LOKAL</div><div class="text-xl font-black mt-1">${storage.supported?esc(formatBytes(storage.remaining)):'Tidak tersedia'}</div><div class="text-[10px] font-bold text-slate-500">terpakai ${storage.supported?esc(formatBytes(storage.usage)):'-'}</div></div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <div class="flex items-center justify-between gap-3 flex-wrap"><div class="font-black text-sm">Detail Penyimpanan Lokal</div><span class="text-[11px] font-black">${storage.supported?`${((storage.usage/storage.quota)*100).toFixed(1)}% terpakai`:'Estimasi browser tidak tersedia'}</span></div>
-          <div class="mt-2 h-2.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-sky-500 transition-all" style="width:${storage.supported?Math.min(100,(storage.usage/storage.quota)*100):0}%"></div></div>
-          <div class="mt-2 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300"><div>Terpakai: <b>${storage.supported?esc(formatBytes(storage.usage)):'-'}</b></div><div>Sisa: <b>${storage.supported?esc(formatBytes(storage.remaining)):'-'}</b></div><div>Kapasitas: <b>${storage.supported?esc(formatBytes(storage.quota)):'-'}</b></div><div>Tracking: <b>${s.rows.length} data</b></div></div>
-          <div class="mt-2 text-[10px] font-bold text-slate-500">Ini adalah perkiraan kapasitas penyimpanan browser untuk situs ini, bukan kapasitas Google Sheet.</div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <div class="font-black text-sm text-slate-800 dark:text-slate-200 mb-3">Status proses terakhir</div>
-          <div class="space-y-2 text-xs font-bold">
-            <div class="flex justify-between gap-3"><span>Status jaringan</span><span>${online?'Terhubung':'Tidak terhubung'}</span></div>
-            <div class="flex justify-between gap-3"><span>Status antrean</span><span>${esc(statusText)}</span></div>
-            <div class="flex justify-between gap-3"><span>Pull Sync V2 terakhir</span><span>${pullAt?esc(fmtDate(pullAt)):'Belum ada'}</span></div>
-            <div class="flex justify-between gap-3"><span>Jumlah pull</span><span>${pullCount}</span></div>
-            <div class="flex justify-between gap-3"><span>Device ID</span><span class="font-mono text-[10px] break-all">${esc(deviceId())}</span></div>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <div class="flex items-center justify-between gap-3 flex-wrap"><div class="font-black text-sm">Antrean lokal yang sedang dikirim</div><button type="button" id="syncInfoNowBtn" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-[11px] font-black">Sinkronkan Sekarang</button></div>
-          <div class="mt-3 space-y-2">${s.q.length?s.q.slice(-8).reverse().map((x,i)=>`<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700"><div class="flex justify-between gap-3"><span class="font-black text-xs">${esc(x.payload?.name||x.payload?.santriId||'Data')}</span><span class="text-[10px] font-black">Percobaan ${esc(x.attempt||0)}/5</span></div><div class="text-[10px] font-bold text-slate-500 mt-1">${esc(x.payload?.type||'-')} · ${esc(x.payload?.juz||'')} · Level ${esc(x.payload?.level||'-')} · ${esc(x.payload?.slots?.[0]?.item||'')}</div><div class="mt-1">${sourceBadge('Lokal')} <span class="text-[10px] font-bold text-slate-500">Sync ID: ${esc(x.syncId||'-')}</span></div>${x.lastError?`<div class="mt-1 text-[10px] font-bold text-rose-600 dark:text-rose-300">Percobaan terakhir: ${esc(x.lastError)}</div>`:''}</div>`).join(''):'<div class="text-xs font-bold text-slate-400">Tidak ada antrean lokal.</div>'}</div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <div class="font-black text-sm">Backend Google Apps Script</div>
-          <div class="mt-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 font-mono text-[10px] break-all">${esc(backend||'Belum ada URL')}</div>
-          <div class="text-[10px] font-bold text-slate-500 mt-2">Data lokal tidak dihapus hanya karena proses Google Sheet belum selesai.</div>
-        </div>
-      </div>`;
-    const b=document.getElementById('syncInfoNowBtn');
-    if(b){
-      b.type='button';
-      b.disabled=false;
-      b.style.pointerEvents='auto';
-      b.onclick=async function(ev){
-        ev.preventDefault();
-        ev.stopPropagation();
-        if(b.dataset.running==='1') return;
-        b.dataset.running='1';
-        const oldText=b.textContent;
-        b.textContent='Sedang sinkron...';
-        b.disabled=true;
-        try{
-          if(typeof window.rqBackendSyncNow==='function') await window.rqBackendSyncNow();
-          if(typeof window.rqBackendSyncPull==='function') await window.rqBackendSyncPull();
-        }catch(e){ console.warn('Sinkronisasi manual:',e); }
-        finally{
-          b.dataset.running='0';
-          b.disabled=false;
-          b.textContent=oldText||'Sinkronkan Sekarang';
-          await render();
-        }
-      };
-    }
-  }
-
-  function queueOneLocal(record){
-    const student=(window.santriList||[]).find(x=>String(x.name||'')===String(record.santri||''))||{};
-    const syncId=String(record.syncId||'').trim()||('LOCAL-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8));
-    const payload={type:'tracking_setoran',clientTimestamp:record.timestamp||new Date().toISOString(),tanggal:record.tanggal||'',santriId:student.id||record.santriId||'',name:record.santri||record.name||'',class:student.class||record.class||'',teacher:student.teacher||record.teacher||'',juz:String(record.juz||''),arah:record.arah||'depan',level:String(record.level||''),slots:[{item:record.surat||'',mode:'quran',start:String(record.ayatDari||''),end:String(record.ayatSampai||'')}],segiBacaan:record.penilaianBacaan||'',segiHafalan:record.penilaianHafalan||'',catatan:record.catatan||'',deviceId:deviceId()};
-    return {syncId,payload,attempt:0,backfill:true};
-  }
-
-  async function backfill(){
-    if(backfillBusy||!navigator.onLine)return;
-    if(typeof window.rqBackendSyncNow!=='function')return;
-    const rows=tracking();
-    const existing=new Set(queue().map(x=>String(x.syncId||'')));
-    const candidates=rows.filter(r=>String(r?.syncStatus||'').toLowerCase()!=='saved'&&!existing.has(String(r?.syncId||''))).slice(0,BACKFILL_BATCH);
-    if(!candidates.length)return;
-    backfillBusy=true;
-    try{
-      const q=queue();
-      const updates=tracking();
-      const ids=[];
-      candidates.forEach(r=>{const item=queueOneLocal(r);r.syncId=item.syncId;r.syncStatus='pending';r.syncUpdatedAt=new Date().toISOString();q.push(item);ids.push(item.syncId)});
-      write(QUEUE_KEY,q);write(TRACKING_KEY,updates);
-      await window.rqBackendSyncNow();
-      const q2=queue();const pending=new Set(q2.map(x=>String(x.syncId||'')));
-      const now=tracking();now.forEach(r=>{if(ids.includes(String(r.syncId||''))&&!pending.has(String(r.syncId||''))){r.syncStatus='saved';r.syncUpdatedAt=new Date().toISOString()}});write(TRACKING_KEY,now);
-      if(typeof window.showToast==='function')window.showToast('Sinkronisasi riwayat lokal berjalan bertahap.','success');
-    }catch(e){console.warn('Backfill tracking lokal:',e)}finally{backfillBusy=false;render()}
-  }
-
-  function addLocalHistoryInfo(){
-    const container=document.getElementById('riwayatInputList');
-    if(!container)return;
-    let box=document.getElementById('riwayatLocalTrackingInfo');
-    if(!box){box=document.createElement('div');box.id='riwayatLocalTrackingInfo';container.parentNode?.insertBefore(box,container);}
-    const rows=tracking().slice().sort((a,b)=>new Date(b.timestamp||0)-new Date(a.timestamp||0));
-    const latest=rows.slice(0,12);
-    box.innerHTML=`<div class="mb-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-2xl p-4"><div class="flex items-center justify-between gap-3 flex-wrap"><div><div class="font-black text-sm text-blue-900 dark:text-blue-200"><i class="fa-solid fa-database mr-1"></i> Riwayat Tracking Lokal</div><div class="text-[10px] font-bold text-blue-700 dark:text-blue-300 mt-1">Semua riwayat lokal tetap dipertahankan dan akan masuk ke Google Sheet secara bertahap.</div></div><div class="text-[11px] font-black">${rows.filter(r=>String(r?.syncStatus||'').toLowerCase()==='saved').length}/${rows.length} tersinkron</div></div><div class="mt-3 space-y-2">${latest.length?latest.map(r=>`<div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/70"><div class="flex justify-between gap-2"><span class="text-xs font-black">${esc(r.santri||'-')}</span>${sourceBadge(String(r.syncStatus||'').toLowerCase()==='saved'?'Google Sheet':'Lokal')}</div><div class="text-[10px] font-bold text-slate-500 mt-1">${esc(r.surat||'-')} · Juz ${esc(r.juz||'-')} · Level ${esc(r.level||'-')} · ${esc(fmtDate(r.timestamp||r.tanggal))}</div></div>`).join(''):'<div class="text-xs font-bold text-slate-400">Belum ada tracking lokal.</div>'}</div></div>`;
-  }
-
-  function refresh(){
-    if(document.getElementById('tracker-panel-sync-info')?.style.display==='block')render();
-    addLocalHistoryInfo();
-  }
-
-  // Tambahkan label sumber pada riwayat Google Sheet tanpa mengubah data aslinya.
-  const originalRender=window.renderRiwayatInputMenu;
-  if(typeof originalRender==='function'&&!originalRender.__syncInfoWrapped){
-    const wrapped=function(){originalRender.apply(this,arguments);setTimeout(addLocalHistoryInfo,0)};
-    wrapped.__syncInfoWrapped=true;window.renderRiwayatInputMenu=wrapped;
-  }
-
-  function init(){ensure();refresh();setInterval(refresh,INFO_REFRESH);setInterval(backfill,BACKFILL_INTERVAL);setTimeout(backfill,4000);}
-  window.addEventListener('online',()=>setTimeout(backfill,1500));
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.openSyncInformation=open;
-
-  // Fallback: tombol tetap dapat ditekan walau panel dibuat ulang oleh innerHTML.
-  document.addEventListener('click',function(e){
-    const b=e.target?.closest?.('#syncInfoNowBtn');
-    if(!b || b.dataset.running==='1') return;
-    if(typeof window.rqBackendSyncNow!=='function') return;
-    b.dataset.running='1';
-    const oldText=b.textContent;
-    b.textContent='Sedang sinkron...';
-    b.disabled=true;
-    Promise.resolve().then(async()=>{
-      try{
-        await window.rqBackendSyncNow();
-        if(typeof window.rqBackendSyncPull==='function') await window.rqBackendSyncPull();
-      }catch(err){ console.warn('Sinkronisasi manual:',err); }
-      finally{
-        b.dataset.running='0';
-        b.disabled=false;
-        b.textContent=oldText||'Sinkronkan Sekarang';
-        await render();
-      }
-    });
-  });
-})();
-</script>
-
-
-<script id="sync-hardening-v77">
-(function(){
-  'use strict';
-  let running=false;
-  let uiTimer=null;
-
-  function queue(){
-    try{const v=JSON.parse(localStorage.getItem('rq_backend_sync_queue_v2')||'[]');return Array.isArray(v)?v:[];}catch(e){return []}
-  }
-  function setButtonState(active){
-    document.querySelectorAll('#syncInfoNowBtn').forEach(function(b){
-      b.disabled=!!active;
-      b.style.pointerEvents='auto';
-      b.style.cursor=active?'wait':'pointer';
-      b.style.position='relative';
-      b.style.zIndex='50';
-      b.textContent=active?'Sedang sinkron...':'Sinkronkan Sekarang';
-    });
-  }
-  function showError(message){
-    try{
-      if(typeof window.showToast==='function') window.showToast(message,'error');
-    }catch(e){}
-    const box=document.getElementById('syncInfoContent');
-    if(!box)return;
-    const old=box.querySelector('[data-rq-sync-hard-error]');
-    if(old)old.remove();
-    const div=document.createElement('div');
-    div.setAttribute('data-rq-sync-hard-error','1');
-    div.className='mt-3 p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 text-[11px] font-black';
-    div.textContent=message;
-    box.prepend(div);
-  }
-  async function manualSync(){
-    if(running)return;
-    if(typeof window.rqBackendSyncNow!=='function'){
-      showError('Fungsi sinkronisasi belum tersedia pada halaman ini.');
-      return;
-    }
-    running=true;
-    setButtonState(true);
-    try{
-      try{window.__rqBackendSyncManual=true;}catch(e){}
-      const before=queue();
-      if(!before.length){
-        try{window.__rqBackendSyncPull?.();}catch(e){}
-        if(typeof window.showToast==='function') window.showToast('Tidak ada data yang menunggu sinkronisasi.','success');
-        return;
-      }
-      await window.rqBackendSyncNow();
-      if(typeof window.rqBackendSyncPull==='function') await window.rqBackendSyncPull();
-      const after=queue();
-      const failed=after.find(x=>String(x?.lastError||'').toLowerCase().includes('jenis post tidak dikenal'));
-      if(failed){
-        showError('Backend Google Apps Script yang aktif belum mengenali Sync V2. Perbarui/deploy backend V77 terlebih dahulu. Data lokal tetap aman.');
-      }else if(after.length===0){
-        if(typeof window.showToast==='function') window.showToast('Sinkronisasi selesai dan antrean kosong.','success');
-      }else{
-        const err=after[0]?.lastError||'Masih ada data menunggu.';
-        showError('Sinkronisasi belum selesai: '+err);
-      }
-    }catch(err){
-      showError('Sinkronisasi gagal: '+String(err?.message||err));
-    }finally{
-      running=false;
-      try{window.__rqBackendSyncManual=false;}catch(e){}
-      setButtonState(false);
-      if(uiTimer){clearInterval(uiTimer);uiTimer=null;}
-      try{window.rqBackendSyncQueue?.();}catch(e){}
-    }
-  }
-
-  window.rqManualSyncV77=manualSync;
-
-  // Delegasi capture: tombol tetap aktif walaupun panel Informasi Sinkronisasi
-  // dibuat ulang oleh renderer setiap beberapa detik.
-  document.addEventListener('click',function(e){
-    const b=e.target?.closest?.('#syncInfoNowBtn');
-    if(!b)return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    manualSync();
-  },true);
-
-  function harden(){
-    const b=document.getElementById('syncInfoNowBtn');
-    if(b){
-      b.type='button';
-      b.disabled=running;
-      b.style.pointerEvents='auto';
-      b.style.cursor=running?'wait':'pointer';
-      b.style.position='relative';
-      b.style.zIndex='50';
-      if(!running)b.textContent='Sinkronkan Sekarang';
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',harden,{once:true});else harden();
-  setInterval(harden,500);
-})();
-</script>
-
-
-<style id="input-sync-read-write-v80-style">
-.rq-input-sync-status{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:.5rem;
-  margin:.15rem 0 .75rem;
-  padding:.55rem;
-  border:1px solid rgba(148,163,184,.28);
-  border-radius:.9rem;
-  background:rgba(248,250,252,.72);
-}
+<style id="input-sync-read-write-local-style">
+.rq-input-sync-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:.15rem 0 .75rem;padding:.55rem;border:1px solid rgba(148,163,184,.28);border-radius:.9rem;background:rgba(248,250,252,.72)}
 .dark .rq-input-sync-status{background:rgba(15,23,42,.55);border-color:rgba(71,85,105,.55)}
-.rq-sync-chip{
-  display:flex;align-items:center;gap:.45rem;min-width:0;
-  padding:.45rem .55rem;border-radius:.7rem;
-  font-size:10px;font-weight:900;line-height:1.15;
-  border:1px solid rgba(148,163,184,.25);
-}
-.rq-sync-chip i{width:15px;text-align:center;flex:0 0 15px}
-.rq-sync-chip .rq-sync-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rq-sync-idle{color:#64748b;background:rgba(148,163,184,.08)}
-.rq-sync-pending{color:#b45309;background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25)}
+.rq-sync-chip{display:flex;align-items:center;justify-content:space-between;gap:.4rem;padding:.45rem .55rem;border:1px solid rgba(148,163,184,.25);border-radius:.65rem;font-size:10px;font-weight:800}
 .rq-sync-success{color:#047857;background:rgba(16,185,129,.10);border-color:rgba(16,185,129,.25)}
 .rq-sync-error{color:#be123c;background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.22)}
-.dark .rq-sync-idle{color:#94a3b8}
-.dark .rq-sync-pending{color:#fbbf24}
-.dark .rq-sync-success{color:#6ee7b7}
-.dark .rq-sync-error{color:#fda4af}
-@media(max-width:480px){
-  .rq-input-sync-status{grid-template-columns:1fr}
-}
+.dark .rq-sync-success{color:#6ee7b7}.dark .rq-sync-error{color:#fda4af}
+@media(max-width:480px){.rq-input-sync-status{grid-template-columns:1fr}}
 </style>
-<script id="input-sync-read-write-v80">
+<script id="input-sync-read-write-local">
 (function(){
   'use strict';
-
-  const STATE_KEY='rq_input_sync_rw_v79';
-  const CATS={
-    bacaan:{label:'Bacaan'},
-    hafalan:{label:'Hafalan'},
-    murojaah:{label:"Muroja'ah"},
-    tugas:{label:'Tugas'},
-    tracking:{label:'Setoran Tracking'}
-  };
-
-  function loadState(){
-    try{
-      const v=JSON.parse(localStorage.getItem(STATE_KEY)||'{}');
-      return v&&typeof v==='object'?v:{};
-    }catch(e){return {}}
+  const KEY='rq_input_sync_local_v1';
+  function read(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return v&&typeof v==='object'?v:{}}catch(e){return {}}}
+  function write(v){try{localStorage.setItem(KEY,JSON.stringify(v))}catch(e){}}
+  function mark(name,cat,direction,state,text){
+    const d=read(); const k=String(cat)+'|'+String(name||''); d[k]=d[k]||{};
+    d[k][direction]={state:state||'success',text:text||'Tersimpan lokal',time:Date.now()}; write(d);
+    try{window.refreshAllInputSyncStatus?.()}catch(e){}
   }
-  const state=loadState();
-  function saveState(){
-    try{localStorage.setItem(STATE_KEY,JSON.stringify(state));}catch(e){}
-  }
-  function key(name,cat){return String(cat)+'|'+String(name||'');}
-
-  function defaultPart(direction){
-    return {state:'idle',text:direction==='read'?'Belum membaca Google Sheet':'Belum ada upload'};
-  }
-
-  function getPart(name,cat,direction){
-    const k=key(name,cat);
-    state[k]=state[k]||{};
-    state[k][direction]=state[k][direction]||defaultPart(direction);
-    return state[k][direction];
-  }
-
-  function getInputProgressPercent(name,cat){
-    try{
-      // Tracking sudah memiliki persentase resmi di UI; gunakan nilai yang sama.
-      if(cat==='tracking'){
-        const el=document.getElementById('trackingProgressText');
-        const m=String(el?.textContent||'').match(/(\d+(?:\.\d+)?)%/);
-        return m ? Math.max(0,Math.min(100,Math.round(Number(m[1])))) : 0;
-      }
-
-      const map={bacaan:'bac',hafalan:'haf',murojaah:'mur'};
-      const prefix=map[cat];
-      if(!prefix || typeof window.extractSlotsStructured!=='function') return 0;
-      const slots=window.extractSlotsStructured(prefix,String(name||''))||[];
-      const values=[];
-      slots.forEach(slot=>{
-        if(String(slot?.mode||'quran').toLowerCase()==='iqro') return;
-        const surat=String(slot?.item||'').trim();
-        const sampai=Number(slot?.end||0);
-        if(!surat || !sampai || typeof window.surahInfo!=='function') return;
-        const total=Number(window.surahInfo(surat)?.ayat||0);
-        if(total) values.push(Math.max(0,Math.min(100,Math.round((sampai/total)*100))));
-      });
-      // Bila ada beberapa slot, tampilkan progres tertinggi yang sedang diinput.
-      return values.length ? Math.max(...values) : 0;
-    }catch(e){
-      return 0;
-    }
-  }
-
-  function chip(direction,part,name,cat){
-    const isRead=direction==='read';
-    const icon=isRead?'fa-cloud-arrow-down':'fa-cloud-arrow-up';
-    const label=isRead?'READ':'WRITE';
-    const cls=part.state==='success'?'rq-sync-success':part.state==='pending'?'rq-sync-pending':part.state==='error'?'rq-sync-error':'rq-sync-idle';
-    const spin=part.state==='pending'?' animate-pulse':'';
-    const progress=getInputProgressPercent(name,cat);
-    return `<div class="rq-sync-chip ${cls}" data-rq-sync-chip="${direction}">
-      <i class="fa-solid ${icon}${spin}"></i>
-      <span class="rq-sync-text"><b>${label}</b> · ${String(part.text||'')} - Progres · ${progress}%</span>
-    </div>`;
-  }
-
-  window.rqInputSyncStatus={
-    set:function(name,cat,direction,status,text){
-      const p=getPart(name,cat,direction);
-      p.state=status||'idle';
-      p.text=text||'';
-      saveState();
-      renderOne(name,cat);
-    },
-    get:function(name,cat,direction){return getPart(name,cat,direction)}
-  };
-
-  function renderOne(name,cat){
-    const id='rqInputSyncStatus_'+encodeURIComponent(String(cat))+'_'+encodeURIComponent(String(name||''));
-    const el=document.getElementById(id);
-    if(!el)return;
-    el.innerHTML=chip('read',getPart(name,cat,'read'))+chip('write',getPart(name,cat,'write'));
-  }
-
-  function ensureForCard(content,cat){
-    if(!content || !content.parentElement)return;
-    const prefix='card_section_content_'+cat+'_';
-    if(!content.id.startsWith(prefix))return;
-    const name=content.id.slice(prefix.length);
-    const id='rqInputSyncStatus_'+encodeURIComponent(String(cat))+'_'+encodeURIComponent(String(name));
-    let bar=document.getElementById(id);
-    if(!bar){
-      bar=document.createElement('div');
-      bar.id=id;
-      bar.className='rq-input-sync-status';
-      content.parentElement.insertBefore(bar,content);
-    }
-    const r=getPart(name,cat,'read'), w=getPart(name,cat,'write');
-    bar.innerHTML=chip('read',r,name,cat)+chip('write',w,name,cat);
-  }
-
-  window.refreshAllInputSyncStatus=function(){
-    try{
-      document.querySelectorAll('[id^="rqInputSyncStatus_"]').forEach(el=>{
-        const parts=String(el.id).split('_');
-        if(parts.length<3)return;
-        const cat=decodeURIComponent(parts[1]||'');
-        const name=decodeURIComponent(parts.slice(2).join('_')||'');
-        const r=getPart(name,cat,'read'), w=getPart(name,cat,'write');
-        el.innerHTML=chip('read',r,name,cat)+chip('write',w,name,cat);
-      });
-      const trackingBox=document.getElementById('rqTrackingInputSyncStatus');
-      if(trackingBox){
-        const name=document.getElementById('trackingSantri')?.value||'';
-        trackingBox.innerHTML=chip('read',getPart(name,'tracking','read'),name,'tracking')+chip('write',getPart(name,'tracking','write'),name,'tracking');
-      }
-    }catch(e){}
-  };
-
-  window.ensureAllInputSyncStatus=function(){
-    ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
-      document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>ensureForCard(el,cat));
-    });
-
-    // Form Input Setoran Tracking utama: satu indikator untuk seluruh form.
-    const saveBtn=document.querySelector('button[onclick="window.saveTrackingSetoran()"]');
-    if(saveBtn){
-      let box=document.getElementById('rqTrackingInputSyncStatus');
-      if(!box){
-        box=document.createElement('div');
-        box.id='rqTrackingInputSyncStatus';
-        box.className='rq-input-sync-status';
-        saveBtn.parentElement.insertBefore(box,saveBtn);
-      }
-      const name=document.getElementById('trackingSantri')?.value||'';
-      const r=getPart(name,'tracking','read'), w=getPart(name,'tracking','write');
-      box.innerHTML=chip('read',r,name,'tracking')+chip('write',w,name,'tracking');
-    }
-    saveState();
-    window.refreshAllInputSyncStatus?.();
-  };
-
-  function markReadAll(){
-    ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
-      document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>{
+  window.rqMarkInputWrite=function(name,cat,status,text){mark(name,cat,'write',status,text||'Tersimpan lokal')};
+  window.rqMarkInputReadSuccess=function(){
+    ['bacaan','hafalan','murojaah','tugas','tracking'].forEach(cat=>{
+      document.querySelectorAll('[id^="card_section_content_'+cat+'_"],#trackingSelectedSantri').forEach(el=>{
         const prefix='card_section_content_'+cat+'_';
-        const name=el.id.slice(prefix.length);
-        const p=getPart(name,cat,'read');
-        p.state='success'; p.text='Berhasil';
+        const name=el.id.startsWith(prefix)?el.id.slice(prefix.length):(document.getElementById('trackingSantri')?.value||'');
+        if(name) mark(name,cat,'read','success','Lokal berhasil dibaca');
       });
     });
-    const name=document.getElementById('trackingSantri')?.value||'';
-    if(name){
-      const p=getPart(name,'tracking','read');
-      p.state='success'; p.text='Berhasil';
-    }
-    saveState();
-    window.ensureAllInputSyncStatus();
-  }
-
-  window.rqMarkInputReadSuccess=markReadAll;
-
-  // Hanya menyegarkan tampilan persentase; tidak mengubah penyimpanan atau rumus progres.
-  document.addEventListener('input',function(e){
-    if(e.target?.id?.startsWith('bac_')||e.target?.id?.startsWith('haf_')||e.target?.id?.startsWith('mur_')||e.target?.id==='trackingAyatDari'||e.target?.id==='trackingAyatSampai'){
-      setTimeout(()=>window.refreshAllInputSyncStatus?.(),0);
-    }
-  },true);
-  document.addEventListener('change',function(e){
-    if(e.target?.id?.startsWith('bac_')||e.target?.id?.startsWith('haf_')||e.target?.id?.startsWith('mur_')||e.target?.id==='trackingSurat'||e.target?.id==='trackingAyatDari'||e.target?.id==='trackingAyatSampai'||e.target?.id==='trackingSantri'){
-      setTimeout(()=>window.refreshAllInputSyncStatus?.(),0);
-    }
-  },true);
-
-  window.rqMarkInputWrite=function(name,cat,status,text){
-    const p=getPart(name,cat,'write');
-    p.state=status;
-    p.text=text||(
-      status==='pending'?'Mengirim...':
-      status==='success'?'Selesai':
-      status==='error'?'Gagal':'Belum ada upload'
-    );
-    saveState();
-    window.ensureAllInputSyncStatus();
   };
+  window.ensureAllInputSyncStatus=function(){};
+  window.refreshAllInputSyncStatus=function(){};
+})();
+</script>
 
-  // Tandai WRITE ketika fungsi upload lama dipanggil.
-  const originalSync=window.syncToCloud;
-  if(typeof originalSync==='function' && !originalSync.__rqReadWriteV79){
-    async function wrappedSync(payload){
-      const p=payload||{};
-      let cat=String(p.type||'');
-      if(cat==='murojaah')cat='murojaah';
-      if(!CATS[cat]) return originalSync.apply(this,arguments);
-
-      const name=String(p.name||'');
-      window.rqMarkInputWrite(name,cat,'pending','Mengirim...');
-      try{
-        const result=await originalSync.apply(this,arguments);
-        // syncToCloud memakai no-cors pada kanal lama, sehingga browser hanya
-        // memastikan request selesai dikirim. Verifikasi penyimpanan dilakukan
-        // oleh READ berikutnya dari Google Sheet.
-        window.rqMarkInputWrite(name,cat,'success','Selesai');
-        return result;
-      }catch(err){
-        window.rqMarkInputWrite(name,cat,'error','Gagal');
-        throw err;
-      }
-    }
-    wrappedSync.__rqReadWriteV79=true;
-    window.syncToCloud=wrappedSync;
+<script id="local-only-finalizer">
+(function(){
+  'use strict';
+  function localStatus(){
+    try{document.querySelectorAll('.rq-sync-chip').forEach(el=>{el.textContent='Lokal';});}catch(e){}
   }
-
-  // READ: setiap fetch Google Sheet yang berhasil menyalakan READ.
-  const originalFetch=window.fetchAllDataFromCloud;
-  if(typeof originalFetch==='function' && !originalFetch.__rqReadWriteV79){
-    async function wrappedFetch(){
-      // Jika pembacaan cloud sedang berjalan, fungsi asli dapat langsung return
-      // tanpa melakukan READ baru. Jangan menyalakan indikator READ Berhasil
-      // untuk pemanggilan yang sebenarnya tidak membaca Google Sheet.
-      const alreadyBusy=!!window._cloudPollingBusy;
-      if(alreadyBusy){
-        return originalFetch.apply(this,arguments);
-      }
-      let lastSyncState='pending';
-      const oldSetSync=window.setSyncIndicator;
-      if(typeof oldSetSync==='function'){
-        window.setSyncIndicator=function(status){
-          lastSyncState=status||lastSyncState;
-          return oldSetSync.apply(this,arguments);
-        };
-      }
-      try{
-        const result=await originalFetch.apply(this,arguments);
-        if(lastSyncState==='error'){
-          ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
-            document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>{
-              const prefix='card_section_content_'+cat+'_';
-              const name=el.id.slice(prefix.length);
-              const p=getPart(name,cat,'read');
-              p.state='error'; p.text='Gagal';
-            });
-          });
-          saveState();
-          window.ensureAllInputSyncStatus();
-        }else{
-          markReadAll();
-        }
-        return result;
-      }catch(err){
-        ['bacaan','hafalan','murojaah','tugas'].forEach(cat=>{
-          document.querySelectorAll('[id^="card_section_content_'+cat+'_"]').forEach(el=>{
-            const prefix='card_section_content_'+cat+'_';
-            const name=el.id.slice(prefix.length);
-            const p=getPart(name,cat,'read');
-            p.state='error'; p.text='Gagal';
-          });
-        });
-        saveState();
-        window.ensureAllInputSyncStatus();
-        throw err;
-      }finally{
-        if(typeof oldSetSync==='function') window.setSyncIndicator=oldSetSync;
-      }
-    }
-    wrappedFetch.__rqReadWriteV79=true;
-    window.fetchAllDataFromCloud=wrappedFetch;
-  }
-
-  // Tracking V2: tandai WRITE berdasarkan status antrean lokal.
-  const originalBackendSync=window.rqBackendSyncNow;
-  if(typeof originalBackendSync==='function' && !originalBackendSync.__rqReadWriteV79){
-    async function wrappedBackendSync(){
-      try{
-        const q=typeof window.rqBackendSyncQueue==='function'?window.rqBackendSyncQueue():[];
-        q.forEach(item=>{
-          const p=item?.payload||{};
-          if(p.type==='tracking_setoran' || p.type==='level_checklist'){
-            window.rqMarkInputWrite(p.name||document.getElementById('trackingSantri')?.value||'','tracking','pending','Mengirim...');
-          }
-        });
-        const result=await originalBackendSync.apply(this,arguments);
-        const left=typeof window.rqBackendSyncQueue==='function'?window.rqBackendSyncQueue():[];
-        if(left.length===0){
-          const name=document.getElementById('trackingSantri')?.value||'';
-          if(name) window.rqMarkInputWrite(name,'tracking','success','Selesai');
-        }else{
-          left.forEach(item=>{
-            const p=item?.payload||{};
-            if(p.type==='tracking_setoran' || p.type==='level_checklist'){
-              window.rqMarkInputWrite(p.name||document.getElementById('trackingSantri')?.value||'','tracking','error','Menunggu');
-            }
-          });
-        }
-        return result;
-      }catch(err){
-        const name=document.getElementById('trackingSantri')?.value||'';
-        if(name) window.rqMarkInputWrite(name,'tracking','error','Gagal');
-        throw err;
-      }
-    }
-    wrappedBackendSync.__rqReadWriteV79=true;
-    window.rqBackendSyncNow=wrappedBackendSync;
-  }
-
-  // Tracking Setoran: tandai WRITE saat data masuk antrean/diunggah.
-  const originalTrackingSave=window.saveTrackingSetoran;
-  if(typeof originalTrackingSave==='function' && !originalTrackingSave.__rqReadWriteV79){
-    async function wrappedTrackingSave(){
-      const name=String(document.getElementById('trackingSantri')?.value||'').trim();
-      let beforeCount=0;
-      try{beforeCount=JSON.parse(localStorage.getItem('rq_tracking_tahfidz_local_v1')||'[]').length}catch(e){}
-      try{
-        const result=await originalTrackingSave.apply(this,arguments);
-        let afterRows=[];
-        try{afterRows=JSON.parse(localStorage.getItem('rq_tracking_tahfidz_local_v1')||'[]')}catch(e){afterRows=[]}
-        // Jika validasi input lama menolak penyimpanan, jangan mengubah indikator WRITE.
-        if(afterRows.length===beforeCount) return result;
-        if(name) window.rqMarkInputWrite(name,'tracking','pending','Menunggu upload');
-        const q=typeof window.rqBackendSyncQueue==='function'?window.rqBackendSyncQueue():[];
-        const own=q.filter(item=>{
-          const p=item?.payload||{};
-          return (p.type==='tracking_setoran'||p.type==='level_checklist') && String(p.name||'')===name;
-        });
-        if(!own.length && name){
-          const latest=afterRows.find(r=>String(r?.santri||'')===name && String(r?.syncStatus||'').toLowerCase()==='saved');
-          if(latest) window.rqMarkInputWrite(name,'tracking','success','Selesai');
-        }
-        return result;
-      }catch(err){
-        if(name) window.rqMarkInputWrite(name,'tracking','error','Gagal');
-        throw err;
-      }
-    }
-    wrappedTrackingSave.__rqReadWriteV79=true;
-    window.saveTrackingSetoran=wrappedTrackingSave;
-  }
-
-  // Setelah render kartu/form, pasang indikator tanpa mengubah form.
-  function refresh(){window.ensureAllInputSyncStatus();}
-  const oldRender=window.renderSantriCardsAndTable;
-  if(typeof oldRender==='function' && !oldRender.__rqReadWriteV79){
-    function wrappedRender(){
-      const out=oldRender.apply(this,arguments);
-      setTimeout(refresh,0);
-      return out;
-    }
-    wrappedRender.__rqReadWriteV79=true;
-    window.renderSantriCardsAndTable=wrappedRender;
-  }
-
-  // Event delegasi: membantu form yang dirender ulang/dibuka dari menu.
-  document.addEventListener('click',function(){
-    setTimeout(refresh,0);
-  },true);
-  document.addEventListener('change',function(){
-    setTimeout(refresh,0);
-  },true);
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh,{once:true});
-  else setTimeout(refresh,0);
+  setTimeout(localStatus,300);
 })();
 </script>
 </body>
