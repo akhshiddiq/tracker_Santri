@@ -738,52 +738,18 @@
 
         window.switchSourceMode = function(category, slot, santriName, mode) {
             const key = `${santriName}_${category}_${slot}`;
-            const currentMode = window.itemSourceMode[key];
+            window.itemSourceMode[key] = 'quran';
+            window.cacheFormInput({ value: 'quran' }, `${santriName}_${category}_mode_${slot}`);
 
-            if (currentMode === mode) {
-                delete window.itemSourceMode[key];
-                const btnQ = document.getElementById(`btn_src_quran_${category}_${slot}_${santriName}`);
-                const btnI = document.getElementById(`btn_src_iqro_${category}_${slot}_${santriName}`);
-                const fieldQ = document.getElementById(`field_quran_${category}_${slot}_${santriName}`);
-                const fieldI = document.getElementById(`field_iqro_${category}_${slot}_${santriName}`);
-
-                if (btnQ) btnQ.className = "px-2.5 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400";
-                if (btnI) btnI.className = "px-2.5 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400";
-                if (fieldQ) fieldQ.classList.add('hidden');
-                if (fieldI) fieldI.classList.add('hidden');
-
-                const surahSel = document.getElementById(`${category}_surah_${slot}_${santriName}`);
-                if (surahSel) surahSel.value = "";
-                const iqroSel = document.getElementById(`${category}_iqro_${slot}_${santriName}`);
-                if (iqroSel) iqroSel.value = "";
-                return;
-            }
-
-            window.itemSourceMode[key] = mode;
-            window.cacheFormInput({ value: mode }, `${santriName}_${category}_mode_${slot}`);
-            
             const btnQ = document.getElementById(`btn_src_quran_${category}_${slot}_${santriName}`);
-            const btnI = document.getElementById(`btn_src_iqro_${category}_${slot}_${santriName}`);
             const fieldQ = document.getElementById(`field_quran_${category}_${slot}_${santriName}`);
-            const fieldI = document.getElementById(`field_iqro_${category}_${slot}_${santriName}`);
             const labelStart = document.getElementById(`lbl_start_${category}_${slot}_${santriName}`);
             const labelEnd = document.getElementById(`lbl_end_${category}_${slot}_${santriName}`);
 
-            if (mode === 'iqro') {
-                if (btnQ) btnQ.className = "px-2.5 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400";
-                if (btnI) btnI.className = "px-2.5 py-1.5 rounded-md text-xs font-black bg-white dark:bg-slate-900 shadow-xs text-amber-700";
-                if (fieldQ) fieldQ.classList.add('hidden');
-                if (fieldI) fieldI.classList.remove('hidden');
-                if (labelStart) labelStart.innerText = "Halaman Mulai:";
-                if (labelEnd) labelEnd.innerText = "Halaman Sampai:";
-            } else {
-                if (btnQ) btnQ.className = "px-2.5 py-1.5 rounded-md text-xs font-black bg-white dark:bg-slate-900 shadow-xs text-emerald-700";
-                if (btnI) btnI.className = "px-2.5 py-1.5 rounded-md text-xs font-bold text-slate-500";
-                if (fieldQ) fieldQ.classList.remove('hidden');
-                if (fieldI) fieldI.classList.add('hidden');
-                if (labelStart) labelStart.innerText = "Ayat Mulai:";
-                if (labelEnd) labelEnd.innerText = "Ayat Sampai:";
-            }
+            if (btnQ) btnQ.className = "px-2.5 py-1.5 rounded-md text-xs font-black bg-white dark:bg-slate-900 shadow-xs text-emerald-700";
+            if (fieldQ) fieldQ.classList.remove('hidden');
+            if (labelStart) labelStart.innerText = "Ayat Mulai:";
+            if (labelEnd) labelEnd.innerText = "Ayat Sampai:";
         };
 
         window.setSlotStatus = function(category, slot, santriName, statusVal) {
@@ -924,7 +890,6 @@
                 const isVisible = isFirst || !!window.activeSlotState[stateKey] || isCloudActive;
 
                 const cacheKeySurah = `${santriName}_${category}_surah_${slot}`;
-                const cacheKeyIqro = `${santriName}_${category}_iqro_${slot}`;
                 const cacheKeyStart = `${santriName}_${category}_start_${slot}`;
                 const cacheKeyEnd = `${santriName}_${category}_end_${slot}`;
                 const cacheKeyMode = `${santriName}_${category}_mode_${slot}`;
@@ -935,17 +900,13 @@
                 const slotEnd = slotData ? (slotData.end || '') : '';
                 const slotStatus = '';
                 
-                let lokalMode = slotData && slotData.mode ? slotData.mode : 'quran';
-                if (!slotData && slotItem.toLowerCase().includes('iqro')) lokalMode = 'iqro';
-                
-                const cachedMode = window.getFormCache(cacheKeyMode, lokalMode);
+                const cachedMode = 'quran';
                 window.itemSourceMode[`${santriName}_${category}_${slot}`] = cachedMode;
 
                 const cachedStatus = window.getFormCache(statusKey, slotStatus);
                 window.itemSlotStatus[statusKey] = cachedStatus;
 
                 const defaultSurahVal = window.getFormCache(cacheKeySurah, slotItem);
-                const defaultIqroVal = window.getFormCache(cacheKeyIqro, slotItem);
                 const defaultStartVal = window.getFormCache(cacheKeyStart, (slotStart && slotStart !== '-' ? slotStart : ''));
                 const defaultEndVal = window.getFormCache(cacheKeyEnd, (slotEnd && slotEnd !== '-' ? slotEnd : ''));
 
@@ -965,36 +926,24 @@
                             </span>
                             <div class="flex items-center bg-slate-200/90 dark:bg-slate-800 p-1 rounded-lg">
                                 <button type="button" id="btn_src_quran_${category}_${slot}_${santriName}" onclick="window.switchSourceMode('${category}', ${slot}, '${santriName}', 'quran')" class="px-2.5 py-1 rounded text-xs ${cachedMode === 'quran' ? 'font-black bg-white dark:bg-slate-900 shadow-xs text-emerald-700' : 'font-bold text-slate-500'}">Al-Qur'an</button>
-                                <button type="button" id="btn_src_iqro_${category}_${slot}_${santriName}" onclick="window.switchSourceMode('${category}', ${slot}, '${santriName}', 'iqro')" class="px-2.5 py-1 rounded text-xs ${cachedMode === 'iqro' ? 'font-black bg-white dark:bg-slate-900 shadow-xs text-amber-700' : 'font-bold text-slate-500'}">Iqro</button>
                             </div>
                         </div>
 
-                        <div id="field_quran_${category}_${slot}_${santriName}" class="${cachedMode === 'iqro' ? 'hidden' : ''}">
+                        <div id="field_quran_${category}_${slot}_${santriName}">
                             <select id="${category}_surah_${slot}_${santriName}" onchange="window.cacheFormInput(this, '${cacheKeySurah}')" class="w-full p-4 bg-transparent border-2 border-slate-300 dark:border-slate-700 rounded-2xl font-black text-sm min-h-[56px]">
                                 <option value="">-- Pilih Surat --</option>
                                 ${window.surahList.map(s => `<option value="${s.name}" ${defaultSurahVal === s.name ? 'selected' : ''}>${s.no}. ${s.name} (${s.ayat} Ayat)</option>`).join('')}
                             </select>
                         </div>
 
-                        <div id="field_iqro_${category}_${slot}_${santriName}" class="${cachedMode === 'quran' ? 'hidden' : ''}">
-                            <select id="${category}_iqro_${slot}_${santriName}" onchange="window.cacheFormInput(this, '${cacheKeyIqro}')" class="w-full p-4 bg-transparent border-2 border-slate-300 dark:border-slate-700 rounded-2xl font-black text-sm min-h-[56px]">
-                                <option value="">-- Pilih Jilid Iqro --</option>
-                                <option value="Iqro 1" ${defaultIqroVal === 'Iqro 1' ? 'selected' : ''}>Iqro Jilid 1</option>
-                                <option value="Iqro 2" ${defaultIqroVal === 'Iqro 2' ? 'selected' : ''}>Iqro Jilid 2</option>
-                                <option value="Iqro 3" ${defaultIqroVal === 'Iqro 3' ? 'selected' : ''}>Iqro Jilid 3</option>
-                                <option value="Iqro 4" ${defaultIqroVal === 'Iqro 4' ? 'selected' : ''}>Iqro Jilid 4</option>
-                                <option value="Iqro 5" ${defaultIqroVal === 'Iqro 5' ? 'selected' : ''}>Iqro Jilid 5</option>
-                                <option value="Iqro 6" ${defaultIqroVal === 'Iqro 6' ? 'selected' : ''}>Iqro Jilid 6</option>
-                            </select>
-                        </div>
 
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label id="lbl_start_${category}_${slot}_${santriName}" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">${cachedMode === 'iqro' ? 'Halaman Mulai:' : 'Ayat Mulai:'}</label>
+                                <label id="lbl_start_${category}_${slot}_${santriName}" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Ayat Mulai:</label>
                                 <input type="number" id="${category}_start_${slot}_${santriName}" oninput="window.cacheFormInput(this, '${cacheKeyStart}')" value="${defaultStartVal}" placeholder="Mulai" class="w-full p-4 bg-transparent border-2 border-slate-300 dark:border-slate-700 rounded-2xl font-black text-sm min-h-[56px]">
                             </div>
                             <div>
-                                <label id="lbl_end_${category}_${slot}_${santriName}" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">${cachedMode === 'iqro' ? 'Halaman Sampai:' : 'Ayat Sampai:'}</label>
+                                <label id="lbl_end_${category}_${slot}_${santriName}" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Ayat Sampai:</label>
                                 <input type="number" id="${category}_end_${slot}_${santriName}" oninput="window.cacheFormInput(this, '${cacheKeyEnd}')" value="${defaultEndVal}" placeholder="Sampai" class="w-full p-4 bg-transparent border-2 border-slate-300 dark:border-slate-700 rounded-2xl font-black text-sm min-h-[56px]">
                             </div>
                         </div>
@@ -1454,20 +1403,14 @@
             const slots = [1, 2, 3];
             const entries = [];
             slots.forEach(slot => {
-                const mode = window.itemSourceMode[`${santriName}_${category}_${slot}`] || 'quran';
-                let itemVal = '';
-                if (mode === 'iqro') {
-                    itemVal = document.getElementById(`${category}_iqro_${slot}_${santriName}`)?.value || '';
-                } else {
-                    itemVal = document.getElementById(`${category}_surah_${slot}_${santriName}`)?.value || '';
-                }
+                const mode = 'quran';
+                const itemVal = document.getElementById(`${category}_surah_${slot}_${santriName}`)?.value || '';
                 const start = document.getElementById(`${category}_start_${slot}_${santriName}`)?.value.trim() || '';
                 const end = document.getElementById(`${category}_end_${slot}_${santriName}`)?.value.trim() || '';
                 const statusVal = window.itemSlotStatus[`${santriName}_${category}_progress_status`] || '';
 
                 if (itemVal) {
-                    const isIqro = (mode === 'iqro' || itemVal.toLowerCase().includes('iqro'));
-                    const unitName = isIqro ? 'halaman' : 'ayat';
+                    const unitName = 'ayat';
                     let count = 0;
                     if (start && end) {
                         const sNum = parseInt(start);
@@ -1479,7 +1422,7 @@
                         count = 1;
                     }
 
-                    const rangeLabel = isIqro ? `Hlm ${start}${end && end !== start ? '-' + end : ''}` : `${start}${end && end !== start ? '-' + end : ''}`;
+                    const rangeLabel = `${start}${end && end !== start ? '-' + end : ''}`;
                     const progressStr = count > 0 ? ` (bertambah ${count} ${unitName})` : '';
                     // Nilai/status ditampilkan terpisah pada kartu/laporan.
                     // Jangan memasukkannya lagi ke detail agar tidak tampil 2x.
@@ -1493,13 +1436,8 @@
             const slots = [1, 2, 3];
             const slotData = [];
             slots.forEach(slot => {
-                const mode = window.itemSourceMode[`${santriName}_${category}_${slot}`] || 'quran';
-                let itemVal = '';
-                if (mode === 'iqro') {
-                    itemVal = document.getElementById(`${category}_iqro_${slot}_${santriName}`)?.value || '-';
-                } else {
-                    itemVal = document.getElementById(`${category}_surah_${slot}_${santriName}`)?.value || '-';
-                }
+                const mode = 'quran';
+                const itemVal = document.getElementById(`${category}_surah_${slot}_${santriName}`)?.value || '-';
                 const start = document.getElementById(`${category}_start_${slot}_${santriName}`)?.value.trim() || '-';
                 const end = document.getElementById(`${category}_end_${slot}_${santriName}`)?.value.trim() || '-';
                 const statusVal = window.itemSlotStatus[`${santriName}_${category}_progress_status`] || '-';
@@ -1526,7 +1464,7 @@
             if (sectionType === 'bacaan') {
                 const bacaanFormatted = window.extractSlotEntries('bac', name);
                 if (!bacaanFormatted || bacaanFormatted === '-') {
-                    window.showToast("Pilih minimal 1 surat/iqro bacaan!", "error");
+                    window.showToast("Pilih minimal 1 surat bacaan!", "error");
                     return;
                 }
                 const bacaanStat = document.getElementById(`bac_stat_${name}`)?.value || '';
@@ -2631,8 +2569,6 @@
             const classSel = document.getElementById('massalClassFilter');
             if (classSel) classSel.value = 'ALL';
 
-            const modeSel = document.getElementById('massalBacaanMode');
-            if (modeSel) modeSel.value = 'quran';
             window.populateMassalBacaanOptions();
             window.renderMassalSantriGrid('murojaah');
             window.updateMassalSelectedCount('murojaah');
@@ -2670,40 +2606,23 @@
         };
 
         window.populateMassalBacaanOptions = function() {
-            const mode = document.getElementById('massalBacaanMode')?.value || 'quran';
             const wrap = document.getElementById('massalBacaanItemWrap');
             const surahSel = document.getElementById('massalSurahSelect');
-            const iqroSel = document.getElementById('massalIqroSelect');
             const start = document.getElementById('massalAyatMulai');
             const end = document.getElementById('massalAyatSampai');
             const labelStart = document.getElementById('massalRangeStartLabel');
             const labelEnd = document.getElementById('massalRangeEndLabel');
             if (!wrap) return;
-
-            if (mode === 'iqro') {
-                if (surahSel) surahSel.classList.add('hidden');
-                if (iqroSel) {
-                    iqroSel.classList.remove('hidden');
-                    iqroSel.innerHTML = '<option value="">-- Pilih Iqro --</option>' +
-                        [1,2,3,4,5,6].map(n => `<option value="Iqro ${n}">Iqro ${n}</option>`).join('');
-                }
-                if (labelStart) labelStart.textContent = 'Halaman/Ayat Mulai:';
-                if (labelEnd) labelEnd.textContent = 'Halaman/Ayat Sampai:';
-                if (start) start.placeholder = 'Mulai';
-                if (end) end.placeholder = 'Sampai';
-            } else {
-                if (iqroSel) iqroSel.classList.add('hidden');
-                if (surahSel) {
-                    surahSel.classList.remove('hidden');
-                    const list = Array.isArray(window.surahList) ? window.surahList : [];
-                    surahSel.innerHTML = '<option value="">-- Pilih Surat --</option>' +
-                        list.map(s => `<option value="${window.massalEsc(s.name)}" data-max="${Number(s.ayat || 0)}">${s.no}. ${window.massalEsc(s.name)} (${s.ayat} Ayat)</option>`).join('');
-                }
-                if (labelStart) labelStart.textContent = 'Ayat Mulai:';
-                if (labelEnd) labelEnd.textContent = 'Ayat Sampai:';
-                if (start) start.placeholder = 'Mulai';
-                if (end) end.placeholder = 'Sampai';
+            if (surahSel) {
+                surahSel.classList.remove('hidden');
+                const list = Array.isArray(window.surahList) ? window.surahList : [];
+                surahSel.innerHTML = '<option value="">-- Pilih Surat --</option>' +
+                    list.map(s => `<option value="${window.massalEsc(s.name)}" data-max="${Number(s.ayat || 0)}">${s.no}. ${window.massalEsc(s.name)} (${s.ayat} Ayat)</option>`).join('');
             }
+            if (labelStart) labelStart.textContent = 'Ayat Mulai:';
+            if (labelEnd) labelEnd.textContent = 'Ayat Sampai:';
+            if (start) start.placeholder = 'Mulai';
+            if (end) end.placeholder = 'Sampai';
         };
 
         window.updateMassalSelectedCount = function(modalType) {
@@ -2811,7 +2730,6 @@
         };
 
         window.validateMassalQuranRange = function() {
-            const mode = document.getElementById('massalBacaanMode')?.value || 'quran';
             const start = Number(document.getElementById('massalAyatMulai')?.value || 0);
             const end = Number(document.getElementById('massalAyatSampai')?.value || 0);
             if (mode !== 'quran') return true;
@@ -2874,26 +2792,24 @@
                 return;
             }
 
-            const mode = document.getElementById('massalBacaanMode')?.value || 'quran';
             const surah = document.getElementById('massalSurahSelect')?.value || '';
-            const iqro = document.getElementById('massalIqroSelect')?.value || '';
             const start = document.getElementById('massalAyatMulai')?.value.trim() || '';
             const end = document.getElementById('massalAyatSampai')?.value.trim() || '';
             const stat = document.getElementById('massalMurojaahStat')?.value || '';
             const catatan = document.getElementById('massalMurojaahCat')?.value.trim() || '';
             const tanggal = document.getElementById('massalMurojaahTanggal')?.value || new Date().toISOString().split('T')[0];
-            const item = mode === 'iqro' ? iqro : surah;
+            const item = surah;
 
             if (!item) {
-                window.showToast(mode === 'iqro' ? '⚠️ Pilih Iqro terlebih dahulu!' : '⚠️ Pilih surat terlebih dahulu!', 'error');
+                window.showToast('⚠️ Pilih surat terlebih dahulu!', 'error');
                 return;
             }
             if (!window.validateMassalQuranRange()) return;
 
             let detailStr = item;
             let rangeStr = '';
-            if (start && end) { detailStr += ` ${start}-${end}`; rangeStr = `${mode === 'iqro' ? 'Halaman' : 'Ayat'} ${start}-${end}`; }
-            else if (start) { detailStr += ` ${start}`; rangeStr = `${mode === 'iqro' ? 'Halaman' : 'Ayat'} ${start}`; }
+            if (start && end) { detailStr += ` ${start}-${end}`; rangeStr = `Ayat ${start}-${end}`; }
+            else if (start) { detailStr += ` ${start}`; rangeStr = `Ayat ${start}`; }
 
             const groupId = `MURBERSAMA-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
             const nowObj = new Date();
@@ -3097,12 +3013,11 @@
             if (!slots.length) return '-';
 
             return slots.map(slot => {
-                const mode = String(slot.mode || 'quran').toLowerCase();
-                const isIqro = mode === 'iqro' || String(slot.item || '').toLowerCase().includes('iqro');
+                const mode = 'quran';
                 const range = slot.start && slot.end && slot.start !== '-' && slot.end !== '-' && String(slot.end) !== String(slot.start)
                     ? `${slot.start}-${slot.end}`
                     : (slot.start && slot.start !== '-' ? String(slot.start) : '-');
-                return `${slot.item || '-'} ${isIqro ? 'Hlm' : 'Ayat'} ${range}`;
+                return `${slot.item || '-'} Ayat ${range}`;
             }).join(' • ');
         };
 
@@ -6348,6 +6263,150 @@ function renderOptions(){
   setTimeout(localStatus,300);
 })();
 </script>
+
+<script id="tracking-quick-input-v1">
+(function(){
+  'use strict';
+  const RECORD_KEY='rq_tracking_tahfidz_local_v1';
+  const LEVEL_KEY='rq_tracking_level_checklist_v1';
+  const LEVEL_HISTORY_KEY='rq_tracking_level_history_v1';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
+  const read=(k,def)=>{try{const v=JSON.parse(localStorage.getItem(k)||'null');return v==null?def:v}catch(e){return def}};
+  const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+  const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+  const selected=()=>String(document.getElementById('trackingSantri')?.value||'').trim();
+  const juz=()=>String(document.getElementById('trackingJuz')?.value||'30');
+  const arah=()=>String(document.getElementById('trackingArah')?.value||'depan');
+  const level=()=>Number(document.getElementById('trackingLevel')?.value||1);
+  const listFor=(j,a,l)=>{
+    const data=window.__RQ_TRACKING_JUZ_LEVELS||{};
+    return data[String(j)]?.[String(a)]?.[Number(l)]||[];
+  };
+  const totalAyat=s=>{try{return Number(window.surahInfo?.(s)?.ayat||0)}catch(e){return 0}};
+  const toast=(msg,type='success')=>{try{if(typeof window.showToast==='function')window.showToast(msg,type);else alert(msg)}catch(e){alert(msg)}};
+  function refresh(){
+    try{window.renderTrackingLevelSuratList?.()}catch(e){}
+    try{window.updateTrackingProgress?.()}catch(e){}
+    try{window.renderTrackingDashboard?.()}catch(e){}
+    try{window.renderTrackingHistory?.()}catch(e){}
+    try{window.refreshTrackingLevelChecklistProgress?.()}catch(e){}
+    try{window.renderLevelHistory?.()}catch(e){}
+    try{window.renderTarget?.()}catch(e){}
+  }
+  function saveLevelCheck(j,l,name,date){
+    const data=read(LEVEL_KEY,{});
+    data[name]=data[name]||{};data[name][j]=data[name][j]||{};data[name][j][l]=true;write(LEVEL_KEY,data);
+    const hist=read(LEVEL_HISTORY_KEY,[]);
+    const idx=hist.findIndex(x=>x.santri===name&&String(x.juz)===String(j)&&Number(x.level)===Number(l));
+    const item={santri:name,juz:String(j),level:Number(l),tanggal:date||today(),timestamp:new Date().toISOString(),source:'Input Cepat'};
+    if(idx>=0)hist[idx]=Object.assign({},hist[idx],item);else hist.push(item);
+    write(LEVEL_HISTORY_KEY,hist);
+  }
+  function currentMeta(){
+    const name=selected();
+    return {name,juz:juz(),arah:arah(),level:level(),tanggal:document.getElementById('trackingTanggal')?.value||today(),pb:document.getElementById('trackingPenilaianBacaan')?.value||'',ph:document.getElementById('trackingPenilaianHafalan')?.value||'',catatan:document.getElementById('trackingCatatan')?.value||''};
+  }
+  function appendCompleteRecord(meta,surat){
+    const records=read(RECORD_KEY,[]);
+    const total=totalAyat(surat);if(!total)return false;
+    const existing=records.filter(r=>String(r.santri||'')===meta.name&&String(r.juz||'')===meta.juz&&String(r.arah||'')===meta.arah&&Number(r.level||0)===meta.level&&norm(r.surat)===norm(surat));
+    const max=existing.reduce((m,r)=>Math.max(m,Number(r.ayatSampai)||0),0);
+    if(max>=total)return false;
+    records.push({
+      id:Date.now()+Math.floor(Math.random()*1000),timestamp:new Date().toISOString(),
+      santri:meta.name,tanggal:meta.tanggal,juz:meta.juz,arah:meta.arah,level:meta.level,surat,
+      ayatDari:1,ayatSampai:total,kualitas:meta.ph||meta.pb||'',penilaianBacaan:meta.pb,penilaianHafalan:meta.ph,catatan:meta.catatan
+    });
+    write(RECORD_KEY,records);return true;
+  }
+  function requireStudent(){
+    const name=selected();
+    if(!name){toast('Pilih nama santri terlebih dahulu.','error');return null;}
+    return name;
+  }
+  function markAllLevels(){
+    const name=requireStudent();if(!name)return;
+    const j=juz(),a=arah(),date=document.getElementById('trackingTanggal')?.value||today(),meta=currentMeta();
+    const all=[];
+    for(let l=1;l<=8;l++){
+      const list=listFor(j,a,l);
+      let added=0;
+      // Untuk level yang memiliki daftar surat, buat record hafalan lengkap
+      // sampai ayat terakhir agar sumber data Tracker Hafalan benar-benar sama
+      // dengan data Input Cepat. Level 7–8 dapat tetap memakai checklist
+      // karena merupakan level ujian/special dan tidak selalu memiliki daftar surat.
+      list.forEach(s=>{
+        if(appendCompleteRecord({...meta,level:l},s))added++;
+      });
+      saveLevelCheck(j,l,name,date);
+      all.push({level:l,added});
+    }
+    const totalAdded=all.reduce((n,x)=>n+x.added,0);
+    refresh();
+    toast(`Level 1–8 Juz ${j} berhasil diproses. ${totalAdded} surat ditambahkan ke data hafalan.`, 'success');
+  }
+  function markCurrentLevel(){
+    const name=requireStudent();if(!name)return;
+    const j=juz(),a=arah(),l=level(),list=listFor(j,a,l),meta=currentMeta();
+    if(!list.length){saveLevelCheck(j,l,name,meta.tanggal);refresh();toast(`Level ${l} Juz ${j} berhasil ditandai selesai.`,'success');return;}
+    if(!confirm(`Tandai semua ${list.length} surat pada Level ${l} Juz ${j} sebagai sudah hafal sampai ayat terakhir untuk ${name}?`))return;
+    let added=0;
+    list.forEach(s=>{if(appendCompleteRecord(meta,s))added++});
+    saveLevelCheck(j,l,name,meta.tanggal);
+    refresh();
+    toast(`${added} surat pada Level ${l} berhasil ditandai sampai ayat terakhir.`,'success');
+  }
+  function markCurrentSurah(){
+    const name=requireStudent();if(!name)return;
+    const surah=String(document.getElementById('trackingSurat')?.value||'').trim();
+    const total=totalAyat(surah);
+    if(!surah||!total){toast('Pilih surat terlebih dahulu.','error');return;}
+    const meta=currentMeta();
+    const records=read(RECORD_KEY,[]);
+    const existing=records.filter(r=>String(r.santri||'')===name&&String(r.juz||'')===meta.juz&&String(r.arah||'')===meta.arah&&Number(r.level||0)===meta.level&&norm(r.surat)===norm(surah));
+    const max=existing.reduce((m,r)=>Math.max(m,Number(r.ayatSampai)||0),0);
+    if(max>=total){toast(`${surah} sudah tercatat sampai ayat terakhir.`,'success');return;}
+    if(!confirm(`Tandai ${surah} sampai ayat terakhir (${total}) sebagai sudah hafal?`))return;
+    const ok=appendCompleteRecord(meta,surah);
+    if(ok){
+      const list=listFor(meta.juz,meta.arah,meta.level);
+      if(list.length&&list.every(s=>{
+        const rr=read(RECORD_KEY,[]).filter(r=>String(r.santri||'')===name&&String(r.juz||'')===meta.juz&&String(r.arah||'')===meta.arah&&Number(r.level||0)===meta.level&&norm(r.surat)===norm(s));
+        const m=rr.reduce((x,r)=>Math.max(x,Number(r.ayatSampai)||0),0);return m>=totalAyat(s);
+      }))saveLevelCheck(meta.juz,meta.level,name,meta.tanggal);
+      refresh();toast(`${surah} berhasil ditandai sudah hafal sampai ayat ${total}.`,'success');
+    }
+  }
+  function setCurrentSurahFull(){
+    const surah=document.getElementById('trackingSurat');const end=document.getElementById('trackingAyatSampai');const start=document.getElementById('trackingAyatDari');
+    const total=totalAyat(surah?.value||'');
+    if(!total){toast('Pilih surat terlebih dahulu.','error');return;}
+    if(start)start.value='1';if(end)end.value=String(total);
+    try{window.updateTrackingProgress?.()}catch(e){}
+    toast(`Rentang ayat diisi 1–${total}. Tinggal tekan SIMPAN SETORAN.`,'success');
+  }
+  function ensure(){
+    const anchor=document.getElementById('trackingLevelSuratList');if(!anchor)return false;
+    let box=document.getElementById('trackingQuickInputBox');
+    if(!box){
+      box=document.createElement('div');box.id='trackingQuickInputBox';
+      box.className='mt-3 p-4 rounded-2xl border-2 border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/20';
+      box.innerHTML=`<div class="flex items-start justify-between gap-3 mb-3"><div><h4 class="text-sm font-black text-amber-900 dark:text-amber-300"><i class="fa-solid fa-bolt mr-1"></i> INPUT CEPAT HAFALAN</h4><p class="text-[10px] font-bold text-slate-500 mt-1">Mempercepat pengisian tanpa mengubah data input biasa.</p></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><button type="button" onclick="window.quickMarkAllLevels()" class="w-full p-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-list-check mr-1"></i> Ceklis Level 1–8</button><button type="button" onclick="window.quickMarkCurrentLevel()" class="w-full p-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-check-double mr-1"></i> Semua Surat Level Ini Sudah Hafal</button><button type="button" onclick="window.quickSetCurrentSurahFull()" class="w-full p-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-arrows-to-circle mr-1"></i> Isi Semua Ayat Surat Ini</button><button type="button" onclick="window.quickMarkCurrentSurah()" class="w-full p-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-bolt mr-1"></i> Surat Ini Sudah Hafal</button></div><div class="mt-3 text-[9px] font-bold text-slate-500">• <b>Ceklis Level 1–8</b> menandai checklist level. • <b>Semua Surat Level Ini</b> membuat setoran penuh sampai ayat terakhir. • <b>Isi Semua Ayat</b> hanya mengisi form, belum menyimpan.</div>`;
+      anchor.parentNode.insertBefore(box,anchor.nextSibling);
+    }
+    return true;
+  }
+  window.quickMarkAllLevels=markAllLevels;
+  window.quickMarkCurrentLevel=markCurrentLevel;
+  window.quickSetCurrentSurahFull=setCurrentSurahFull;
+  window.quickMarkCurrentSurah=markCurrentSurah;
+  function boot(){ensure();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+  setInterval(ensure,1500);
+})();
+</script>
+
 </body>
 
 <script id="sync-information-menu-stability-v1">
