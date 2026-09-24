@@ -3599,6 +3599,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <button class="tracker-menu-btn px-3 py-2 rounded-xl bg-white text-emerald-900 shadow text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-input" onclick="window.switchTrackerMenu('input')" type="button"><i class="fa-solid fa-pen-to-square mr-1"></i> Input Setoran</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Surat Persantri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-capaian" onclick="window.switchTrackerMenu('capaian')" type="button"><i class="fa-solid fa-user-check mr-1"></i> Materi Hafalan &amp; Capaian Level Santri</button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-dashboard" onclick="window.openDashboardPersantri()" type="button"><i class="fa-solid fa-chart-pie mr-1"></i> Dashboard Laporan Persantri</button>
 </div>
 </nav>
 <button class="p-2.5 bg-emerald-700 dark:bg-emerald-900 rounded-xl text-amber-300 hover:bg-emerald-600 transition shadow-xs shrink-0" onclick="window.toggleDarkMode()" title="Fitur Malam (Dark Mode)">
@@ -3623,7 +3624,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 </div>
 </div><div class="grid grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)] gap-4 items-start" id="trackerAppLayout">
-<aside class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 lg:sticky lg:top-20">
+<aside id="trackerSearchSidebar" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 lg:sticky lg:top-20">
 <div class="mb-4">
 <div class="flex items-center gap-2">
 <i class="fa-solid fa-users text-emerald-600"></i>
@@ -3867,6 +3868,22 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
     <div id="bacaanSantriList" class="space-y-3"></div>
   </div>
 </div>
+<div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-dashboard" style="display:none;">
+      <div class="space-y-4">
+        <div class="bg-gradient-to-r from-violet-700 via-purple-600 to-fuchsia-600 text-white rounded-2xl shadow-sm overflow-hidden">
+          <div class="p-4 sm:p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2"><span class="w-10 h-10 rounded-xl bg-white/15 border border-white/20 grid place-items-center"><i class="fa-solid fa-chart-pie"></i></span><div><h2 class="text-lg sm:text-xl font-black">Dashboard Laporan Persantri</h2><p class="text-[10px] sm:text-xs text-white/80 font-bold mt-0.5">Ringkasan program hafalan per Juz, progres Level, dan peringatan murojaah.</p></div></div>
+              </div>
+              <div class="min-w-0 lg:w-80"><label class="block text-[10px] font-black text-white/80 mb-1">Pilih Santri</label><select id="rqDashboardSantriSelect" class="w-full p-3 rounded-xl bg-white text-slate-800 border-0 outline-none font-black text-xs"></select></div>
+            </div>
+          </div>
+        </div>
+        <div id="rqDashboardStudentInfo"></div>
+        <div id="rqDashboardJuzGrid" class="space-y-3"></div>
+        <div id="rqDashboardMurojaahWarning"></div>
+      </div></div>
 <div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-hafalan" style="display:none;">
 <div class="space-y-3">
 <!-- Pengaturan tampilan Juz -->
@@ -5306,8 +5323,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 </style>
 <script>
 window.switchTrackerMenu=function(menu){
-  const pages=['input','hafalan','materi','capaian','history','bacaan'];
+  const pages=['input','hafalan','materi','capaian','history','bacaan','dashboard'];
   document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
+      document.body.classList.toggle('tracker-dashboard-active',menu==='dashboard');
   const perSuratSummary=document.getElementById('trackingPerSuratSummary');
   const perSuratTable=document.getElementById('trackingPerSuratTableWrap');
   const perSuratWarning=document.getElementById('trackingPerSuratWarning');
@@ -5315,6 +5333,7 @@ window.switchTrackerMenu=function(menu){
   [perSuratSummary,perSuratTable,perSuratWarning].forEach(el=>{
     if(el) el.style.display=showPerSurat?'':'none';
   });
+  if(menu==='dashboard' && typeof window.renderTrackingDashboard==='function') window.renderTrackingDashboard();
   pages.forEach(k=>{
     const page=document.getElementById('tracker-panel-'+k);
     const btn=document.getElementById('trackerMenu-'+k);
@@ -5333,7 +5352,6 @@ window.switchTrackerMenu=function(menu){
     }
   });
 
-  if(menu==='dashboard' && typeof window.renderTrackingDashboard==='function') window.renderTrackingDashboard();
   if(menu==='hafalan' && typeof window.renderHafalanTracker==='function') window.renderHafalanTracker();
   if(menu==='capaian' && typeof window.renderCapaianLevelSantri==='function') window.renderCapaianLevelSantri();
   if(menu==='bacaan' && typeof window.renderBacaanSantriMenu==='function') window.renderBacaanSantriMenu();
@@ -5846,10 +5864,30 @@ function renderOptions(){
       .sort((a,b)=>String(b.tanggal||'').localeCompare(String(a.tanggal||''))||Number(b.id||0)-Number(a.id||0))[0]||null;
   }
 
+  // Draft tanggal per surat: setiap surat memiliki tanggal setoran sendiri.
+  // Draft hanya untuk input yang belum disimpan; setelah tersimpan, tanggal resmi
+  // diambil dari record terakhir surat tersebut.
+  window.__trackingSuratDateDrafts=window.__trackingSuratDateDrafts||{};
+  function suratDateKey(name,juz,arah,level,surat){
+    return [name,juz,arah,level,norm(surat)].join('||');
+  }
+  function getSuratDateDraft(name,juz,arah,level,surat,fallback){
+    const key=suratDateKey(name,juz,arah,level,surat);
+    return window.__trackingSuratDateDrafts[key] || fallback || today();
+  }
+  function setSuratDateDraft(name,juz,arah,level,surat,date){
+    if(!name||!surat||!date)return;
+    window.__trackingSuratDateDrafts[suratDateKey(name,juz,arah,level,surat)]=date;
+  }
+  function clearSuratDateDraft(name,juz,arah,level,surat){
+    delete window.__trackingSuratDateDrafts[suratDateKey(name,juz,arah,level,surat)];
+  }
+
   function renderCards(){
     const box=document.getElementById('trackingLevelSuratList');
     if(!box)return;
     const c=context(), list=suratList(c.juz,c.arah,c.level), name=String(document.getElementById('trackingSantri')?.value||'');
+    const mainDate=document.getElementById('trackingTanggal')?.value||today();
     box.dataset.juz=c.juz; box.dataset.arah=c.arah; box.dataset.level=c.level;
     if(!list.length){
       box.innerHTML=`<div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50"><div class="text-xs font-black text-emerald-800 dark:text-emerald-300">${Number(c.level)===8?'Ujian Tasmi\' Semua Surat Juz tersebut '+esc(c.juz):'Level '+esc(c.level)+' Juz '+esc(c.juz)}</div></div>`;
@@ -5858,9 +5896,10 @@ function renderOptions(){
     box.innerHTML=`<div class="flex items-center justify-between gap-2 mb-2"><span class="text-[10px] font-black text-cyan-800 dark:text-cyan-300">Semua Surat Level ${esc(c.level)}</span><span class="text-[9px] font-bold text-slate-400">${list.length} surat</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${list.map((surat,i)=>{
       const total=totalAyat(surat), max=maxSaved(name,surat,c.juz,c.arah), pct=total?Math.min(100,Math.round(max/total*100)):0;
       const last=lastSaved(name,surat,c.juz,c.arah);
+      const date=getSuratDateDraft(name,c.juz,c.arah,c.level,surat,last?.tanggal||mainDate);
       const cls=pct>=100?'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50':pct>0?'bg-amber-50 dark:bg-amber-950/25 border-amber-200 dark:border-amber-900/50':'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700';
       const status=pct>=100?'Selesai':pct>0?`Ayat 1-${max}`:'Belum setor';
-      return `<button type="button" data-rq-v31-surat="${esc(surat)}" class="w-full text-left p-3 rounded-xl border-2 ${cls} hover:border-emerald-400 transition"><div class="flex items-center justify-between gap-2"><span class="text-xs font-black">${i+1}. ${esc(surat)}</span><span class="text-[9px] font-black">${pct}%</span></div><div class="text-[9px] text-slate-500 mt-1">${total} ayat · ${status}${last?' · terakhir '+esc(last.tanggal):''}</div></button>`;
+      return `<div class="w-full p-3 rounded-xl border-2 ${cls} transition hover:border-emerald-400" data-rq-v31-card="${esc(surat)}"><button type="button" data-rq-v31-surat="${esc(surat)}" class="w-full text-left"><div class="flex items-center justify-between gap-2"><span class="text-xs font-black">${i+1}. ${esc(surat)}</span><span class="text-[9px] font-black">${pct}%</span></div><div class="text-[9px] text-slate-500 mt-1">${total} ayat · ${status}</div></button><div class="mt-2 pt-2 border-t border-slate-200/80 dark:border-slate-700/80"><label class="flex items-center gap-2 text-[8px] font-black text-slate-500 dark:text-slate-400"><i class="fa-regular fa-calendar"></i><span>Tanggal setoran</span><input type="date" value="${esc(date)}" data-rq-v31-date="${esc(surat)}" class="ml-auto w-[125px] px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[9px] font-black text-slate-700 dark:text-slate-200" aria-label="Tanggal setoran ${esc(surat)}"></label></div></div>`;
     }).join('')}</div>`;
   }
 
@@ -5897,7 +5936,8 @@ function renderOptions(){
   function makeRow(surat){
     const row=document.createElement('div');
     row.className='tracking-extra-row p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-900/50';
-    row.innerHTML=`<div class="flex items-center justify-between gap-2 mb-2"><span class="text-xs font-black text-emerald-800 dark:text-emerald-300">Setoran Tambahan</span><button type="button" class="text-[10px] font-black text-rose-600 hover:underline"><i class="fa-solid fa-trash mr-1"></i>Hapus</button></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="sm:col-span-2"><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Surat</label><input class="extra-surat w-full p-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" list="trackingSuratList" autocomplete="off" placeholder="Ketik nama surat..." value="${esc(surat||'')}" /></div><div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Dari Ayat</label><input class="extra-dari w-full p-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" type="number" min="1" placeholder="1" /></div><div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Sampai Ayat</label><input class="extra-sampai w-full p-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" type="number" min="1" placeholder="20" /></div></div>`;
+    const defaultDate=document.getElementById('trackingTanggal')?.value||today();
+    row.innerHTML=`<div class="flex items-center justify-between gap-2 mb-2"><span class="text-xs font-black text-emerald-800 dark:text-emerald-300">Setoran Tambahan</span><button type="button" class="text-[10px] font-black text-rose-600 hover:underline"><i class="fa-solid fa-trash mr-1"></i>Hapus</button></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"><div><label class="block text-[10px] font-black text-slate-700 dark:text-slate-300 mb-1">Surat</label><input class="extra-surat w-full p-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" list="trackingSuratList" autocomplete="off" placeholder="Ketik nama surat..." value="${esc(surat||'')}" /></div><div><label class="block text-[10px] font-black text-slate-700 dark:text-slate-300 mb-1">Tanggal Setoran</label><input class="extra-tanggal w-full p-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" type="date" value="${esc(defaultDate)}" /></div><div><label class="block text-[10px] font-black text-slate-700 dark:text-slate-300 mb-1">Dari Ayat</label><input class="extra-dari w-full p-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" type="number" min="1" placeholder="1" /></div><div><label class="block text-[10px] font-black text-slate-700 dark:text-slate-300 mb-1">Sampai Ayat</label><input class="extra-sampai w-full p-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" type="number" min="1" placeholder="20" /></div></div>`;
     const remove=row.querySelector('button');
     if(remove)remove.addEventListener('click',()=>{row.remove();try{window.updateTrackingProgress?.()}catch(e){}});
     return row;
@@ -5932,9 +5972,14 @@ function renderOptions(){
     if(!exact)return;
     if(isTaken(exact,null)){toast('Surat tersebut sudah ada pada baris input. Pilih surat lain.','error');return;}
     const main=document.getElementById('trackingSurat'), d=document.getElementById('trackingAyatDari'), a=document.getElementById('trackingAyatSampai');
+    const dateInput=document.querySelector(`[data-rq-v31-date="${CSS.escape(exact)}"]`);
+    const chosenDate=dateInput?.value || getSuratDateDraft(String(document.getElementById('trackingSantri')?.value||''),c.juz,c.arah,c.level,exact,document.getElementById('trackingTanggal')?.value||today());
+    setSuratDateDraft(String(document.getElementById('trackingSantri')?.value||''),c.juz,c.arah,c.level,exact,chosenDate);
     const busy=String(main?.value||'').trim()||String(d?.value||'').trim()||String(a?.value||'').trim();
     if(!busy && main){
       main.value=exact;
+      const tanggalEl=document.getElementById('trackingTanggal');
+      if(tanggalEl){tanggalEl.value=chosenDate;try{updateTrackingTanggalHari()}catch(e){}}
       if(d&&!d.value)d.value='1';
       if(a&&!a.value){const total=totalAyat(exact);if(total)a.value=String(total);}
       try{window.onTrackingSuratInput?.(true)}catch(e){}
@@ -5942,15 +5987,18 @@ function renderOptions(){
       return;
     }
     const row=addRow(exact);
-    if(row){const rd=row.querySelector('.extra-dari'),ra=row.querySelector('.extra-sampai'),total=totalAyat(exact);if(rd&&!rd.value)rd.value='1';if(ra&&!ra.value&&total)ra.value=String(total);}
+    if(row){const rd=row.querySelector('.extra-dari'),ra=row.querySelector('.extra-sampai'),rt=row.querySelector('.extra-tanggal'),total=totalAyat(exact);if(rd&&!rd.value)rd.value='1';if(ra&&!ra.value&&total)ra.value=String(total);if(rt&&!rt.value)rt.value=chosenDate;}
   }
 
   function readRows(){
     const out=[];
     const main=document.getElementById('trackingSurat'), d=document.getElementById('trackingAyatDari'), a=document.getElementById('trackingAyatSampai');
-    const mr={surat:String(main?.value||'').trim(),dari:Number(d?.value||0),sampai:Number(a?.value||0)};
+    const c=context(), name=String(document.getElementById('trackingSantri')?.value||'').trim(), mainDate=document.getElementById('trackingTanggal')?.value||today();
+    const mainSurat=String(main?.value||'').trim();
+    const mainDraftDate=mainSurat ? getSuratDateDraft(name,c.juz,c.arah,c.level,mainSurat,mainDate) : mainDate;
+    const mr={surat:mainSurat,dari:Number(d?.value||0),sampai:Number(a?.value||0),tanggal:mainDraftDate};
     if(mr.surat||mr.dari||mr.sampai)out.push(mr);
-    document.querySelectorAll('#trackingAdditionalRows .tracking-extra-row').forEach(row=>out.push({surat:String(row.querySelector('.extra-surat')?.value||'').trim(),dari:Number(row.querySelector('.extra-dari')?.value||0),sampai:Number(row.querySelector('.extra-sampai')?.value||0)}));
+    document.querySelectorAll('#trackingAdditionalRows .tracking-extra-row').forEach(row=>out.push({surat:String(row.querySelector('.extra-surat')?.value||'').trim(),dari:Number(row.querySelector('.extra-dari')?.value||0),sampai:Number(row.querySelector('.extra-sampai')?.value||0),tanggal:String(row.querySelector('.extra-tanggal')?.value||mainDate)}));
     return out;
   }
 
@@ -5965,6 +6013,7 @@ function renderOptions(){
   function clearAfterSave(){
     const box=document.getElementById('trackingAdditionalRows');if(box)box.innerHTML='';
     ['trackingSurat','trackingAyatDari','trackingAyatSampai'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    const tanggal=document.getElementById('trackingTanggal');if(tanggal){tanggal.value=today();try{updateTrackingTanggalHari()}catch(e){}}
     const note=document.getElementById('trackingCatatan');if(note)note.value='';
     try{window.restoreTrackingAssessment?.('bacaan','');window.restoreTrackingAssessment?.('hafalan','')}catch(e){}
   }
@@ -5976,7 +6025,7 @@ function renderOptions(){
     const rows=readRows();
     if(!rows.length){toast('Pilih surat dan isi rentang ayat terlebih dahulu.','error');return;}
     const santri=String(document.getElementById('trackingSantri')?.value||'').trim();
-    const tanggal=document.getElementById('trackingTanggal')?.value||new Date().toISOString().slice(0,10);
+    const tanggalDefault=document.getElementById('trackingTanggal')?.value||new Date().toISOString().slice(0,10);
     const c=context();
     if(!santri){toast('Pilih nama santri terlebih dahulu.','error');return;}
     const allowed=suratList(c.juz,c.arah,c.level), seen=new Set(), valid=[];
@@ -6001,13 +6050,17 @@ function renderOptions(){
       if(extra)extra.innerHTML='';
       for(const r of valid){
         if(main)main.value=r.surat;if(d)d.value=String(r.dari);if(a)a.value=String(r.sampai);
+        const rowDate=String(r.tanggal||tanggalDefault)||tanggalDefault;
+        const tanggalEl=document.getElementById('trackingTanggal');
+        if(tanggalEl){tanggalEl.value=rowDate;try{updateTrackingTanggalHari()}catch(e){}}
         if(note)note.value=savedNote;if(pb)pb.value=savedPB;if(ph)ph.value=savedPH;
         const before=read(RECORD_KEY,[]).length;
         baseSave();
         const after=read(RECORD_KEY,[]).length;
         if(after<=before)throw new Error('Data tidak bertambah setelah fungsi simpan dijalankan.');
         saved++;
-        recordLevel(santri,c.juz,c.level,tanggal);
+        recordLevel(santri,c.juz,c.level,rowDate);
+        clearSuratDateDraft(santri,c.juz,c.arah,c.level,r.surat);
       }
     }catch(err){
       if(extra)extra.innerHTML=originalExtra;
@@ -6049,6 +6102,14 @@ function renderOptions(){
     if(box&&!box.dataset.rqV31Click){
       box.dataset.rqV31Click='1';
       box.addEventListener('click',e=>{const b=e.target.closest('[data-rq-v31-surat]');if(b){e.preventDefault();choose(b.getAttribute('data-rq-v31-surat'));}},true);
+      box.addEventListener('change',e=>{
+        const input=e.target?.closest?.('[data-rq-v31-date]');
+        if(!input)return;
+        const c=context(), name=String(document.getElementById('trackingSantri')?.value||'').trim(), surat=input.getAttribute('data-rq-v31-date')||'', date=input.value||today();
+        setSuratDateDraft(name,c.juz,c.arah,c.level,surat,date);
+        const selected=norm(document.getElementById('trackingSurat')?.value||'')===norm(surat);
+        if(selected){const t=document.getElementById('trackingTanggal');if(t){t.value=date;try{updateTrackingTanggalHari()}catch(err){}}}
+      },true);
     }
     document.addEventListener('input',e=>{
       if(e.target?.classList?.contains('extra-surat'))updateExtra(e.target);
@@ -7673,33 +7734,25 @@ function renderOptions(){
     return out.sort((a,b)=>b.days-a.days);
   }
   function ensurePanel(){
-    if(document.getElementById('tracker-panel-dashboard'))return;
-    const nav=document.querySelector('#appHeader nav > div');
-    if(nav && !document.getElementById('trackerMenu-dashboard')){
-      const b=document.createElement('button');b.type='button';b.id='trackerMenu-dashboard';b.className='tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap';b.innerHTML='<i class="fa-solid fa-chart-pie mr-1"></i> Dashboard Laporan Persantri';b.onclick=()=>window.switchTrackerMenu('dashboard');
-      nav.insertBefore(b,document.getElementById('trackerMenu-hafalan')||null);
+    const panel=document.getElementById('tracker-panel-dashboard');
+    if(!panel)return;
+    const grid=document.getElementById('rqDashboardJuzGrid');
+    if(grid && !grid.dataset.levelToggleBound){
+      grid.dataset.levelToggleBound='1';
+      grid.addEventListener('click',function(e){
+        const btn=e.target.closest('[data-rq-level-toggle="1"]');
+        if(btn && grid.contains(btn)){e.preventDefault();e.stopPropagation();window.rqToggleDashboardLevel(btn);}
+      });
     }
-    const content=document.getElementById('trackerPageContent');if(!content)return;
-    const panel=document.createElement('div');panel.className='tracker-menu-panel';panel.id='tracker-panel-dashboard';panel.dataset.panelHidden='1';panel.style.display='none';
-    panel.innerHTML=`
-      <div class="space-y-4">
-        <div class="bg-gradient-to-r from-violet-700 via-purple-600 to-fuchsia-600 text-white rounded-2xl shadow-sm overflow-hidden">
-          <div class="p-4 sm:p-5">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <div class="flex items-center gap-2"><span class="w-10 h-10 rounded-xl bg-white/15 border border-white/20 grid place-items-center"><i class="fa-solid fa-chart-pie"></i></span><div><h2 class="text-lg sm:text-xl font-black">Dashboard Laporan Persantri</h2><p class="text-[10px] sm:text-xs text-white/80 font-bold mt-0.5">Ringkasan program hafalan per Juz, progres Level, dan peringatan murojaah.</p></div></div>
-              </div>
-              <div class="min-w-0 lg:w-80"><label class="block text-[10px] font-black text-white/80 mb-1">Pilih Santri</label><select id="rqDashboardSantriSelect" class="w-full p-3 rounded-xl bg-white text-slate-800 border-0 outline-none font-black text-xs"></select></div>
-            </div>
-          </div>
-        </div>
-        <div id="rqDashboardStudentInfo"></div>
-        <div id="rqDashboardJuzGrid" class="space-y-3"></div>
-        <div id="rqDashboardMurojaahWarning"></div>
-      </div>`;
-    const capaian=document.getElementById('tracker-panel-capaian');content.insertBefore(panel,capaian||content.firstElementChild);
     const sel=document.getElementById('rqDashboardSantriSelect');
-    if(sel && !sel.dataset.bound){sel.dataset.bound='1';sel.addEventListener('change',()=>{const base=document.getElementById('trackingSantri');if(base){base.value=sel.value;base.dispatchEvent(new Event('change',{bubbles:true}));}window.renderTrackingDashboardPersantri();});}
+    if(sel && !sel.dataset.bound){
+      sel.dataset.bound='1';
+      sel.addEventListener('change',()=>{
+        const base=document.getElementById('trackingSantri');
+        if(base){base.value=sel.value;base.dispatchEvent(new Event('change',{bubbles:true}));}
+        window.renderTrackingDashboardPersantri();
+      });
+    }
   }
   function syncSelect(){
     const sel=document.getElementById('rqDashboardSantriSelect');if(!sel)return;const current=selected();const list=santri().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'id'));
@@ -7712,12 +7765,41 @@ function renderOptions(){
     const m=studentMeta(name);const all=JUZS.map(j=>juzState(name,j));const totalPct=Math.round(all.reduce((a,x)=>a+x.pct,0)/JUZS.length);
     box.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-2"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Santri</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.name)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Kelas</div><div class="text-sm font-black text-violet-700 dark:text-violet-300 mt-1">${esc(m.kelas)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Pengajar</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.teacher)}</div></div><div class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-3"><div class="text-[9px] font-black text-violet-600 dark:text-violet-300">Rata-rata Progres 4 Juz</div><div class="text-xl font-black text-violet-700 dark:text-violet-300 mt-1">${totalPct}%</div></div></div>`;
   }
+  function dashboardLevelSuratList(name,juz,level){
+    if(level>=7){
+      return '<div class="rq-level-surat-list mt-2 p-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/50 text-[9px] font-bold text-slate-500">Level ini adalah evaluasi/ujian, bukan daftar surat per-level.</div>';
+    }
+    const list=levelSurat(juz,level)||[];
+    const done=list.filter(s=>{const x=suratState(name,juz,s);return x.total&&x.max>=x.total;});
+    if(!done.length){
+      return '<div class="rq-level-surat-list mt-2 p-2.5 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/50 text-[9px] font-bold text-slate-500">Belum ada surat yang selesai dihafalkan pada level ini.</div>';
+    }
+    const all=allJuzSurat(juz);
+    return '<div class="rq-level-surat-list mt-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">'+done.map(s=>{
+      const x=suratState(name,juz,s);
+      const total=x.total||info(s).ayat||0;
+      const no=Math.max(1,all.findIndex(v=>String(v)===String(s))+1);
+      const arabic=typeof window.rqArabicFor==='function'?window.rqArabicFor(s):'';
+      return '<div class="rounded-lg bg-slate-800 dark:bg-slate-950 border border-slate-700 px-2.5 py-2 text-center shadow-sm"><div dir="rtl" class="text-[14px] sm:text-[15px] font-black leading-5 text-white">'+(arabic?esc(arabic):'')+'</div><div class="mt-1 text-[10px] sm:text-[11px] font-black leading-4 text-white">'+no+'. '+esc(s)+'</div><div class="mt-0.5 text-[8px] font-bold text-emerald-300">✓ Hafal '+total+'/'+total+' ayat</div></div>';
+    }).join('')+'</div>';
+  }
+  window.rqToggleDashboardLevel=function(btn){
+    if(!btn)return;
+    const target=btn.closest('.rq-level-row')?.querySelector('.rq-level-surat-list-wrap');
+    if(!target)return;
+    const show=target.dataset.open!=='1';
+    target.dataset.open=show?'1':'0';
+    target.style.display=show?'block':'none';
+    btn.innerHTML='<i class="fa-solid '+(show?'fa-chevron-up':'fa-chevron-down')+' text-[6px]"></i><span class="ml-0.5">'+(show?'Tutup':'Surat')+'</span>';
+    btn.title=show?'Sembunyikan surat yang telah dihafal':'Tampilkan surat yang telah dihafal';
+    btn.setAttribute('aria-label',btn.title);
+  };
   function renderJuz(name){
     const box=document.getElementById('rqDashboardJuzGrid');if(!box)return;if(!name){box.innerHTML='';return;}
     const saved=read('rq_dashboard_juz_open_v1',{});
     box.innerHTML=JUZS.map(j=>{
       const z=juzState(name,j);const hasData=z.list.some(s=>suratState(name,j,s).last);const open=Object.prototype.hasOwnProperty.call(saved,j)?!!saved[j]:hasData;const color=COLORS[j];
-      const levels=LEVELS.map(l=>{const r=levelState(name,j,l);const label=LEVEL_LABELS[l];const special=l>=7;return `<div class="rq-level-row rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 p-2.5"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg grid place-items-center text-[10px] font-black shrink-0" style="background:${color}18;color:${color}">${l}</div><div class="min-w-0 flex-1"><div class="text-[10px] font-black text-slate-800 dark:text-slate-100">${esc(label)}</div><div class="text-[8px] font-bold text-slate-500 mt-0.5">${special?(r.done?'Sudah ditandai selesai':'Belum ditandai'):`${r.done} dari ${r.total} surat selesai`}</div></div><div class="text-right shrink-0"><strong class="text-xs font-black" style="color:${color}">${r.pct}%</strong></div></div><div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mt-2"><div class="h-full rounded-full" style="width:${r.pct}%;background:${color}"></div></div></div>`;}).join('');
+      const levels=LEVELS.map(l=>{const r=levelState(name,j,l);const label=LEVEL_LABELS[l];const special=l>=7;return `<div class="rq-level-row rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 p-2.5"><div class="flex items-start gap-2"><div class="shrink-0 flex flex-col items-center gap-1"><div class="w-8 h-8 rounded-lg grid place-items-center text-[10px] font-black" style="background:${color}18;color:${color}">${l}</div><button type="button" title="Tampilkan surat yang telah dihafal" aria-label="Tampilkan surat yang telah dihafal" class="rq-level-surat-toggle w-8 h-5 px-0 rounded-md text-[6px] font-black border transition whitespace-nowrap leading-none" style="border-color:${color}55;color:${color};background:${color}0d" data-rq-level-toggle="1"><i class="fa-solid fa-chevron-down text-[6px]"></i><span class="ml-0.5">Surat</span></button></div><div class="min-w-0 flex-1"><div class="flex items-center justify-between gap-2"><div class="min-w-0"><div class="text-[10px] font-black text-slate-800 dark:text-slate-100">${esc(label)}</div><div class="text-[8px] font-bold text-slate-500 mt-0.5">${special?(r.done?'Sudah ditandai selesai':'Belum ditandai'):`${r.done} dari ${r.total} surat selesai`}</div></div><div class="text-right shrink-0"><strong class="text-xs font-black" style="color:${color}">${r.pct}%</strong></div></div><div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mt-2"><div class="h-full rounded-full" style="width:${r.pct}%;background:${color}"></div></div><div class="rq-level-surat-list-wrap" style="display:none" data-open="0">${dashboardLevelSuratList(name,j,l)}</div></div></div></div>`;}).join('');
       return `<section class="rq-juz-dashboard-card rounded-2xl border-2 bg-white dark:bg-slate-800 shadow-sm overflow-hidden" style="border-color:${color}35"><div class="p-3 sm:p-4" style="background:linear-gradient(135deg,${SOFT[j]},transparent)"><div class="flex flex-col md:flex-row md:items-center gap-4"><div class="flex items-center gap-4 min-w-0 flex-1"><div class="rq-ring shrink-0" style="--ring-pct:${z.pct};--ring-color:${color};--ring-bg:${document.documentElement.classList.contains('dark')?'#0f172a':'#fff'}"><div><div class="text-xl font-black" style="color:${color}">${z.pct}%</div><div class="text-[8px] font-black text-slate-500">progres Juz</div></div></div><div class="min-w-0"><div class="flex items-center gap-2"><h3 class="text-base font-black text-slate-900 dark:text-slate-100">Program Juz ${j}</h3><span class="px-2 py-1 rounded-lg text-[8px] font-black" style="background:${color}18;color:${color}">${z.list.length} surat</span></div><div class="text-[10px] font-bold text-slate-500 mt-1">${z.doneSurat} surat selesai · ${z.partial} dalam proses</div><div class="text-[9px] font-black mt-1" style="color:${color}">Persentase berdasarkan progres ayat seluruh surat Juz ${j}.</div></div></div><div class="flex items-center gap-2 md:self-start"><button type="button" class="px-3 py-2 rounded-xl text-[9px] font-black border transition" style="border-color:${color}55;color:${color};background:${color}0d" onclick="window.rqToggleDashboardJuz('${j}')"><i class="fa-solid ${open?'fa-chevron-up':'fa-chevron-down'} mr-1"></i>${open?'Tutup':'Tampilkan'} Juz ${j}</button></div></div></div>${open?`<div class="border-t border-slate-100 dark:border-slate-700 p-3 sm:p-4"><div class="grid grid-cols-1 lg:grid-cols-2 gap-2">${levels}</div></div>`:`<div class="px-4 pb-4"><div class="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-3 text-center text-[9px] font-bold text-slate-400">Level Juz ${j} disembunyikan. Tekan “Tampilkan” untuk melihat Level 1–8.</div></div>`}</section>`;
     }).join('');
   }
@@ -7757,6 +7839,104 @@ function renderOptions(){
   window.addEventListener('load',()=>setTimeout(install,120));
 })();
 </script>
+
+<script id="rq-dashboard-layout-fix-v3">
+(function(){
+  'use strict';
+  function arrange(){
+    const content=document.getElementById('trackerPageContent');
+    const dashboard=document.getElementById('tracker-panel-dashboard');
+    const anchor=document.getElementById('trackingPerSuratSummary');
+    if(content && dashboard && anchor && dashboard.parentElement===content){
+      // Dashboard harus berada sebelum ringkasan/tabel Tracker Surat Persantri.
+      content.insertBefore(dashboard, anchor);
+    }
+  }
+  function setPerSurat(menu){
+    const show=(menu==='input');
+    ['trackingPerSuratSummary','trackingPerSuratTableWrap','trackingPerSuratWarning'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el) el.style.display=show?'':'none';
+    });
+  }
+  window.__rqSetPerSuratVisibility=setPerSurat;
+  function ready(){
+    arrange();
+    setPerSurat('input');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ready);
+  else ready();
+  window.addEventListener('load',function(){setTimeout(arrange,0);});
+})();
+</script>
+
+<script id="rq-unified-surat-date-sync-v1">
+(function(){
+  'use strict';
+  const RECORD_KEY='rq_tracking_tahfidz_local_v1';
+  function read(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback;}}
+  function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){return false;}}
+  function toDateOnly(value){
+    if(!value)return '';
+    const raw=String(value).trim();
+    const m=raw.match(/^(\d{4}-\d{2}-\d{2})/);
+    if(m)return m[1];
+    const d=new Date(raw);
+    if(Number.isNaN(d.getTime()))return '';
+    const y=d.getFullYear(),mo=String(d.getMonth()+1).padStart(2,'0'),da=String(d.getDate()).padStart(2,'0');
+    return `${y}-${mo}-${da}`;
+  }
+  function normalizeRecords(){
+    const rows=read(RECORD_KEY,[]);
+    if(!Array.isArray(rows))return [];
+    let changed=false;
+    const out=rows.map(r=>{
+      if(!r||typeof r!=='object')return r;
+      const next=Object.assign({},r);
+      const date=toDateOnly(next.tanggal||next.tanggalSetoran||next.date||next.timestamp);
+      if(date && next.tanggal!==date){next.tanggal=date;changed=true;}
+      return next;
+    });
+    if(changed)write(RECORD_KEY,out);
+    return out;
+  }
+  function sameName(a,b){return String(a||'').trim()===String(b||'').trim();}
+  function sameSurat(a,b){
+    const n=v=>String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
+    return n(a)===n(b);
+  }
+  window.rqGetUnifiedSuratLastDate=function(name,juz,surat,arah){
+    const rows=normalizeRecords().filter(r=>sameName(r.santri,name)&&String(r.juz||'')===String(juz||'')&&sameSurat(r.surat,surat)&&(arah==null||String(r.arah||'')===String(arah)));
+    rows.sort((a,b)=>String(b.tanggal||'').localeCompare(String(a.tanggal||''))||Number(b.id||0)-Number(a.id||0));
+    return rows[0]?.tanggal||'';
+  };
+  function refresh(){
+    normalizeRecords();
+    const fns=['renderHafalanTracker','renderTrackingDashboardPersantri','renderTrackingDashboard','renderTrackingPerSurat','renderTrackingHistory','updateTrackingMurojaahInfo','updateTrackingProgress','refreshTrackingEnhancements','generateTrackingReport','generateTrackingWA'];
+    fns.forEach(fn=>{try{if(typeof window[fn]==='function')window[fn]();}catch(e){}});
+  }
+  function wrapSave(){
+    const fn=window.saveTrackingSetoran;
+    if(typeof fn!=='function'||fn.__rqUnifiedDateSync)return false;
+    const wrapped=function(){
+      const result=fn.apply(this,arguments);
+      setTimeout(refresh,0);
+      return result;
+    };
+    wrapped.__rqUnifiedDateSync=true;
+    wrapped.__original=fn;
+    window.saveTrackingSetoran=wrapped;
+    return true;
+  }
+  function install(){
+    normalizeRecords();
+    if(!wrapSave())setTimeout(wrapSave,50);
+    setTimeout(refresh,80);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+  window.addEventListener('load',()=>setTimeout(install,120));
+})();
+</script>
 </html>
 
 <style id="rq-final-menu-readability-v1">
@@ -7769,6 +7949,59 @@ function renderOptions(){
 @media (min-width:1280px){
   #appHeader nav .tracker-menu-btn{font-size:14px !important;}
 }
+</style>
+
+<script id="rq-dashboard-static-bind-v1">
+(function(){
+  function bind(){
+    var sel=document.getElementById('rqDashboardSantriSelect');
+    if(sel && !sel.dataset.boundStatic){
+      sel.dataset.boundStatic='1';
+      sel.addEventListener('change',function(){
+        var base=document.getElementById('trackingSantri');
+        if(base){base.value=sel.value;base.dispatchEvent(new Event('change',{bubbles:true}));}
+        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+      });
+    }
+    if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,50);});
+  else setTimeout(bind,50);
+  window.addEventListener('load',function(){setTimeout(bind,100);});
+})();
+</script>
+<script id="rq-dashboard-direct-open-v2">
+(function(){
+  window.openDashboardPersantri=function(){
+    try{
+      document.body.classList.add('tracker-dashboard-active');
+      var panels=document.querySelectorAll('#trackerPageContent > .tracker-menu-panel');
+      panels.forEach(function(p){p.dataset.panelHidden='1';p.style.setProperty('display','none','important');});
+      var panel=document.getElementById('tracker-panel-dashboard');
+      if(!panel){
+        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+        panel=document.getElementById('tracker-panel-dashboard');
+      }
+      if(!panel)return;
+      panel.dataset.panelHidden='0';
+      panel.style.setProperty('display','block','important');
+      document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
+        btn.classList.remove('bg-white','text-emerald-900','shadow');
+        btn.classList.remove('text-emerald-50','hover:bg-emerald-700');
+        if(btn.id==='trackerMenu-dashboard') btn.classList.add('bg-white','text-emerald-900','shadow');
+        else btn.classList.add('text-emerald-50','hover:bg-emerald-700');
+      });
+      document.body.classList.remove('tracker-hafalan-active');
+      if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){console.error('Dashboard Persantri open error:',e);}
+  };
+})();
+</script>
+<style id="rq-dashboard-hide-search-sidebar-v1">
+/* Dashboard Laporan Persantri: sembunyikan panel pencarian kelas/santri agar dashboard memakai lebar penuh. */
+body.tracker-dashboard-active #trackerSearchSidebar{display:none!important;}
+body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1fr)!important;}
 </style>
 <script id="rq-final-menu-dispatcher-v1">
 (function(){
@@ -7799,6 +8032,7 @@ function renderOptions(){
   }
   function dispatch(menu){
     try{
+      if(typeof window.__rqSetPerSuratVisibility==='function') window.__rqSetPerSuratVisibility(menu);
       document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
       if(menu==='wa-wali'){
         if(typeof window.__openWaWaliPersonalPanel==='function') window.__openWaWaliPersonalPanel();
