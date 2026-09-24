@@ -4067,6 +4067,8 @@ if(initialDarkIcon){
   function load(){ try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch(e){ return []; } }
   function save(){ localStorage.setItem(KEY, JSON.stringify(records)); }
   function santriList(){ return Array.isArray(window.santriList) ? window.santriList : []; }
+  // Kompatibilitas untuk modul laporan lama: semua pemanggilan santri() diarahkan ke sumber data santri utama.
+  if(typeof window.santri!=='function'){ window.santri=function(){ return Array.isArray(window.santriList) ? window.santriList : []; }; }
   function surahInfo(name){
     const raw=String(name||'').trim();
     const aliases={
