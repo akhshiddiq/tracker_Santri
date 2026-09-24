@@ -2233,7 +2233,7 @@
             window.open(`https://wa.me/${targetPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(document.getElementById('classReportMessagePreview')?.value)}`, '_blank');
         };
 
-        window.exportDataToExcel = function() {
+        window.downloadDataCSV = function() {
             let csv = "Nama Santri,Kelas,Pengajar,Bacaan Terakhir,Hafalan Terakhir,Murojaah Terakhir,Tugas Terakhir\n";
             window.santriList.forEach(s => {
                 csv += `"${s.name}","${s.class}","${s.teacher}","${s.lastBacaan}","${s.lastHafalan}","${s.lastMurojaah}","${s.lastTugas}"\n`;
@@ -2243,8 +2243,10 @@
             link.href = URL.createObjectURL(blob);
             link.download = `Data_Santri_RQ_AlKhansa_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            window.showToast("File Excel berhasil didownload!", "success");
+            window.showToast("File CSV berhasil diunduh!", "success");
         };
+
+        window.exportDataToExcel = window.downloadDataCSV;
 
         window.resetDailyLogsOnly = function() {
             if (confirm("Reset data setoran harian?")) {
@@ -3889,21 +3891,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
         <button type="button" onclick="window.closeCapaianAll()" class="px-3 py-2 rounded-xl bg-emerald-950/40 text-white border border-white/20 text-[9px] sm:text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-chevron-up mr-1"></i>Tutup Semua</button>
         <button type="button" onclick="window.openCapaianMateriOnly()" class="px-3 py-2 rounded-xl bg-white text-emerald-800 text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-book-open mr-1"></i>Buka Materi Hafalan Saja</button>
         <button type="button" onclick="window.openCapaianMateriAndSantri()" class="px-3 py-2 rounded-xl bg-emerald-950/40 text-white border border-white/20 text-[9px] sm:text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-users mr-1"></i>Buka Materi + Capaian Santri</button>
-        <div class="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-white/10 border border-white/20">
-          <i class="fa-solid fa-filter text-white/90 text-[10px]"></i>
-          <label for="materiPdfJuzSelect" class="text-[9px] sm:text-[10px] font-black text-white whitespace-nowrap">PDF Juz</label>
-          <select id="materiPdfJuzSelect" class="px-2 py-1.5 rounded-lg bg-white text-slate-800 text-[9px] sm:text-[10px] font-black border-0 outline-none cursor-pointer">
-            <option value="30">Juz 30</option>
-            <option value="29">Juz 29</option>
-            <option value="28">Juz 28</option>
-            <option value="27">Juz 27</option>
-            <option value="all" selected>Semua Juz</option>
-          </select>
-        </div>
-        <button type="button" onclick="window.downloadMateriHafalanPDF()" class="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi PDF</button>
-        <button type="button" onclick="window.downloadMateriSantriPDF()" class="px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi + Santri PDF</button>
-        <button type="button" onclick="window.downloadMateriHafalanJPG()" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-image mr-1"></i>Download Materi JPG</button>
-        <button type="button" onclick="window.downloadMateriSantriJPG()" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-image mr-1"></i>Download Materi + Santri JPG</button>
+        <button type="button" onclick="window.downloadDataCSV()" class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-csv mr-1"></i>Download CSV</button>
       </div>
     </div>
     <div class="p-3 sm:p-4">
@@ -6935,287 +6923,6 @@ function renderOptions(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>\n
-<script id="materi-capaian-pdf-export-v5">
-(function(){
-  'use strict';
-  const JUZS=['30','29','28','27'];
-  const LEVELS=[1,2,3,4,5,6,7,8];
-  const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
-  const COLORS={
-    '30':{main:'#7c3aed',light:'#f3e8ff',soft:'#faf5ff',text:'#4c1d95'},
-    '29':{main:'#f97316',light:'#ffedd5',soft:'#fff7ed',text:'#9a3412'},
-    '28':{main:'#64748b',light:'#e2e8f0',soft:'#f8fafc',text:'#334155'},
-    '27':{main:'#ec4899',light:'#fce7f3',soft:'#fdf2f8',text:'#9d174d'}
-  };
-  const read=(key,fallback)=>{try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}};
-  function materials(j,l){
-    const d=window.__RQ_TRACKING_JUZ_LEVELS||{};
-    return {depan:Array.isArray(d?.[j]?.depan?.[l])?d[j].depan[l]:[],belakang:Array.isArray(d?.[j]?.belakang?.[l])?d[j].belakang[l]:[]};
-  }
-  function achieved(j,l){
-    const data=read(CHECKLIST_KEY,{}), names=new Set();
-    Object.keys(data||{}).forEach(name=>{if(data?.[name]?.[String(j)]?.[String(l)]) names.add(String(name));});
-    return [...names].sort((a,b)=>a.localeCompare(b,'id'));
-  }
-  function arabicFor(name){
-    if(typeof window.arabicFor==='function') return window.arabicFor(name)||'';
-    const map={
-      'An-Naba':'سورة النبأ','An-Nazi\'at':'سورة النازعات','\'Abasa':'سورة عبس','At-Takwir':'سورة التكوير','Al-Infithar':'سورة الانفطار',
-      'Al-Mutaffifin':'سورة المطففين','Al-Muthaffifin':'سورة المطففين','Al-Insyiqaq':'سورة الانشقاق','Al-Buruj':'سورة البروج','Ath-Thariq':'سورة الطارق','At-Tariq':'سورة الطارق','Al-A\'la':'سورة الأعلى',
-      'Al-Ghasyiyah':'سورة الغاشية','Al-Fajr':'سورة الفجر','Al-Balad':'سورة البلد','Asy-Syams':'سورة الشمس','Al-Lail':'سورة الليل','Ad-Duha':'سورة الضحى','Adh-Dhuha':'سورة الضحى','Asy-Syarh':'سورة الشرح','At-Tin':'سورة التين','Al-\'Alaq':'سورة العلق','Al-Alaq':'سورة العلق','Al-Qadr':'سورة القدر','Al-Bayyinah':'سورة البينة',
-      'Az-Zalzalah':'سورة الزلزلة','Al-\'Adiyat':'سورة العاديات','Al-Adiyat':'سورة العاديات','Al-Qari\'ah':'سورة القارعة','Al-Qariah':'سورة القارعة','At-Takatsur':'سورة التكاثر','Al-\'Ashr':'سورة العصر','Al-Asr':'سورة العصر','Al-Humazah':'سورة الهمزة','Al-Fil':'سورة الفيل','Quraisy':'سورة قريش','Al-Ma\'un':'سورة الماعون','Al-Maun':'سورة الماعون','Al-Kautsar':'سورة الكوثر','Al-Kafirun':'سورة الكافرون','An-Nashr':'سورة النصر','Al-Lahab':'سورة المسد','Al-Masad':'سورة المسد','Al-Ikhlas':'سورة الإخلاص','Al-Ikhlash':'سورة الإخلاص','Al-Falaq':'سورة الفلق','An-Nas':'سورة الناس'
-    };
-    return map[String(name||'')]||'';
-  }
-  function levelTitle(j,l){
-    if(l===7) return `Level 7 — Evaluasi & Pertanyaan`;
-    if(l===8) return `Level 8 — Ujian Tasmi' Semua Surat Juz tersebut`;
-    return `Level ${l} — Juz ${j}`;
-  }
-  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-  function escSvg(s){return esc(s).replace(/\u0000/g,'');}
-  function wrap(s,max){s=String(s??'').trim();if(!s)return [''];const out=[];while(s.length>max){let c=s.lastIndexOf(' ',max);if(c<Math.floor(max*.55))c=max;out.push(s.slice(0,c).trim());s=s.slice(c).trim();}if(s)out.push(s);return out;}
-  function text(x,y,s,size,weight,fill,anchor='start',family='Arial, Noto Sans Arabic, sans-serif',extra=''){
-    return `<text x="${x}" y="${y}" font-family="${family}" font-size="${size}px" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" ${extra}>${escSvg(s)}</text>`;
-  }
-  function rect(x,y,w,h,fill,stroke='none',sw=1,rx=10){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;}
-  function line(x1,y1,x2,y2,color='#d9e1e8',sw=1){return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${sw}"/>`;}
-  function pageSvg(juz,includeStudents,pageNo,totalPages,bodyBlocks){
-    const W=1240,H=1754,m=70,c=COLORS[juz];
-    let s=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#ffffff"/>`;
-    s+=rect(m,52,W-m*2,112,'#f7fbfa','#d7e8e2',2,18);
-    s+=rect(m,52,12,112,'#087f68','#087f68',0,6);
-    s+=text(m+34,88,'RUMAH QURAN AL-KHANSA',26,800,'#075c4c');
-    s+=text(m+34,125,includeStudents?'Materi Hafalan & Capaian Level Santri':'Materi Hafalan',36,800,'#0b1720');
-    s+=text(W-m-24,88,`Juz ${juz}`,24,800,c.main,'end');
-    s+=text(W-m-24,124,'A4 • Materi Hafalan',17,600,'#64748b','end');
-    let y=205;
-    s+=rect(m,y,W-m*2,78,c.main,c.main,0,14);
-    s+=text(m+24,y+34,`JUZ ${juz}`,28,900,'#ffffff');
-    s+=text(m+24,y+60,'Materi hafalan • Depan (Awal) dan Belakang (Akhir)',17,600,'#ffffff');
-    y+=102;
-    s+=text(m,y,'Keterangan:',18,800,'#17212b');
-    s+=text(m+118,y,'Materi Depan = materi pada bagian awal level.  Materi Belakang = materi pada bagian akhir level.',17,500,'#374151');
-    y+=34;
-    bodyBlocks.forEach(block=>{ s+=block.svg; });
-    s+=line(m,H-68,W-m,H-68,'#0a8068',2);
-    s+=text(m,H-38,'Rumah Quran Al-Khansa',14,700,'#64748b');
-    s+=text(W-m,H-38,`Halaman ${pageNo} / ${totalPages}`,14,700,'#64748b','end');
-    s+='</svg>'; return s;
-  }
-  function makeLevelBlock(j,l,includeStudents,maxY){
-    const c=COLORS[j], m=70, W=1240, inner=W-m*2, gap=18;
-    const mat=materials(j,l), students=achieved(j,l);
-    const title=levelTitle(j,l);
-    const headerH=62, subH=45, rowGap=12, rowH=76;
-    let rows=[];
-    const max=Math.max(mat.depan.length,mat.belakang.length,1);
-    for(let i=0;i<max;i++){
-      const a=mat.depan[i]||'—', b=mat.belakang[i]||'—';
-      const arA=arabicFor(a), arB=arabicFor(b);
-      const left=arA?`<div>${arA}</div><div>${a}</div>`:`<div>${a}</div>`;
-      const right=arB?`<div>${arB}</div><div>${b}</div>`:`<div>${b}</div>`;
-      rows.push({a,left,b,right,st:i===0?students:[]});
-    }
-    let height=headerH+subH+rows.length*rowH+(rows.length-1)*rowGap+20;
-    if(l===7||l===8) height=headerH+86;
-    let svg=rect(m,0,inner,headerH,c.soft,'#d9e1e8',1,14);
-    svg+=rect(m,0,14,headerH,c.main,c.main,0,6);
-    svg+=text(m+30,39,title,25,900,'#111827');
-    if(includeStudents) svg+=text(W-m-18,39,`${students.length} santri`,17,800,c.text,'end');
-    let yy=headerH+10;
-    if(l===7||l===8){
-      const desc=l===7?'Evaluasi & Pertanyaan':'Ujian Tasmi\' Semua Surat Juz tersebut';
-      svg+=rect(m,yy,inner,72,'#ffffff','#e2e8f0',1,12);
-      svg+=text(m+20,yy+31,desc,21,800,c.text);
-      svg+=text(W-m-20,yy+31,'Tahap khusus',16,700,'#64748b','end');
-    } else {
-      const colW=includeStudents?330:(inner-gap)/2, col2=colW, col3=includeStudents?inner-colW-col2-gap*2:0;
-      let x=m;
-      svg+=rect(x,yy,colW,subH,c.light,'#d7e1ea',1,10);svg+=text(x+18,yy+29,'MATERI DEPAN (AWAL)',18,900,'#111827');x+=colW+gap;
-      svg+=rect(x,yy,col2,subH,c.light,'#d7e1ea',1,10);svg+=text(x+18,yy+29,'MATERI BELAKANG (AKHIR)',18,900,'#111827');
-      if(includeStudents){x+=col2+gap;svg+=rect(x,yy,col3,subH,c.light,'#d7e1ea',1,10);svg+=text(x+18,yy+29,'SANTRI YANG MENCAPAI',16,900,'#111827');}
-      yy+=subH+rowGap;
-      rows.forEach((r,idx)=>{
-        let x=m; const fill=idx%2?'#ffffff':c.soft;
-        svg+=rect(x,yy,colW,rowH,fill,'#dfe6ec',1,10);
-        if(arabicFor(r.a)) svg+=text(x+18,yy+29,arabicFor(r.a),22,800,'#111827');
-        svg+=text(x+18,yy+57,r.a,17,800,'#111827');
-        x+=colW+gap;svg+=rect(x,yy,col2,rowH,fill,'#dfe6ec',1,10);
-        if(arabicFor(r.b)) svg+=text(x+18,yy+29,arabicFor(r.b),22,800,'#111827');
-        svg+=text(x+18,yy+57,r.b,17,800,'#111827');
-        if(includeStudents){x+=col2+gap;svg+=rect(x,yy,col3,rowH,fill,'#dfe6ec',1,10);const names=r.st.length?r.st:['Belum ada santri'];r.st.length?names.forEach((n,k)=>svg+=text(x+18,yy+30+k*22,n,15,700,'#111827')):svg+=text(x+18,yy+38,names[0],15,600,'#64748b');}
-        yy+=rowH+rowGap;
-      });
-    }
-    return {svg,height};
-  }
-  function getPdfJuzSelection(){const el=document.getElementById('materiPdfJuzSelect');const v=el?String(el.value||'all'):'all';return v==='all'?[...JUZS]:JUZS.includes(v)?[v]:[...JUZS];}
-  function getPdfJuzLabel(){const el=document.getElementById('materiPdfJuzSelect');const v=el?String(el.value||'all'):'all';return v==='all'?'Semua Juz (30, 29, 28, 27)':`Juz ${v}`;}
-  async function svgToJpeg(svg){
-    return await new Promise((resolve,reject)=>{
-      const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();
-      img.onload=()=>{try{const c=document.createElement('canvas');c.width=1240;c.height=1754;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0);URL.revokeObjectURL(url);resolve({data:c.toDataURL('image/jpeg',0.93),width:c.width,height:c.height});}catch(e){URL.revokeObjectURL(url);reject(e)}};
-      img.onerror=e=>{URL.revokeObjectURL(url);reject(e)};img.src=url;
-    });
-  }
-  function dataUrlBytes(dataUrl){const b=atob(dataUrl.split(',')[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
-  function jpegSize(bytes){let i=2;while(i<bytes.length){if(bytes[i]!==0xff){i++;continue}const marker=bytes[i+1];if(marker===0xd8||marker===0xd9){i+=2;continue}const len=(bytes[i+2]<<8)|bytes[i+3];if([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf].includes(marker))return {h:(bytes[i+5]<<8)|bytes[i+6],w:(bytes[i+7]<<8)|bytes[i+8],cs:bytes[i+9]===1?1:3};i+=2+len;}return {w:1240,h:1754,cs:3};}
-  function buildImagePdf(images,filename){
-    const objs=[];const add=o=>{objs.push(o);return objs.length};
-    const pagesId=add(null),fontId=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');const pageIds=[];
-    images.forEach((im,idx)=>{const bytes=dataUrlBytes(im.data),sz=jpegSize(bytes);const imgId=add({type:'img',bytes,w:sz.w,h:sz.h});const stream=`q 595.28 0 0 841.89 0 0 cm /Im${idx+1} Do Q`;const contentId=add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);pageIds.push(add({type:'page',contentId,imgId}));});
-    objs[pagesId-1]=`<< /Type /Pages /Kids [${pageIds.map(id=>id+' 0 R').join(' ')}] /Count ${pageIds.length} >>`;const catalogId=add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-    let pdf='%PDF-1.4\n%\xFF\xFF\xFF\xFF\n',offsets=[0];
-    for(let i=0;i<objs.length;i++){offsets[i+1]=pdf.length;const o=objs[i];pdf+=`${i+1} 0 obj\n`;if(o&&o.type==='img'){pdf+=`<< /Type /XObject /Subtype /Image /Width ${o.w} /Height ${o.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${o.bytes.length} >>\nstream\n`;const head=pdf;let bin='';for(let j=0;j<o.bytes.length;j++)bin+=String.fromCharCode(o.bytes[j]);pdf+=bin+'\nendstream\n';}else if(o&&o.type==='page'){pdf+=`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 ${fontId} 0 R >> /XObject << /Im${pageIds.indexOf(i+1)+1} ${o.imgId} 0 R >> >> /Contents ${o.contentId} 0 R >>\n`;}else pdf+=String(o)+'\n';pdf+='endobj\n';}
-    const xref=pdf.length;pdf+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';pdf+=`trailer\n<< /Size ${objs.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;
-    const bytes=new Uint8Array(pdf.length);for(let i=0;i<pdf.length;i++)bytes[i]=pdf.charCodeAt(i)&255;const blob=new Blob([bytes],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1800);
-  }
-  async function buildPdf(includeStudents){
-    try{
-      const selected=getPdfJuzSelection();if(!selected.length)throw new Error('Juz belum dipilih');
-      if(typeof window.showToast==='function')window.showToast(`Menyiapkan PDF A4 ${getPdfJuzLabel()}…`,'success');
-      const pages=[];
-      for(const j of selected){
-        let blocks=[],used=0;for(const l of LEVELS){const b=makeLevelBlock(j,l,includeStudents);if(used+b.height>1450&&blocks.length){pages.push({j,blocks});blocks=[];used=0;}blocks.push(b);used+=b.height+18;}if(blocks.length)pages.push({j,blocks});
-      }
-      const images=[];for(let i=0;i<pages.length;i++){const p=pages[i];const svg=pageSvg(p.j,includeStudents,i+1,pages.length,p.blocks);images.push(await svgToJpeg(svg));}
-      const scope=selected.length===4?'Semua_Juz':`Juz_${selected[0]}`;buildImagePdf(images,includeStudents?`Materi_Hafalan_dan_Capaian_Level_Santri_${scope}.pdf`:`Materi_Hafalan_${scope}.pdf`);
-      if(typeof window.showToast==='function')window.showToast(`PDF A4 ${getPdfJuzLabel()} berhasil diunduh.`,'success');
-    }catch(e){console.error('PDF v5 error',e);if(typeof window.showToast==='function')window.showToast('PDF gagal dibuat. Silakan coba lagi.','error');}
-  }
-  window.downloadMateriHafalanPDF=()=>buildPdf(false);
-  window.downloadMateriSantriPDF=()=>buildPdf(true);
-})();
-</script>
-
-<script id="materi-capaian-jpg-export-v1">
-(function(){
-  'use strict';
-  const JUZS=['30','29','28','27'];
-  const LEVELS=[1,2,3,4,5,6,7,8];
-  const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
-  const LOGO_URL='https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi';
-  const COLORS={
-    '30':{main:'#7c3aed',light:'#e9d5ff',soft:'#faf5ff',text:'#3b0764'},
-    '29':{main:'#f97316',light:'#fed7aa',soft:'#fff7ed',text:'#7c2d12'},
-    '28':{main:'#64748b',light:'#cbd5e1',soft:'#f8fafc',text:'#1e293b'},
-    '27':{main:'#ec4899',light:'#fbcfe8',soft:'#fdf2f8',text:'#831843'}
-  };
-  const read=(key,fallback)=>{try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}};
-  function materials(j,l){
-    const d=window.__RQ_TRACKING_JUZ_LEVELS||{};
-    return {depan:Array.isArray(d?.[j]?.depan?.[l])?d[j].depan[l]:[],belakang:Array.isArray(d?.[j]?.belakang?.[l])?d[j].belakang[l]:[]};
-  }
-  function achieved(j,l){
-    const data=read(CHECKLIST_KEY,{}),names=new Set();
-    Object.keys(data||{}).forEach(name=>{if(data?.[name]?.[String(j)]?.[String(l)])names.add(String(name));});
-    return [...names].sort((a,b)=>a.localeCompare(b,'id'));
-  }
-  function arabicFor(name){
-    if(typeof window.arabicFor==='function')return window.arabicFor(name)||'';
-    const map={
-      'An-Naba':'سورة النبأ','An-Nazi\'at':'سورة النازعات','\'Abasa':'سورة عبس','At-Takwir':'سورة التكوير','Al-Infithar':'سورة الانفطار',
-      'Al-Mutaffifin':'سورة المطففين','Al-Muthaffifin':'سورة المطففين','Al-Insyiqaq':'سورة الانشقاق','Al-Buruj':'سورة البروج','Ath-Thariq':'سورة الطارق','At-Tariq':'سورة الطارق','Al-A\'la':'سورة الأعلى',
-      'Al-Ghasyiyah':'سورة الغاشية','Al-Fajr':'سورة الفجر','Al-Balad':'سورة البلد','Asy-Syams':'سورة الشمس','Al-Lail':'سورة الليل','Ad-Duha':'سورة الضحى','Adh-Dhuha':'سورة الضحى','Asy-Syarh':'سورة الشرح','At-Tin':'سورة التين','Al-\'Alaq':'سورة العلق','Al-Alaq':'سورة العلق','Al-Qadr':'سورة القدر','Al-Bayyinah':'سورة البينة',
-      'Az-Zalzalah':'سورة الزلزلة','Al-\'Adiyat':'سورة العاديات','Al-Adiyat':'سورة العاديات','Al-Qari\'ah':'سورة القارعة','Al-Qariah':'سورة القارعة','At-Takatsur':'سورة التكاثر','Al-\'Ashr':'سورة العصر','Al-Asr':'سورة العصر','Al-Humazah':'سورة الهمزة','Al-Fil':'سورة الفيل','Quraisy':'سورة قريش','Al-Ma\'un':'سورة الماعون','Al-Maun':'سورة الماعون','Al-Kautsar':'سورة الكوثر','Al-Kafirun':'سورة الكافرون','An-Nashr':'سورة النصر','Al-Lahab':'سورة المسد','Al-Masad':'سورة المسد','Al-Ikhlas':'سورة الإخلاص','Al-Ikhlash':'سورة الإخلاص','Al-Falaq':'سورة الفلق','An-Nas':'سورة الناس'
-    };
-    return map[String(name||'')]||'';
-  }
-  function levelTitle(j,l){
-    if(l===7)return `Level 7 — Evaluasi & Pertanyaan`;
-    if(l===8)return `Level 8 — Ujian Tasmi' Semua Surat Juz tersebut`;
-    return `Level ${l} — Juz ${j}`;
-  }
-  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-  function rect(x,y,w,h,fill,stroke='none',sw=1,rx=14){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;}
-  function text(x,y,s,size,weight,fill,anchor='start',family='Arial, Noto Sans Arabic, sans-serif',extra=''){return `<text x="${x}" y="${y}" font-family="${family}" font-size="${size}px" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" ${extra}>${esc(s)}</text>`;}
-  function line(x1,y1,x2,y2,color='#d6dde5',sw=1){return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${sw}"/>`;}
-  function pageSvg(j,includeStudents){
-    const W=1240,H=1754,m=58,c=COLORS[j],inner=W-m*2;
-    let s=`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#ffffff"/>`;
-    s+=rect(m,40,inner,150,'#ffffff','#dbe4e8',2,24);
-    s+=`<image href="${LOGO_URL}" x="78" y="57" width="116" height="116" preserveAspectRatio="xMidYMid meet" crossorigin="anonymous"/>`;
-    s+=text(220,91,'MATERI HAFALAN',40,900,'#0b1720');
-    s+=text(220,142,`JUZ ${j}`,58,950,c.main);
-    s+=text(W-m-24,89,'RUMAH QURAN AL-KHANSA',22,900,'#087f68','end');
-    s+=text(W-m-24,121,'Mencetak Generasi Qur\'ani',17,600,'#64748b','end');
-    s+=text(W-m-24,155,includeStudents?'Materi + Capaian Santri':'Materi Hafalan',16,800,c.text,'end');
-    let y=220;
-    s+=rect(m,y,inner,76,c.main,c.main,0,18);
-    s+=text(m+28,y+34,`JUZ ${j}`,30,950,'#ffffff');
-    s+=text(m+28,y+61,'Materi hafalan disusun bertahap per level',17,650,'#ffffff');
-    y+=102;
-    s+=text(m,y,'MATERI DEPAN (AWAL)',21,900,'#1e293b');
-    s+=text(W/2+18,y,'MATERI BELAKANG (AKHIR)',21,900,'#1e293b');
-    s+=line(m+0,y+16,W-m,y+16,'#d8e2e8',2);
-    y+=46;
-    for(const l of LEVELS){
-      const mat=materials(j,l), students=achieved(j,l);
-      const title=levelTitle(j,l);
-      if(l===7||l===8){
-        s+=rect(m,y,inner,94,'#f8f5ff',c.main,2,18);
-        s+=text(m+22,y+34,title,24,900,c.text);
-        s+=text(m+22,y+67,l===7?'Evaluasi hafalan dan pertanyaan terkait materi Juz tersebut.':'Ujian Tasmi\' seluruh surat pada Juz tersebut.',17,650,'#475569');
-        y+=110;continue;
-      }
-      const rows=Math.max(mat.depan.length,mat.belakang.length,1), headerH=48,rowH=70,gap=9,blockH=headerH+rows*rowH+(rows-1)*gap+20;
-      if(y+blockH>H-90){break;}
-      s+=rect(m,y,inner,blockH,'#ffffff',c.light,2,18);
-      s+=rect(m,y,inner,headerH,c.soft,'none',0,18);
-      s+=text(m+20,y+31,title,22,900,c.text);
-      if(includeStudents)s+=text(W-m-20,y+31,`${students.length} santri tercapai`,15,800,'#64748b','end');
-      const gapCol=14,colW=(inner-gapCol)/2;
-      let yy=y+headerH+10;
-      for(let i=0;i<rows;i++){
-        const a=mat.depan[i]||'—',b=mat.belakang[i]||'—',aa=arabicFor(a),ab=arabicFor(b),fill=i%2?'#ffffff':c.soft;
-        s+=rect(m+10,yy,colW-5,rowH,fill,'#dfe6ec',1,11);
-        s+=rect(m+colW+4,yy,colW-5,rowH,fill,'#dfe6ec',1,11);
-        if(aa)s+=text(m+27,yy+29,aa,22,800,'#111827');
-        s+=text(m+27,yy+(aa?57:38),`${i+1}. ${a}`,16,800,'#111827');
-        if(ab)s+=text(m+colW+21,yy+29,ab,22,800,'#111827');
-        s+=text(m+colW+21,yy+(ab?57:38),`${i+1}. ${b}`,16,800,'#111827');
-        yy+=rowH+gap;
-      }
-      if(includeStudents && students.length){
-        const names=students.slice(0,8).map((n,i)=>`✓ ${n}`).join('   ');
-        s+=text(m+20,y+blockH-12,names,13,700,'#475569');
-      }
-      y+=blockH+16;
-    }
-    s+=line(m,H-58,W-m,H-58,'#0a8068',2);
-    s+=text(m,H-28,'Rumah Quran Al-Khansa',14,700,'#64748b');
-    s+=text(W-m,H-28,`Juz ${j}`,14,700,c.text,'end');
-    return s+'</svg>';
-  }
-  function selected(){const el=document.getElementById('materiPdfJuzSelect');const v=el?String(el.value||'all'):'all';return v==='all'?[...JUZS]:JUZS.includes(v)?[v]:[...JUZS];}
-  function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Logo tidak dapat dimuat'));img.src=src;});}
-  async function svgToJpg(svg){
-    const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
-    try{const img=new Image();img.crossOrigin='anonymous';img.src=url;await new Promise((res,rej)=>{img.onload=res;img.onerror=rej});const c=document.createElement('canvas');c.width=1240;c.height=1754;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0);return c.toDataURL('image/jpeg',0.96)}finally{URL.revokeObjectURL(url)}
-  }
-  async function build(includeStudents){
-    try{
-      const js=selected();
-      if(typeof window.showToast==='function')window.showToast(`Menyiapkan JPG ${js.length===4?'Semua Juz':`Juz ${js[0]}`}…`,'success');
-      for(const j of js){
-        const svg=pageSvg(j,includeStudents);
-        let data;
-        try{data=await svgToJpg(svg)}catch(e){
-          console.warn('JPG logo/canvas fallback',e);
-          const fallback=svg.replace(new RegExp(`<image[^>]*href=["']${LOGO_URL.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}["'][^>]*/>`, 'g'),'');
-          data=await svgToJpg(fallback);
-        }
-        const a=document.createElement('a');a.href=data;a.download=`Materi_Hafalan_Juz_${j}${includeStudents?'_dan_Capaian_Santri':''}.jpg`;document.body.appendChild(a);a.click();a.remove();
-      }
-      if(typeof window.showToast==='function')window.showToast(`JPG ${js.length===4?'Semua Juz':`Juz ${js[0]}`} berhasil diunduh.`,'success');
-    }catch(e){console.error('JPG export error',e);if(typeof window.showToast==='function')window.showToast('JPG gagal dibuat. Jika logo tidak termuat, cek koneksi internet.','error');}
-  }
-  window.downloadMateriHafalanJPG=()=>build(false);
-  window.downloadMateriSantriJPG=()=>build(true);
-})();
-</script>
-
 <script id="laporan-level-perkelas-web-v1">
 (function(){
   'use strict';
