@@ -3889,8 +3889,19 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
         <button type="button" onclick="window.closeCapaianAll()" class="px-3 py-2 rounded-xl bg-emerald-950/40 text-white border border-white/20 text-[9px] sm:text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-chevron-up mr-1"></i>Tutup Semua</button>
         <button type="button" onclick="window.openCapaianMateriOnly()" class="px-3 py-2 rounded-xl bg-white text-emerald-800 text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-book-open mr-1"></i>Buka Materi Hafalan Saja</button>
         <button type="button" onclick="window.openCapaianMateriAndSantri()" class="px-3 py-2 rounded-xl bg-emerald-950/40 text-white border border-white/20 text-[9px] sm:text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-users mr-1"></i>Buka Materi + Capaian Santri</button>
-        <button type="button" onclick="window.downloadMateriHafalanPDF()" class="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi Hafalan (PDF)</button>
-        <button type="button" onclick="window.downloadMateriSantriPDF()" class="px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi + Santri (PDF)</button>
+        <div class="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-white/10 border border-white/20">
+          <i class="fa-solid fa-filter text-white/90 text-[10px]"></i>
+          <label for="materiPdfJuzSelect" class="text-[9px] sm:text-[10px] font-black text-white whitespace-nowrap">PDF Juz</label>
+          <select id="materiPdfJuzSelect" class="px-2 py-1.5 rounded-lg bg-white text-slate-800 text-[9px] sm:text-[10px] font-black border-0 outline-none cursor-pointer">
+            <option value="30">Juz 30</option>
+            <option value="29">Juz 29</option>
+            <option value="28">Juz 28</option>
+            <option value="27">Juz 27</option>
+            <option value="all" selected>Semua Juz</option>
+          </select>
+        </div>
+        <button type="button" onclick="window.downloadMateriHafalanPDF()" class="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi PDF</button>
+        <button type="button" onclick="window.downloadMateriSantriPDF()" class="px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi + Santri PDF</button>
       </div>
     </div>
     <div class="p-3 sm:p-4">
@@ -6187,7 +6198,7 @@ function renderOptions(){
     "Adz-Dzariyat":"سورة الذاريات","Ath-Thur":"سورة الطور","An-Najm":"سورة النجم",
     "Al-Qamar":"سورة القمر","Ar-Rahman":"سورة الرحمن","Al-Hadid":"سورة الحديد"
   };
-  function arabicFor(surat){
+  window.rqArabicFor=function(surat){
     const raw=String(surat||'').trim();
     if(ARABIC_NAMES[raw]) return ARABIC_NAMES[raw];
     const key=raw.replace(/[’`]/g,"'").replace(/\s+/g,' ');
@@ -6887,14 +6898,14 @@ function renderOptions(){
             return `<div class="rounded-xl border ${c[0]} overflow-hidden">
               <button type="button" onclick="window.toggleCapaianLevel('${j}',${l})" class="w-full px-2.5 py-2 flex items-center gap-2 text-left ${c[1]} hover:brightness-95 dark:hover:brightness-110 transition">
                 <span class="w-6 h-6 rounded-lg bg-white/75 dark:bg-slate-900/45 border ${c[0]} ${c[2]} flex items-center justify-center text-[9px] font-black">${l}</span>
-                <span class="flex-1 text-[10px] font-black ${c[2]}">${l===7?`Level 7 - Juz ${j} : Evaluasi & Pertanyaan`:l===8?`Level 8 - Juz ${j} : Ujian Tasmi\' Semua Surat Juz tersebut`:`Level ${l} - Juz ${j}`}</span>
-                <span class="text-[8px] font-bold ${c[2]} opacity-70">${students.length} santri tercapai</span>
+                <span class="flex-1 text-[14px] sm:text-base font-black ${c[2]} leading-snug">${l===7?`Level 7 - Juz ${j} : Evaluasi & Pertanyaan`:l===8?`Level 8 - Juz ${j} : Ujian Tasmi\' Semua Surat Juz tersebut`:`Level ${l} - Juz ${j}`}</span>
+                <span class="text-[10px] sm:text-[11px] font-bold ${c[2]} opacity-80 whitespace-nowrap">${students.length} santri tercapai</span>
                 <i class="fa-solid ${lo?'fa-chevron-up':'fa-chevron-down'} text-[9px] ${c[2]} opacity-70"></i>
               </button>
               <div class="${lo?'':'hidden'} p-2 bg-white dark:bg-slate-900 space-y-2">
                 ${has?`<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <div class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-200 dark:bg-blue-900/60 p-2"><div class="text-[9px] font-black text-blue-700 dark:text-blue-300 mb-1.5">Depan</div>${m.depan.length?'<div class="flex flex-wrap gap-1">'+m.depan.map((s,i)=>`<span class="px-2 py-1 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/60 text-[9px] font-black text-slate-700 dark:text-slate-200">${i+1}. ${esc(s)}</span>`).join('')+'</div>':'<span class="text-[9px] font-bold text-slate-400">Belum ada materi.</span>'}</div>
-                  <div class="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-200 dark:bg-emerald-900/60 p-2"><div class="text-[9px] font-black text-emerald-700 dark:text-emerald-300 mb-1.5">Belakang</div>${m.belakang.length?'<div class="flex flex-wrap gap-1">'+m.belakang.map((s,i)=>`<span class="px-2 py-1 rounded-md bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60 text-[9px] font-black text-slate-700 dark:text-slate-200">${i+1}. ${esc(s)}</span>`).join('')+'</div>':'<span class="text-[9px] font-bold text-slate-400">Belum ada materi.</span>'}</div>
+                  <div class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-200 dark:bg-blue-900/60 p-2"><div class="text-[9px] font-black text-blue-700 dark:text-blue-300 mb-1.5">Depan</div>${m.depan.length?'<div class="flex flex-wrap gap-1.5">'+m.depan.map((s,i)=>{const ar=(typeof window.rqArabicFor==='function'?window.rqArabicFor(s):'');return `<span class="px-2.5 py-2.5 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/60 text-slate-700 dark:text-slate-200 leading-tight"><span dir="rtl" class="block text-[17px] font-black leading-6 text-slate-800 dark:text-slate-100 text-center">${ar?esc(ar):''}</span><span class="block mt-2 text-[13px] font-black text-center">${i+1}. ${esc(s)}</span></span>`}).join('')+'</div>':'<span class="text-[9px] font-bold text-slate-400">Belum ada materi.</span>'}</div>
+                  <div class="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-200 dark:bg-emerald-900/60 p-2"><div class="text-[9px] font-black text-emerald-700 dark:text-emerald-300 mb-1.5">Belakang</div>${m.belakang.length?'<div class="flex flex-wrap gap-1.5">'+m.belakang.map((s,i)=>{const ar=(typeof window.rqArabicFor==='function'?window.rqArabicFor(s):'');return `<span class="px-2.5 py-2.5 rounded-md bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60 text-slate-700 dark:text-slate-200 leading-tight"><span dir="rtl" class="block text-[17px] font-black leading-6 text-slate-800 dark:text-slate-100 text-center">${ar?esc(ar):''}</span><span class="block mt-2 text-[13px] font-black text-center">${i+1}. ${esc(s)}</span></span>`}).join('')+'</div>':'<span class="text-[9px] font-bold text-slate-400">Belum ada materi.</span>'}</div>
                 </div>`:`<div class="p-2.5 rounded-lg bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 text-[9px] font-bold text-violet-700 dark:text-violet-300">${l===7?'Evaluasi & Pertanyaan Juz '+j:l===8?'Ujian Tasmi\' Semua Surat Juz tersebut '+j+' — dari awal Juz sampai akhir':'Belum ada daftar materi untuk level ini.'}</div>`}
                 <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 overflow-hidden">
                   <button type="button" onclick="window.toggleCapaianStudents('${j}',${l})" class="w-full px-2.5 py-2 flex items-center gap-2 text-left">
@@ -7013,8 +7024,8 @@ function renderOptions(){
     const p=doc.page(), green='#087f68';
     addRect(p,doc.margin,p.y-48,doc.W-doc.margin*2,48,'#f7fbfa',green,1.1);
     addRect(p,doc.margin,p.y-48,5,48,green);
-    addText(p,doc.margin+14,p.y-18,'RUMAH QURAN AL-KHANSA',11,hexRgb('#087f68'),true);
-    addText(p,doc.margin+14,p.y-32,includeStudents?'Materi Hafalan & Capaian Level Santri':'Materi Hafalan',15,hexRgb('#163b5b'),true);
+    addText(p,doc.margin+14,p.y-18,'RUMAH QURAN AL-KHANSA',12,hexRgb('#075c4c'),true);
+    addText(p,doc.margin+14,p.y-32,includeStudents?'Materi Hafalan & Capaian Level Santri':'Materi Hafalan',16,hexRgb('#0a1824'),true);
     addText(p,doc.W-doc.margin-8,p.y-18,new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}),7,hexRgb('#60758a'),false);
     addText(p,doc.W-doc.margin-8,p.y-32,'Juz 30, 29, 28, 27',7,hexRgb('#60758a'),false);
     p.y-=58;
@@ -7025,15 +7036,16 @@ function renderOptions(){
     const p=doc.page();
     addRect(p,doc.margin,p.y-22,doc.W-doc.margin*2,22,c.main,c.main,0.8);
     addText(p,doc.margin+9,p.y-15,`Juz ${j}`,12,[1,1,1],true);
-    addText(p,doc.margin+75,p.y-14,'Materi hafalan dan capaian level santri',7,[1,1,1],false);
-    p.y-=30;
+    addText(p,doc.margin+75,p.y-14,'Materi hafalan dan capaian level santri',8,[1,1,1],false);
+    addText(p,doc.margin+9,p.y-28,'Depan = materi pada bagian Depan level tersebut.  Belakang = materi pada bagian Belakang level tersebut.',7,[0.12,0.16,0.20],false);
+    p.y-=40;
     LEVELS.forEach(l=>{
       const m=materials(j,l), students=achieved(j,l);
       const max=Math.max(m.depan.length,m.belakang.length,1);
       const title=levelTitle(j,l);
       const studentText=includeStudents?(students.length?students.join(', '):'Belum ada santri yang mencapai level ini'):
         '';
-      const col1=includeStudents?178:247, col2=includeStudents?178:247, col3=includeStudents?184:0;
+      const col1=includeStudents?170:247, col2=includeStudents?170:247, col3=includeStudents?191:0;
       const x0=doc.margin, gap=4;
       let headerH=19;
       if(doc.need(headerH+25)){drawHeader(doc,includeStudents)}
@@ -7041,44 +7053,61 @@ function renderOptions(){
       addRect(q,x0,q.y-headerH,doc.W-doc.margin*2,headerH,c.soft,'#dbe5ef',0.6);
       addRect(q,x0+6,q.y-15,14,14,c.light,c.main,0.5);
       addText(q,x0+11,q.y-11,String(l),7,text,true);
-      addText(q,x0+27,q.y-11,title,8,[0.09,0.20,0.30],true);
-      if(includeStudents)addText(q,doc.W-doc.margin-8,q.y-11,`${students.length} santri`,6,[0.44,0.53,0.61],false);
+      addText(q,x0+27,q.y-11,title,10,[0.03,0.08,0.12],true);
+      if(includeStudents)addText(q,doc.W-doc.margin-8,q.y-11,`${students.length} santri`,8,[0.05,0.10,0.15],true);
       q.y-=headerH+3;
       const headH=17;
       if(doc.need(headH+18)){drawHeader(doc,includeStudents);q=doc.page();}
       const cols=includeStudents?[col1,col2,col3]:[col1,col2];
       const total=cols.reduce((a,b)=>a+b,0)+gap*(cols.length-1);
+      // Keep all PDF columns inside the A4 printable width.
+      const maxWidth=doc.W-doc.margin*2;
+      if(total>maxWidth){ const scale=(maxWidth-gap*(cols.length-1))/cols.reduce((a,b)=>a+b,0); for(let ci=0;ci<cols.length;ci++) cols[ci]=Math.floor(cols[ci]*scale); }
       let xx=x0;
-      ['Materi Depan (Awal)','Materi Belakang (Akhir)'].slice(0,2).forEach((label,idx)=>{addRect(q,xx,q.y-headH,cols[idx],headH,c.light,'#d7e1ea',0.5);addText(q,xx+5,q.y-11,label,6.5,text,true);xx+=cols[idx]+gap;});
-      if(includeStudents){addRect(q,xx,q.y-headH,cols[2],headH,c.light,'#d7e1ea',0.5);addText(q,xx+5,q.y-11,'Santri yang Sudah Mencapai',6.2,text,true);}
+      ['Materi Depan (Awal)','Materi Belakang (Akhir)'].slice(0,2).forEach((label,idx)=>{addRect(q,xx,q.y-headH,cols[idx],headH,c.light,'#d7e1ea',0.5);addText(q,xx+5,q.y-11,label,8.5,[0.02,0.05,0.08],true);xx+=cols[idx]+gap;});
+      if(includeStudents){addRect(q,xx,q.y-headH,cols[2],headH,c.light,'#d7e1ea',0.5);addText(q,xx+5,q.y-11,'Santri yang Sudah Mencapai',8,[0.02,0.05,0.08],true);}
       q.y-=headH;
       for(let i=0;i<max;i++){
         const a=m.depan[i]||'—', b=m.belakang[i]||'—';
         const st=i===0?studentText:'';
-        const la=wrapText(a,approxChars(col1,6.5)), lb=wrapText(b,approxChars(col2,6.5)), ls=includeStudents?wrapText(st,approxChars(col3,6.1)):[];
-        const lines=Math.max(la.length,lb.length,includeStudents?ls.length:1); const rh=Math.max(17,lines*8+6);
+        const la=wrapText(a,approxChars(col1,8.5)), lb=wrapText(b,approxChars(col2,8.5)), ls=includeStudents?wrapText(st,approxChars(col3,8)):[];
+        const lines=Math.max(la.length,lb.length,includeStudents?ls.length:1); const rh=Math.max(21,lines*10+8);
         if(doc.need(rh+3)){drawHeader(doc,includeStudents);q=doc.page();
-          addRect(q,x0,q.y-headH,cols[0],headH,c.light,'#d7e1ea',0.5);addText(q,x0+5,q.y-11,'Materi Depan (Awal)',6.5,text,true);
-          let hx=x0+cols[0]+gap;addRect(q,hx,q.y-headH,cols[1],headH,c.light,'#d7e1ea',0.5);addText(q,hx+5,q.y-11,'Materi Belakang (Akhir)',6.5,text,true);
-          if(includeStudents){hx+=cols[1]+gap;addRect(q,hx,q.y-headH,cols[2],headH,c.light,'#d7e1ea',0.5);addText(q,hx+5,q.y-11,'Santri yang Sudah Mencapai',6.2,text,true);}
+          addRect(q,x0,q.y-headH,cols[0],headH,c.light,'#d7e1ea',0.5);addText(q,x0+5,q.y-11,'Materi Depan (Awal)',8.5,[0.02,0.05,0.08],true);
+          let hx=x0+cols[0]+gap;addRect(q,hx,q.y-headH,cols[1],headH,c.light,'#d7e1ea',0.5);addText(q,hx+5,q.y-11,'Materi Belakang (Akhir)',8.5,[0.02,0.05,0.08],true);
+          if(includeStudents){hx+=cols[1]+gap;addRect(q,hx,q.y-headH,cols[2],headH,c.light,'#d7e1ea',0.5);addText(q,hx+5,q.y-11,'Santri yang Sudah Mencapai',8,[0.02,0.05,0.08],true);}
           q.y-=headH;
         }
-        let cx=x0; addRect(q,cx,q.y-rh,col1,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);la.forEach((t,k)=>addText(q,cx+5,q.y-11-k*8,t,6.5,[0.13,0.27,0.36],false));
-        cx+=col1+gap;addRect(q,cx,q.y-rh,col2,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);lb.forEach((t,k)=>addText(q,cx+5,q.y-11-k*8,t,6.5,[0.13,0.27,0.36],false));
-        if(includeStudents){cx+=col2+gap;addRect(q,cx,q.y-rh,col3,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);ls.forEach((t,k)=>addText(q,cx+5,q.y-11-k*8,t,6.1,[0.20,0.32,0.40],false));}
+        let cx=x0; addRect(q,cx,q.y-rh,col1,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);la.forEach((t,k)=>addText(q,cx+5,q.y-13-k*10,t,8.5,[0.03,0.05,0.07],true));
+        cx+=col1+gap;addRect(q,cx,q.y-rh,col2,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);lb.forEach((t,k)=>addText(q,cx+5,q.y-13-k*10,t,8.5,[0.03,0.05,0.07],true));
+        if(includeStudents){cx+=col2+gap;addRect(q,cx,q.y-rh,col3,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);ls.forEach((t,k)=>addText(q,cx+5,q.y-13-k*10,t,8,[0.04,0.07,0.09],true));}
         q.y-=rh;
       }
       q.y-=7;
     });
   }
+  function getPdfJuzSelection(){
+    const el=document.getElementById('materiPdfJuzSelect');
+    const value=el ? String(el.value||'all') : 'all';
+    if(value==='all') return [...JUZS];
+    return JUZS.includes(value) ? [value] : [...JUZS];
+  }
+  function getPdfJuzLabel(){
+    const el=document.getElementById('materiPdfJuzSelect');
+    const value=el ? String(el.value||'all') : 'all';
+    return value==='all' ? 'Semua Juz (30, 29, 28, 27)' : `Juz ${value}`;
+  }
   function buildPdf(includeStudents){
     try{
-      if(typeof window.showToast==='function')window.showToast('Membuat PDF A4…','success');
+      const selectedJuz=getPdfJuzSelection();
+      if(!selectedJuz.length) throw new Error('Juz PDF belum dipilih');
+      if(typeof window.showToast==='function')window.showToast(`Membuat PDF A4: ${getPdfJuzLabel()}…`,'success');
       const doc=new PdfDoc();drawHeader(doc,includeStudents);
-      JUZS.forEach(j=>drawJuz(doc,j,includeStudents));
+      selectedJuz.forEach(j=>drawJuz(doc,j,includeStudents));
       doc.pages.forEach((p,i)=>{addLine(p,doc.margin,doc.margin-5,doc.W-doc.margin,doc.margin-5,'#087f68',1);addText(p,doc.margin,doc.margin-17,`Rumah Quran Al-Khansa · ${includeStudents?'Materi Hafalan & Capaian Level Santri':'Materi Hafalan'}`,6,[0.40,0.48,0.55],false);addText(p,doc.W-doc.margin,doc.margin-17,`Halaman ${i+1} / ${doc.pages.length}`,6,[0.40,0.48,0.55],false);});
-      doc.save(includeStudents?'Materi_Hafalan_dan_Capaian_Level_Santri.pdf':'Materi_Hafalan.pdf');
-      if(typeof window.showToast==='function')window.showToast('PDF A4 berhasil diunduh.','success');
+      const scope=(selectedJuz.length===4)?'Semua_Juz':`Juz_${selectedJuz[0]}`;
+      doc.save(includeStudents?`Materi_Hafalan_dan_Capaian_Level_Santri_${scope}.pdf`:`Materi_Hafalan_${scope}.pdf`);
+      if(typeof window.showToast==='function')window.showToast(`PDF A4 ${getPdfJuzLabel()} berhasil diunduh.`,'success');
     }catch(e){console.error('PDF export error:',e);if(typeof window.showToast==='function')window.showToast('PDF gagal dibuat.','error');}
   }
   window.downloadMateriHafalanPDF=function(){buildPdf(false)};
