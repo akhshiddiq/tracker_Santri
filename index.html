@@ -3369,34 +3369,6 @@
 .tracking-murojaah-option{cursor:default!important;user-select:none}
 .tracking-murojaah-option input{pointer-events:none}
 </style>
-<style id="sticky-save-clone-v15">
-#rqFloatingSaveSetoran{
-  position:fixed!important;
-  left:8px!important;
-  right:8px!important;
-  bottom:8px!important;
-  width:auto!important;
-  height:40px!important;
-  z-index:2147483647!important;
-  display:none;
-  margin:0!important;
-  padding:0!important;
-  transform:none!important;
-}
-#rqFloatingSaveSetoran button{
-  width:100%!important;
-  height:40px!important;
-  min-height:40px!important;
-  padding:6px 12px!important;
-  border-radius:11px!important;
-  font-size:13px!important;
-  margin:0!important;
-}
-@media(max-width:640px){
-  #rqFloatingSaveSetoran{left:6px!important;right:6px!important;bottom:6px!important;height:38px!important}
-  #rqFloatingSaveSetoran button{height:38px!important;min-height:38px!important;font-size:12px!important;border-radius:10px!important}
-}
-</style>
 <style id="tracker-position-fix-v2">
 /* Saat Tracker Hafalan dibuka, elemen tabel persurat tidak ikut mengambil ruang di atas tracker. */
 #tracker-panel-hafalan{display:block;}
@@ -3600,6 +3572,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Surat Persantri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-capaian" onclick="window.switchTrackerMenu('capaian')" type="button"><i class="fa-solid fa-user-check mr-1"></i> Materi Hafalan &amp; Capaian Level Santri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-dashboard" onclick="window.openDashboardPersantri()" type="button"><i class="fa-solid fa-chart-pie mr-1"></i> Dashboard Laporan Persantri</button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-panduan" onclick="window.switchTrackerMenu('panduan')" type="button"><i class="fa-solid fa-circle-info mr-1"></i> Cara Penggunaan</button>
 </div>
 </nav>
 <button class="p-2.5 bg-emerald-700 dark:bg-emerald-900 rounded-xl text-amber-300 hover:bg-emerald-600 transition shadow-xs shrink-0" onclick="window.toggleDarkMode()" title="Fitur Malam (Dark Mode)">
@@ -3661,8 +3634,25 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <h3 class="font-black text-sm sm:text-base text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-pen-to-square mr-1"></i> Form Setoran Harian</h3>
 <span class="text-[9px] font-black px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500" id="trackingStorageBadge">Tersimpan di perangkat</span>
 </div>
+<div id="rqInputQuickLinks" class="rounded-2xl border-2 border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/70 dark:bg-emerald-950/20 p-3">
+  <div class="flex items-center justify-between gap-2 mb-2">
+    <div>
+      <div class="text-sm font-black text-emerald-900 dark:text-emerald-200"><i class="fa-solid fa-bolt mr-1"></i>Link Cepat Pengisian</div>
+      <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Klik untuk langsung menuju kolom yang ingin diisi.</div>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+    <button type="button" class="rq-input-quick-btn" onclick="window.rqInputQuickJump('santri')"><i class="fa-solid fa-user-check"></i><span>Santri</span></button>
+    <button type="button" class="rq-input-quick-btn" onclick="window.rqInputQuickJump('tanggal')"><i class="fa-solid fa-calendar-days"></i><span>Tanggal</span></button>
+    <button type="button" class="rq-input-quick-btn" onclick="window.rqInputQuickJump('juzlevel')"><i class="fa-solid fa-layer-group"></i><span>Juz & Level</span></button>
+    <button type="button" class="rq-input-quick-btn" onclick="window.rqInputQuickJump('surat')"><i class="fa-solid fa-book-quran"></i><span>Surat</span></button>
+    <button type="button" class="rq-input-quick-btn" onclick="window.rqInputQuickJump('ayat')"><i class="fa-solid fa-list-ol"></i><span>Ayat</span></button>
+    <button type="button" class="rq-input-quick-btn" onclick="window.rqInputQuickJump('penilaian')"><i class="fa-solid fa-star"></i><span>Penilaian</span></button>
+    <button type="button" class="rq-input-quick-btn" onclick="window.rqInputQuickJump('simpan')"><i class="fa-solid fa-floppy-disk"></i><span>Simpan</span></button>
+  </div>
+</div>
 <div>
-<label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Santri Terpilih</label>
+<label id="rqInputSectionSantri" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Santri Terpilih</label>
 <div class="w-full p-3.5 sm:p-4 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl min-h-[64px] flex items-center text-emerald-800 dark:text-emerald-300" id="trackingSelectedSantri">
 <div class="selected-santri-icon"><i class="fa-solid fa-user-check"></i></div>
 <div class="min-w-0 ml-3">
@@ -3690,13 +3680,13 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 <div>
-<label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Tanggal Setoran</label>
+<label id="rqInputSectionTanggal" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Tanggal Setoran</label>
 <input class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm min-h-[52px]" id="trackingTanggal" type="date">
 </input>
 <div class="mt-1 text-[11px] font-black text-emerald-700 dark:text-emerald-300" id="trackingTanggalHari"></div>
 </div>
 <div>
-<label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Juz</label>
+<label id="rqInputSectionJuz" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Juz</label>
 <select class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm min-h-[52px]" id="trackingJuz" onchange="window.refreshTrackingJuzLevelContext();">
 <option value="30">Juz 30</option>
 <option value="29">Juz 29</option>
@@ -3722,14 +3712,14 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 </div>
 <div>
-<label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Surat</label>
+<label id="rqInputSectionSurat" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Surat</label>
 <input autocomplete="off" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm min-h-[52px]" id="trackingSurat" list="trackingSuratList" onchange="window.onTrackingSuratInput(true)" oninput="window.onTrackingSuratInput()" placeholder="Ketik nama surat..."/>
 <datalist id="trackingSuratList"></datalist>
 <div class="text-[9px] font-bold text-slate-400 mt-1">Ketik nama surat atau pilih dari daftar.</div>
 </div>
 <div class="grid grid-cols-2 gap-3">
 <div>
-<label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Dari Ayat</label>
+<label id="rqInputSectionAyat" class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Dari Ayat</label>
 <input class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-lg min-h-[58px]" id="trackingAyatDari" min="1" oninput="window.updateTrackingProgress()" placeholder="1" type="number"/>
 </div>
 <div>
@@ -3755,7 +3745,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 <div class="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/20 border-2 border-sky-200 dark:border-sky-900/50">
 <div class="mb-3">
-<h4 class="text-sm font-black text-sky-900 dark:text-sky-300">PENILAIAN SETORAN HAFALAN PERSURAT</h4>
+<h4 id="rqInputSectionPenilaian" class="text-sm font-black text-sky-900 dark:text-sky-300">PENILAIAN SETORAN HAFALAN PERSURAT</h4>
 <p class="text-[10px] font-bold text-slate-500 mt-1">Klik langsung kotak penilaian yang sesuai.</p>
 </div>
 <div class="space-y-4">
@@ -3797,9 +3787,9 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 </div>
 </div>
-<div> <div class="flex items-center justify-between gap-2 mb-1"> <label class="block text-xs font-black text-slate-700 dark:text-slate-300">Catatan Ustadz</label> <button class="hidden px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-300 text-[10px] font-black hover:bg-rose-100 transition" id="trackingCatatanClear" onclick="window.clearTrackingCatatan()" title="Hapus catatan saat ini" type="button"><i class="fa-solid fa-xmark mr-1"></i>Hapus</button> </div> <div class="relative"> <textarea class="w-full p-3.5 pr-12 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm" id="trackingCatatan" placeholder="Catatan guru untuk surat ini..." rows="3"></textarea> <button aria-label="Hapus catatan saat ini" class="hidden absolute right-3 top-3 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-rose-100 hover:text-rose-600 transition items-center justify-center" id="trackingCatatanX" onclick="window.clearTrackingCatatan()" title="Hapus catatan saat ini" type="button"><i class="fa-solid fa-xmark text-sm"></i></button> </div> </div>
+<div> <div class="flex items-center justify-between gap-2 mb-1"> <label id="rqInputSectionCatatan" class="block text-xs font-black text-slate-700 dark:text-slate-300">Catatan Ustadz</label> <button class="hidden px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-300 text-[10px] font-black hover:bg-rose-100 transition" id="trackingCatatanClear" onclick="window.clearTrackingCatatan()" title="Hapus catatan saat ini" type="button"><i class="fa-solid fa-xmark mr-1"></i>Hapus</button> </div> <div class="relative"> <textarea class="w-full p-3.5 pr-12 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm" id="trackingCatatan" placeholder="Catatan guru untuk surat ini..." rows="3"></textarea> <button aria-label="Hapus catatan saat ini" class="hidden absolute right-3 top-3 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-rose-100 hover:text-rose-600 transition items-center justify-center" id="trackingCatatanX" onclick="window.clearTrackingCatatan()" title="Hapus catatan saat ini" type="button"><i class="fa-solid fa-xmark text-sm"></i></button> </div> </div>
 <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900/50">
-<h4 class="text-sm font-black text-amber-900 dark:text-amber-300 mb-3">CATATAN WAKTU &amp; STATUS MUROJA'AH</h4>
+<h4 id="rqInputSectionMurojaah" class="text-sm font-black text-amber-900 dark:text-amber-300 mb-3">CATATAN WAKTU &amp; STATUS MUROJA'AH</h4>
 <div class="mb-3">
 <label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Tanggal Waktu Terakhir Disetor</label>
 <div class="w-full p-3.5 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm" id="trackingLastSubmitted">Belum ada setoran untuk surat ini.</div>
@@ -3822,7 +3812,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 </div>
 </div>
-<button class="w-full min-h-[58px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md active:scale-[.99] transition" onclick="window.saveTrackingSetoran()" type="button">
+<button id="rqInputSectionSimpan" class="w-full min-h-[58px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md active:scale-[.99] transition" onclick="window.saveTrackingSetoran()" type="button">
 <i class="fa-solid fa-floppy-disk mr-1"></i> SIMPAN SETORAN
                     </button>
 <p class="text-[9px] text-slate-400 font-bold text-center">Data modul ini tersimpan di Local Storage browser pada perangkat ini.</p>
@@ -3866,6 +3856,46 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="bacaanSantriSummary"></div>
     <div id="bacaanSantriList" class="space-y-3"></div>
+  </div>
+</div>
+<div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-panduan" style="display:none;">
+  <div class="space-y-4">
+    <div class="bg-gradient-to-r from-emerald-700 via-teal-600 to-cyan-600 text-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="p-4 sm:p-6">
+        <div class="flex items-start gap-3">
+          <span class="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 grid place-items-center shrink-0"><i class="fa-solid fa-circle-info text-lg"></i></span>
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black">Cara Penggunaan Tracking Tahfidz Santri</h2>
+            <p class="text-xs sm:text-sm text-white/85 font-bold mt-1">Ikuti urutan pengisian agar data hafalan, tanggal setoran, progres Juz, Level, dan warning muroja'ah tersambung rapi ke semua menu.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <div>
+          <h3 class="text-base sm:text-lg font-black text-emerald-800 dark:text-emerald-300">Urutan Pengisian yang Disarankan</h3>
+          <p class="text-[10px] sm:text-xs font-bold text-slate-500 mt-1">Gunakan tombol di bawah untuk langsung menuju kolomnya.</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('santri')"><b>1</b><span><strong>Pilih Santri</strong><small>Pilih nama santri terlebih dahulu.</small></span><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('tanggal')"><b>2</b><span><strong>Tanggal Setoran</strong><small>Isi tanggal sesuai tanggal setoran.</small></span><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('juzlevel')"><b>3</b><span><strong>Juz, Arah & Level</strong><small>Pilih Juz dan Level sesuai materi.</small></span><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('surat')"><b>4</b><span><strong>Surat</strong><small>Pilih surat yang disetorkan.</small></span><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('ayat')"><b>5</b><span><strong>Rentang Ayat</strong><small>Isi ayat awal sampai ayat akhir.</small></span><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('penilaian')"><b>6</b><span><strong>Penilaian</strong><small>Isi penilaian bacaan dan hafalan.</small></span><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('catatan')"><b>7</b><span><strong>Catatan & Muroja'ah</strong><small>Tambahkan catatan dan cek status.</small></span><i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" class="rq-guide-step rq-guide-save" onclick="window.rqInputQuickJump('simpan')"><b>8</b><span><strong>Simpan Setoran</strong><small>Simpan setelah semua kolom benar.</small></span><i class="fa-solid fa-floppy-disk"></i></button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="rq-guide-info"><i class="fa-solid fa-calendar-check"></i><div><b>Tanggal per surat</b><span>Setiap surat memiliki tanggal setoran sendiri agar warning muroja'ah akurat.</span></div></div>
+      <div class="rq-guide-info"><i class="fa-solid fa-chart-pie"></i><div><b>Dashboard</b><span>Progres Juz dan Level mengikuti data hafalan yang disimpan.</span></div></div>
+      <div class="rq-guide-info"><i class="fa-solid fa-triangle-exclamation"></i><div><b>Warning Muroja'ah</b><span>Tanggal terakhir surat dipakai untuk menentukan surat yang perlu dimuroja'ah.</span></div></div>
+    </div>
   </div>
 </div>
 <div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-dashboard" style="display:none;">
@@ -5369,64 +5399,7 @@ window.switchTrackerMenu=function(menu){
 document.addEventListener('DOMContentLoaded',function(){
   window.switchTrackerMenu('input');
 });
-</script>
-<script id="sticky-save-clone-v15-js">
-(function(){
-  let floating=null, original=null;
-
-  function formatBytes(bytes){
-    const n=Number(bytes)||0;
-    if(n<1024) return `${Math.round(n)} B`;
-    if(n<1024*1024) return `${(n/1024).toFixed(1)} KB`;
-    if(n<1024*1024*1024) return `${(n/1024/1024).toFixed(1)} MB`;
-    return `${(n/1024/1024/1024).toFixed(2)} GB`;
-  }
-
-  async function getLocalStorageInfo(){
-    try{
-      if(navigator.storage && typeof navigator.storage.estimate==='function'){
-        const e=await navigator.storage.estimate();
-        const usage=Number(e?.usage||0);
-        const quota=Number(e?.quota||0);
-        return {usage,quota,remaining:Math.max(0,quota-usage),supported:quota>0};
-      }
-    }catch(e){}
-    return {usage:0,quota:0,remaining:0,supported:false};
-  }
-
-  function ensure(){
-    if(!original){
-      const list=document.querySelectorAll('button[onclick*="saveTrackingSetoran"]');
-      if(!list.length)return;
-      original=list[0];
-    }
-    if(!floating){
-      floating=document.createElement('div');
-      floating.id='rqFloatingSaveSetoran';
-      const b=document.createElement('button');
-      b.type='button';
-      b.className=original.className;
-      b.innerHTML=original.innerHTML;
-      b.addEventListener('click',function(e){
-        e.preventDefault();
-        if(original) original.click();
-      });
-      floating.appendChild(b);
-      document.body.appendChild(floating);
-    }
-    const panel=document.getElementById('tracker-panel-input');
-    const show=!!panel && getComputedStyle(panel).display!=='none' && getComputedStyle(panel).visibility!=='hidden';
-    floating.style.display=show?'block':'none';
-  }
-
-  function start(){
-    ensure();
-    setInterval(ensure,300);
-  }
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
-  else start();
-})();
+window.__rqCoreSwitchTrackerMenu=window.switchTrackerMenu;
 </script>
 <script id="tracker-expand-safe-v16-js">
 (function(){
@@ -6578,21 +6551,8 @@ function renderOptions(){
   window.renderWaWaliSantriReport=function(){init();renderPreview();};
   window.copyWaWaliSantriReport=copy;
   window.sendWaWaliSantriReport=send;
-  function hookSwitch(){
-    const original=window.switchTrackerMenu;if(typeof original!=='function'||original.__waWaliWrapped)return;
-    function wrapped(menu){
-      if(menu!=='wa-wali')return original(menu);
-      ['input','hafalan','history','wa-wali'].forEach(k=>{
-        const p=document.getElementById('tracker-panel-'+k),b=document.getElementById('trackerMenu-'+k);
-        if(p){p.dataset.panelHidden=k==='wa-wali'?'0':'1';p.style.display=k==='wa-wali'?'block':'none';}
-        if(b){b.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(k==='wa-wali')b.classList.add('bg-white','text-emerald-900','shadow');else b.classList.add('text-emerald-50','hover:bg-emerald-700');}
-      });
-      document.body.classList.remove('tracker-hafalan-active');
-      init();renderPreview();window.scrollTo({top:0,behavior:'smooth'});
-    }
-    wrapped.__waWaliWrapped=true;window.switchTrackerMenu=wrapped;
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init();hookSwitch();});else{init();hookSwitch();}
+  function hookSwitch(){ /* dispatcher is centralized at the end of the file */ }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init();});else{init();}
 })();
 </script>
 
@@ -6717,67 +6677,6 @@ function renderOptions(){
 
 \n
 
-
-<script id="tracker-menu-stability-v1">
-(function(){
-  'use strict';
-
-  const panelMap={
-    'input':'tracker-panel-input',
-    'hafalan':'tracker-panel-hafalan',
-    'capaian':'tracker-panel-capaian',
-    'bacaan':'tracker-panel-bacaan',
-    'history':'tracker-panel-history',
-    'wa-wali':'tracker-panel-wa-wali',
-    'wa-kondisi':'tracker-panel-wa-kondisi'
-  };
-
-  function normalize(menu){
-    const target=panelMap[menu]||null;
-    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{
-      const active=target && p.id===target;
-      p.dataset.panelHidden=active?'0':'1';
-      p.style.display=active?'block':'none';
-    });
-
-    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{
-      const active=btn.id===('trackerMenu-'+menu);
-      btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';
-      if(active){
-        btn.classList.add('bg-white','text-emerald-900','shadow');
-      }else{
-        btn.classList.add('text-emerald-50','hover:bg-emerald-700');
-      }
-    });
-  }
-
-  function install(){
-    const current=window.switchTrackerMenu;
-    if(typeof current!=='function')return;
-    if(current.__stableMenuWrapper)return;
-
-    function stable(menu){
-      const result=current(menu);
-      normalize(menu);
-      return result;
-    }
-    stable.__stableMenuWrapper=true;
-    window.switchTrackerMenu=stable;
-
-    // The original app starts at Input Setoran. Keep that behavior,
-    // but make sure only that menu is visibly active.
-    setTimeout(()=>normalize('input'),0);
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',install);
-  }else{
-    install();
-  }
-
-  window.__normalizeTrackerMenu=normalize;
-})();
-</script>
 
 <!-- =========================================================
      LOCAL STORAGE ONLY
@@ -6915,29 +6814,6 @@ function renderOptions(){
 })();
 </script>
 
-<script id="wa-menu-final-direct-bind-v1">
-(function(){
-  'use strict';
-  function bind(){
-    // Restore the application's original menu dispatcher. The WA modules now
-    // open their own panels directly, avoiding a chain of nested wrappers.
-    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
-      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
-    }
-    const personal=document.getElementById('trackerMenu-wa-wali');
-    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
-      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
-    }
-    const kelas=document.getElementById('trackerMenu-wa-kelas');
-    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
-      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
-  else setTimeout(bind,150);
-  window.addEventListener('load',()=>setTimeout(bind,150));
-})();
-</script>
 </body>
 
 <script id="sync-information-menu-stability-v1">
@@ -7281,14 +7157,6 @@ function renderOptions(){
 
   function install(){
     if(!window.__rqOriginalSwitchTrackerMenu)window.__rqOriginalSwitchTrackerMenu=window.switchTrackerMenu;
-    const current=window.switchTrackerMenu;
-    if(typeof current==='function'&&!current.__waKelasWrapped){
-      const wrapped=function(menu){
-        if(menu===MENU){openMenu();return;}
-        return current.apply(this,arguments);
-      };
-      wrapped.__waKelasWrapped=true; window.switchTrackerMenu=wrapped;
-    }
     build();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
@@ -7488,23 +7356,10 @@ function renderOptions(){
 
   window.__openWaWaliPersonalPanel = showPanel;
 
-  function installSwitchGuard(){
-    const current=window.switchTrackerMenu;
-    if(typeof current!=='function' || current.__waWaliFinalFix) return;
-    const wrapped=function(menu){
-      if(menu===MENU){
-        ensure();
-        return showPanel();
-      }
-      return current.apply(this,arguments);
-    };
-    wrapped.__waWaliFinalFix=true;
-    window.switchTrackerMenu=wrapped;
-  }
+  function installSwitchGuard(){ /* dispatcher is centralized at the end of the file */ }
 
   function init(){
     ensure();
-    installSwitchGuard();
   }
 
   if(document.readyState==='loading'){
@@ -7516,29 +7371,6 @@ function renderOptions(){
 })();
 </script>
 
-<script id="wa-menu-final-direct-bind-v1b">
-(function(){
-  'use strict';
-  function bind(){
-    // Restore the application's original menu dispatcher. The WA modules now
-    // open their own panels directly, avoiding a chain of nested wrappers.
-    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
-      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
-    }
-    const personal=document.getElementById('trackerMenu-wa-wali');
-    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
-      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
-    }
-    const kelas=document.getElementById('trackerMenu-wa-kelas');
-    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
-      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
-  else setTimeout(bind,150);
-  window.addEventListener('load',()=>setTimeout(bind,150));
-})();
-</script>
 <script id="rq-input-universal-sync-v2">
 (function(){
   'use strict';
@@ -7817,29 +7649,6 @@ function renderOptions(){
   document.addEventListener('change',e=>{if(e.target?.id==='trackingSantri')setTimeout(window.renderTrackingDashboardPersantri,0);});
 })();
 </script>
-<script id="rq-dashboard-persantri-v1-dispatch">
-(function(){
-  'use strict';
-  function install(){
-    const old=window.switchTrackerMenu;
-    if(typeof old!=='function'||old.__rqDashboardWrapped)return;
-    function wrapped(menu){
-      if(menu==='dashboard'){
-        document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{p.style.display='none';p.dataset.panelHidden='1';});
-        const p=document.getElementById('tracker-panel-dashboard');if(p){p.style.display='block';p.dataset.panelHidden='0';}
-        document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{btn.classList.remove('bg-white','text-emerald-900','shadow');btn.classList.remove('text-emerald-50','hover:bg-emerald-700');if(btn.id==='trackerMenu-dashboard')btn.classList.add('bg-white','text-emerald-900','shadow');else btn.classList.add('text-emerald-50','hover:bg-emerald-700');});
-        window.renderTrackingDashboardPersantri();window.scrollTo({top:0,behavior:'smooth'});return;
-      }
-      return old(menu);
-    }
-    wrapped.__rqDashboardWrapped=true;wrapped.__rqDashboardOriginal=old;window.switchTrackerMenu=wrapped;
-  }
-  function ready(){setTimeout(install,20);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
-  window.addEventListener('load',()=>setTimeout(install,120));
-})();
-</script>
-
 <script id="rq-dashboard-layout-fix-v3">
 (function(){
   'use strict';
@@ -7937,6 +7746,7 @@ function renderOptions(){
   window.addEventListener('load',()=>setTimeout(install,120));
 })();
 </script>
+
 </html>
 
 <style id="rq-final-menu-readability-v1">
@@ -8003,75 +7813,72 @@ function renderOptions(){
 body.tracker-dashboard-active #trackerSearchSidebar{display:none!important;}
 body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1fr)!important;}
 </style>
-<script id="rq-final-menu-dispatcher-v1">
+<script id="rq-final-menu-dispatcher-v2">
 (function(){
   'use strict';
+  const PANEL_MAP={
+    input:'tracker-panel-input',
+    hafalan:'tracker-panel-hafalan',
+    capaian:'tracker-panel-capaian',
+    history:'tracker-panel-history',
+    bacaan:'tracker-panel-bacaan',
+    dashboard:'tracker-panel-dashboard',
+    panduan:'tracker-panel-panduan',
+    'wa-wali':'tracker-panel-wa-wali',
+    'wa-kelas':'tracker-panel-wa-kelas',
+    'wa-kondisi':'tracker-panel-wa-kondisi',
+    'level-perkelas':'tracker-panel-level-perkelas'
+  };
   function hideAll(){
     document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
-      p.style.display='none';
-      p.dataset.panelHidden='1';
+      p.style.display='none';p.dataset.panelHidden='1';
     });
   }
   function setButtons(menu){
     document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
-      btn.classList.remove('bg-white','text-emerald-900','shadow');
-      btn.classList.remove('text-emerald-50','hover:bg-emerald-700');
-      if(btn.id==='trackerMenu-'+menu){
-        btn.classList.add('bg-white','text-emerald-900','shadow');
-      }else{
-        btn.classList.add('text-emerald-50','hover:bg-emerald-700');
-      }
+      btn.classList.remove('bg-white','text-emerald-900','shadow','text-emerald-50','hover:bg-emerald-700');
+      if(btn.id==='trackerMenu-'+menu) btn.classList.add('bg-white','text-emerald-900','shadow');
+      else btn.classList.add('text-emerald-50','hover:bg-emerald-700');
     });
   }
-  function showPanel(id){
-    var p=document.getElementById(id);
+  function show(id){
+    const p=document.getElementById(id);
     if(!p)return false;
-    p.style.display='block';
-    p.dataset.panelHidden='0';
+    p.style.display='block';p.dataset.panelHidden='0';
     return true;
+  }
+  function prepare(menu){
+    if(typeof window.__rqSetPerSuratVisibility==='function') window.__rqSetPerSuratVisibility(menu);
+    document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
+    document.body.classList.toggle('tracker-dashboard-active',menu==='dashboard');
+    if(menu!=='dashboard') document.body.classList.remove('tracker-dashboard-active');
   }
   function dispatch(menu){
     try{
-      if(typeof window.__rqSetPerSuratVisibility==='function') window.__rqSetPerSuratVisibility(menu);
-      document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
-      if(menu==='wa-wali'){
+      prepare(menu);
+      hideAll();
+      let ready=true;
+      if(menu==='dashboard'){
+        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+        ready=show(PANEL_MAP.dashboard);
+      }else if(menu==='wa-wali'){
         if(typeof window.__openWaWaliPersonalPanel==='function') window.__openWaWaliPersonalPanel();
         else if(typeof window.renderWaWaliSantriReport==='function') window.renderWaWaliSantriReport();
-        hideAll();
-        showPanel('tracker-panel-wa-wali');
-        setButtons(menu);
-        return;
-      }
-      if(menu==='wa-kelas'){
+        ready=show(PANEL_MAP['wa-wali']);
+      }else if(menu==='wa-kelas'){
         if(typeof window.__openWaKelasLevelPanel==='function') window.__openWaKelasLevelPanel();
         else if(typeof window.renderWaKelasReport==='function') window.renderWaKelasReport();
-        hideAll();
-        showPanel('tracker-panel-wa-kelas');
-        setButtons(menu);
-        return;
-      }
-      if(menu==='dashboard'){
-        hideAll();
-        if(!showPanel('tracker-panel-dashboard')){
-          if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
-          showPanel('tracker-panel-dashboard');
-        }
-        setButtons(menu);
-        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
-        window.scrollTo({top:0,behavior:'smooth'});
-        return;
-      }
-      var panelMap={
-        input:'tracker-panel-input',
-        hafalan:'tracker-panel-hafalan',
-        capaian:'tracker-panel-capaian',
-        history:'tracker-panel-history',
-        bacaan:'tracker-panel-bacaan'
-      };
-      if(panelMap[menu]){
-        hideAll();
-        showPanel(panelMap[menu]);
-        setButtons(menu);
+        ready=show(PANEL_MAP['wa-kelas']);
+      }else if(menu==='wa-kondisi'){
+        if(typeof window.openWaKondisiPersuratMenu==='function') window.openWaKondisiPersuratMenu();
+        ready=show(PANEL_MAP['wa-kondisi']);
+      }else if(menu==='panduan'){
+        ready=show(PANEL_MAP.panduan);
+      }else if(menu==='level-perkelas'){
+        if(typeof window.renderWaKelasReport==='function') window.renderWaKelasReport();
+        ready=show(PANEL_MAP['level-perkelas']);
+      }else if(PANEL_MAP[menu]){
+        ready=show(PANEL_MAP[menu]);
         if(menu==='hafalan' && typeof window.renderHafalanTracker==='function') window.renderHafalanTracker();
         if(menu==='capaian' && typeof window.renderCapaianLevelSantri==='function') window.renderCapaianLevelSantri();
         if(menu==='history' && typeof window.renderTrackingHistory==='function') window.renderTrackingHistory();
@@ -8079,36 +7886,190 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
         if(menu==='input'){
           if(typeof window.renderTrackingPerSuratOptions==='function') window.renderTrackingPerSuratOptions();
           if(typeof window.renderTrackingPerSurat==='function') window.renderTrackingPerSurat();
+          if(typeof window.renderTrackingLevelSuratList==='function') window.renderTrackingLevelSuratList();
         }
-        window.scrollTo({top:0,behavior:'smooth'});
-        return;
+      }else if(menu==='sync-info'){
+        if(typeof window.openSyncInformation==='function') window.openSyncInformation();
+        ready=true;
+      }else{
+        const core=window.__rqCoreSwitchTrackerMenu;
+        if(typeof core==='function' && core!==dispatch) core(menu);
+        ready=show('tracker-panel-'+menu);
       }
-      /* Menu lain yang memang dikelola sistem lama tetap memakai dispatcher asli. */
-      var base=window.__rqOriginalSwitchTrackerMenu;
-      if(typeof base==='function') base(menu);
-      hideAll();
-      var p=document.getElementById('tracker-panel-'+menu);
-      if(p){p.style.display='block';p.dataset.panelHidden='0';}
       setButtons(menu);
+      if(menu==='dashboard') document.body.classList.add('tracker-dashboard-active');
+      else document.body.classList.remove('tracker-dashboard-active');
+      if(ready) window.scrollTo({top:0,behavior:'smooth'});
     }catch(err){
-      console.error('Final menu dispatcher error:',err);
+      console.error('Tracker menu dispatcher error:',err);
     }
   }
-  function install(){
-    window.switchTrackerMenu=dispatch;
-    window.__rqFinalMenuDispatcherInstalled=true;
-    /* Pastikan dua menu dinamis tetap bisa dibuka meskipun script lama mencoba membungkus switchTrackerMenu. */
+  window.switchTrackerMenu=dispatch;
+  dispatch.__rqCentralDispatcher=true;
+  dispatch.__stableMenuWrapper=true;
+  dispatch.__waWaliWrapped=true;
+  dispatch.__waKelasWrapped=true;
+  dispatch.__rqDashboardWrapped=true;
+  dispatch.__rqCaraUsageWrapped=true;
+  window.__rqFinalMenuDispatcherInstalled=true;
+  function bindButtons(){
     document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
-      if(btn.id==='trackerMenu-wa-wali' || btn.id==='trackerMenu-wa-kelas'){
-        btn.onclick=function(e){e.preventDefault();dispatch(btn.id==='trackerMenu-wa-wali'?'wa-wali':'wa-kelas');};
+      const id=btn.id||'';
+      if(!id.startsWith('trackerMenu-')) return;
+      const menu=id.slice('trackerMenu-'.length);
+      if(['pengaturan'].includes(menu)) return;
+      if(menu==='sync-info'){btn.onclick=function(e){e.preventDefault();dispatch(menu);};return;}
+      if(PANEL_MAP[menu] || ['dashboard','panduan','wa-wali','wa-kelas','wa-kondisi','level-perkelas'].includes(menu)){
+        btn.onclick=function(e){e.preventDefault();dispatch(menu);};
       }
     });
   }
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){setTimeout(install,0);});
-  }else{
-    setTimeout(install,0);
+  bindButtons();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindButtons,{once:true});
+  window.addEventListener('load',bindButtons,{once:true});
+  setTimeout(bindButtons,0);
+})();
+</script>
+<style id="rq-cara-penggunaan-mobile-v1">
+.rq-input-quick-btn{
+  min-height:42px; display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:8px 10px; border-radius:12px; border:1px solid rgba(16,185,129,.25);
+  background:rgba(255,255,255,.85); color:#065f46; font-size:11px; font-weight:900;
+  transition:.15s ease;
+}
+.dark .rq-input-quick-btn{background:#0f172a;color:#a7f3d0;border-color:rgba(52,211,153,.22)}
+.rq-input-quick-btn:hover{border-color:#10b981;transform:translateY(-1px)}
+.rq-input-quick-btn i{font-size:11px}
+.rq-guide-step{
+  width:100%; min-height:82px; display:flex; align-items:center; gap:10px; text-align:left;
+  padding:12px; border-radius:16px; border:2px solid #e2e8f0; background:#fff;
+  color:#0f172a; transition:.15s ease;
+}
+.dark .rq-guide-step{background:#0f172a;border-color:#334155;color:#f8fafc}
+.rq-guide-step:hover{border-color:#10b981;transform:translateY(-1px)}
+.rq-guide-step>b{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:#d1fae5;color:#047857;font-size:13px}
+.rq-guide-step span{min-width:0;flex:1}
+.rq-guide-step strong{display:block;font-size:12px;font-weight:900}
+.rq-guide-step small{display:block;margin-top:3px;font-size:9px;font-weight:700;color:#64748b;line-height:1.4}
+.dark .rq-guide-step small{color:#94a3b8}
+.rq-guide-step>i{color:#10b981;font-size:11px}
+.rq-guide-save{border-color:#86efac;background:#f0fdf4}
+.dark .rq-guide-save{background:#052e16;border-color:#166534}
+.rq-guide-info{display:flex;gap:10px;align-items:flex-start;padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0}
+.dark .rq-guide-info{background:#0f172a;border-color:#334155}
+.rq-guide-info>i{font-size:16px;color:#059669;margin-top:2px}
+.rq-guide-info b{display:block;font-size:11px;font-weight:900}
+.rq-guide-info span{display:block;font-size:9px;font-weight:700;color:#64748b;line-height:1.5;margin-top:3px}
+.dark .rq-guide-info span{color:#94a3b8}
+#rqInputSectionSantri,#rqInputSectionTanggal,#rqInputSectionJuz,#rqInputSectionSurat,#rqInputSectionAyat,#rqInputSectionPenilaian,#rqInputSectionCatatan,#rqInputSectionMurojaah,#rqInputSectionSimpan{scroll-margin-top:95px}
+
+@media (max-width:767px){
+  /* Semua bagian input HP dibuat vertikal dan lebih lega. */
+  #tracker-panel-input .p-4.sm\:p-5{padding:16px!important}
+  #tracker-panel-input label{font-size:14px!important;line-height:1.35!important}
+  #tracker-panel-input input:not([type="hidden"]),#tracker-panel-input select{
+    min-height:60px!important;font-size:16px!important;padding:15px!important;border-radius:14px!important
   }
-  window.addEventListener('load',function(){setTimeout(install,0);});
+  #tracker-panel-input textarea{min-height:112px!important;font-size:15px!important;padding:15px!important;line-height:1.5!important}
+  #tracker-panel-input .tracking-assessment-option{min-height:78px!important;padding:14px!important}
+  #tracker-panel-input .tracking-assessment-option .font-black{font-size:14px!important}
+  #tracker-panel-input .tracking-assessment-option .text-\[10px\]{font-size:12px!important;line-height:1.45!important}
+  #tracker-panel-input #trackingSelectedSantri{min-height:76px!important;padding:16px!important}
+  #tracker-panel-input #trackingProgressContainer>div{padding:16px!important}
+  #tracker-panel-input #trackingAddRowBtn{min-height:56px!important;font-size:14px!important}
+  #tracker-panel-input #trackingMurojaahStatus label{padding:14px!important;min-height:62px}
+  #tracker-panel-input #trackingMurojaahStatus label span{font-size:12px!important;line-height:1.5!important}
+  /* Semua kolom berpasangan pada HP dibuat satu per satu ke bawah agar lebih lega. */
+  #tracker-panel-input .grid.grid-cols-2{grid-template-columns:minmax(0,1fr)!important}
+  #tracker-panel-input #rqInputQuickLinks .grid.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #tracker-panel-input button[onclick*="saveTrackingSetoran"]{min-height:64px!important;font-size:16px!important}
+
+  /* Dashboard HP: kartu Level diperbesar ke bawah, teks dibuat mudah dibaca. */
+  #tracker-panel-dashboard .rq-juz-dashboard-card{margin-bottom:14px!important}
+  #tracker-panel-dashboard .rq-juz-dashboard-card>div{padding:16px!important}
+  #tracker-panel-dashboard .rq-ring{width:104px!important;height:104px!important}
+  #tracker-panel-dashboard .rq-juz-dashboard-card h3{font-size:18px!important}
+  #tracker-panel-dashboard .rq-juz-dashboard-card .text-\[10px\]{font-size:12px!important}
+  #tracker-panel-dashboard .rq-juz-dashboard-card .text-\[9px\]{font-size:11px!important}
+  #tracker-panel-dashboard .rq-level-row{
+    min-height:142px!important;padding:14px!important;margin-bottom:4px!important
+  }
+  #tracker-panel-dashboard .rq-level-row>div{gap:12px!important}
+  #tracker-panel-dashboard .rq-level-row>div>div:first-child>div:first-child{
+    width:44px!important;height:44px!important;font-size:14px!important;border-radius:12px!important
+  }
+  #tracker-panel-dashboard .rq-level-surat-toggle{
+    width:48px!important;height:28px!important;font-size:9px!important;border-radius:8px!important
+  }
+  #tracker-panel-dashboard .rq-level-surat-toggle i{font-size:8px!important}
+  #tracker-panel-dashboard .rq-level-row .text-\[10px\]{font-size:14px!important;line-height:1.35!important}
+  #tracker-panel-dashboard .rq-level-row .text-\[8px\]{font-size:11px!important;line-height:1.4!important}
+  #tracker-panel-dashboard .rq-level-row strong.text-xs{font-size:16px!important}
+  #tracker-panel-dashboard .rq-level-row .h-1\.5{height:8px!important}
+  #tracker-panel-dashboard .rq-level-surat-list{gap:8px!important}
+  #tracker-panel-dashboard .rq-level-surat-list>div{padding:10px!important;min-height:76px}
+  #tracker-panel-dashboard .rq-level-surat-list>div [dir="rtl"]{font-size:17px!important}
+  #tracker-panel-dashboard .rq-level-surat-list>div>div:nth-child(2){font-size:12px!important}
+  #tracker-panel-dashboard .rq-level-surat-list>div>div:nth-child(3){font-size:10px!important}
+}
+</style>
+<script id="rq-cara-penggunaan-v1">
+(function(){
+  'use strict';
+  const TARGETS={
+    santri:'rqInputSectionSantri',
+    tanggal:'rqInputSectionTanggal',
+    juzlevel:'rqInputSectionJuz',
+    surat:'rqInputSectionSurat',
+    ayat:'rqInputSectionAyat',
+    penilaian:'rqInputSectionPenilaian',
+    catatan:'rqInputSectionCatatan',
+    murojaah:'rqInputSectionMurojaah',
+    simpan:'rqInputSectionSimpan'
+  };
+  function jump(key){
+    const id=TARGETS[key]||key;
+    const el=document.getElementById(id);
+    if(!el)return;
+    const inputPanel=document.getElementById('tracker-panel-input');
+    if(inputPanel && getComputedStyle(inputPanel).display==='none'){
+      if(typeof window.switchTrackerMenu==='function') window.switchTrackerMenu('input');
+      setTimeout(()=>doJump(el,key),80);
+      return;
+    }
+    doJump(el,key);
+  }
+  function doJump(el,key){
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(function(){
+      const focus=key==='santri'?document.getElementById('trackingSelectedSantri'):
+        key==='tanggal'?document.getElementById('trackingTanggal'):
+        key==='juzlevel'?document.getElementById('trackingJuz'):
+        key==='surat'?document.getElementById('trackingSurat'):
+        key==='ayat'?document.getElementById('trackingAyatDari'):
+        key==='penilaian'?document.getElementById('trackingPenilaianBacaanOptions'):
+        key==='catatan'?document.getElementById('trackingCatatan'):
+        key==='murojaah'?document.getElementById('trackingMurojaahStatus'):
+        document.getElementById('rqInputSectionSimpan');
+      if(focus && typeof focus.focus==='function' && focus.tabIndex!==-1){
+        try{focus.focus({preventScroll:true})}catch(e){}
+      }
+      el.animate?.([{boxShadow:'0 0 0 0 rgba(16,185,129,0)'},{boxShadow:'0 0 0 5px rgba(16,185,129,.22)'},{boxShadow:'0 0 0 0 rgba(16,185,129,0)'}],{duration:700});
+    },180);
+  }
+  window.rqInputQuickJump=jump;
+
+  function bindGuide(){
+    const btn=document.getElementById('trackerMenu-panduan');
+    if(btn && !btn.dataset.bound){btn.dataset.bound='1';btn.onclick=function(e){e.preventDefault();window.switchTrackerMenu('panduan');};}
+  }
+
+  function installDispatcher(){ /* dispatcher is centralized at the end of the file */ }
+  function init(){
+    bindGuide();
+    installDispatcher();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  window.addEventListener('load',function(){bindGuide(); if(window.switchTrackerMenu && !window.switchTrackerMenu.__rqCaraUsageWrapped)installDispatcher();});
 })();
 </script>
