@@ -7589,6 +7589,174 @@ function renderOptions(){
 })();
 </script>
 </body>
+
+<style id="rq-dashboard-persantri-v1-style">
+.rq-ring{width:118px;height:118px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--ring-color,#10b981) calc(var(--ring-pct,0)*1%),rgba(148,163,184,.18) 0);}
+.rq-ring::after{content:"";position:absolute;inset:10px;border-radius:50%;background:var(--ring-bg,#fff);box-shadow:inset 0 0 0 1px rgba(148,163,184,.12);}
+.dark .rq-ring::after{background:#0f172a;}
+.rq-ring > div{position:relative;z-index:1;text-align:center;line-height:1.05;}
+.rq-juz-dashboard-card{scroll-margin-top:90px;}
+.rq-level-row{transition:transform .15s ease,box-shadow .15s ease;}
+.rq-level-row:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(15,23,42,.06);}
+</style>
+<script id="rq-dashboard-persantri-v1">
+(function(){
+  'use strict';
+  const RECORD_KEY='rq_tracking_tahfidz_local_v1';
+  const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
+  const JUZS=['30','29','28','27'];
+  const LEVELS=[1,2,3,4,5,6,7,8];
+  const COLORS={30:'#7c3aed',29:'#f97316',28:'#64748b',27:'#ec4899'};
+  const SOFT={30:'#faf5ff',29:'#fff7ed',28:'#f8fafc',27:'#fdf2f8'};
+  const LEVEL_LABELS={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 — Evaluasi & Pertanyaan',8:'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut'};
+  const ALIASES={
+    'Abasa':["'Abasa"],'Al-Infitar':['Al-Infithar'],'Al-Mutaffifin':['Al-Muthaffifin'],'Al-Insyiqaq':['Al-Inshiqaq'],
+    'Al-A\'la':['Al-Ala'],'Al-Ghasyiyah':['Al-Ghashiyah'],'Al-\'Alaq':['Al-Alaq'],'Al-\'Adiyat':['Al-Adiyat'],
+    'Al-Qari\'ah':['Al-Qariah'],'Al-\'Ashr':['Al-Asr'],'Al-Ma\'un':['Al-Maun'],'Al-Ikhlas':['Al-Ikhlash'],
+    'Al-Muddatstsir':['Al-Muddaththir'],'Al-Ma\'arij':['Al-Maarij'],'Al-Waqiah':["Al-Waqi'ah"],'Al-Mujadilah':['Al-Mujadilah'],
+    'Al-Hashr':['Al-Hasyr'],'As-Saff':['Ash-Shaff'],'At-Talaq':['Ath-Thalaq'],'Adh-Dhariyat':['Adz-Dzariyat'],
+    'At-Tur':['Ath-Thur'],'Al-Waqi\'ah':["Al-Waqi'ah"]
+  };
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const read=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(d));}catch(e){return d;}};
+  const records=()=>Array.isArray(read(RECORD_KEY,[]))?read(RECORD_KEY,[]):[];
+  const selected=()=>String(document.getElementById('trackingSantri')?.value||'').trim();
+  const santri=()=>Array.isArray(window.santriList)?window.santriList:[];
+  const juzData=()=>window.__RQ_TRACKING_JUZ_LEVELS||{};
+  const normalizeNames=name=>[String(name||'')].concat(ALIASES[String(name||'')]||[]);
+  function info(name){
+    try{const x=window.surahInfo?.(name);if(x&&Number(x.ayat))return {ayat:Number(x.ayat)};}catch(e){}
+    const arr=Array.isArray(window.surahList)?window.surahList:[];
+    const names=normalizeNames(name);
+    const f=arr.find(x=>names.includes(String(x.name)));
+    return {ayat:Number(f?.ayat||0)};
+  }
+  function allJuzSurat(juz){
+    const book=juzData()[String(juz)]||{};
+    const out=[];
+    ['depan','belakang'].forEach(a=>{LEVELS.forEach(l=>{(book[a]?.[l]||[]).forEach(s=>{if(!out.some(x=>String(x)===String(s)))out.push(s);});});});
+    return out;
+  }
+  function levelSurat(juz,l){
+    const book=juzData()[String(juz)]||{};const out=[];
+    ['depan','belakang'].forEach(a=>(book[a]?.[l]||[]).forEach(s=>{if(!out.some(x=>String(x)===String(s)))out.push(s);}));
+    return out;
+  }
+  function matchingRecords(name,juz,surat){
+    const names=normalizeNames(surat);
+    return records().filter(r=>String(r.santri||'')===name&&String(r.juz||'')===String(juz)&&names.includes(String(r.surat||'')));
+  }
+  function suratState(name,juz,surat){
+    const rr=matchingRecords(name,juz,surat);let max=0,last=null;
+    rr.forEach(r=>{max=Math.max(max,Number(r.ayatSampai)||0);if(!last || String(r.tanggal||'')>String(last.tanggal||'') || (String(r.tanggal||'')===String(last.tanggal||'')&&Number(r.id||0)>Number(last.id||0)))last=r;});
+    const total=info(surat).ayat;const pct=total?Math.min(100,Math.round(max/total*100)):0;
+    return {max,total,pct,last,records:rr};
+  }
+  function levelState(name,juz,l){
+    if(l>=7){const c=read(CHECKLIST_KEY,{});return {total:1,done:c?.[name]?.[juz]?.[l]?1:0,pct:c?.[name]?.[juz]?.[l]?100:0,special:true};}
+    const list=levelSurat(juz,l);let done=0,total=list.length;list.forEach(s=>{const x=suratState(name,juz,s);if(x.total&&x.max>=x.total)done++;});
+    return {total,done,pct:total?Math.round(done/total*100):0,special:false};
+  }
+  function juzState(name,juz){
+    const list=allJuzSurat(juz);let totalAyat=0,doneAyat=0,doneSurat=0,partial=0;
+    list.forEach(s=>{const x=suratState(name,juz,s);if(x.total){totalAyat+=x.total;doneAyat+=Math.min(x.max,x.total);if(x.max>=x.total)doneSurat++;else if(x.max>0)partial++;}});
+    return {list,totalAyat,doneAyat,doneSurat,partial,pct:totalAyat?Math.round(doneAyat/totalAyat*100):0};
+  }
+  function studentMeta(name){
+    const s=santri().find(x=>String(x.name||'')===name);
+    return {name,kelas:String(s?.class||s?.kelas||'-'),teacher:String(s?.teacher||s?.pengajar||'-')};
+  }
+  function daysSince(date){if(!date)return Infinity;const t=new Date(String(date)+'T00:00:00').getTime();return Math.max(0,Math.floor((Date.now()-t)/86400000));}
+  function warningList(name){
+    const out=[];
+    JUZS.forEach(j=>allJuzSurat(j).forEach(s=>{const x=suratState(name,j,s);if(x.last&&daysSince(x.last.tanggal)>=30)out.push({juz:j,surat:s,pct:x.pct,days:daysSince(x.last.tanggal),tanggal:x.last.tanggal});}));
+    return out.sort((a,b)=>b.days-a.days);
+  }
+  function ensurePanel(){
+    if(document.getElementById('tracker-panel-dashboard'))return;
+    const nav=document.querySelector('#appHeader nav > div');
+    if(nav && !document.getElementById('trackerMenu-dashboard')){
+      const b=document.createElement('button');b.type='button';b.id='trackerMenu-dashboard';b.className='tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap';b.innerHTML='<i class="fa-solid fa-chart-pie mr-1"></i> Dashboard Laporan Persantri';b.onclick=()=>window.switchTrackerMenu('dashboard');
+      nav.insertBefore(b,document.getElementById('trackerMenu-hafalan')||null);
+    }
+    const content=document.getElementById('trackerPageContent');if(!content)return;
+    const panel=document.createElement('div');panel.className='tracker-menu-panel';panel.id='tracker-panel-dashboard';panel.dataset.panelHidden='1';panel.style.display='none';
+    panel.innerHTML=`
+      <div class="space-y-4">
+        <div class="bg-gradient-to-r from-violet-700 via-purple-600 to-fuchsia-600 text-white rounded-2xl shadow-sm overflow-hidden">
+          <div class="p-4 sm:p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2"><span class="w-10 h-10 rounded-xl bg-white/15 border border-white/20 grid place-items-center"><i class="fa-solid fa-chart-pie"></i></span><div><h2 class="text-lg sm:text-xl font-black">Dashboard Laporan Persantri</h2><p class="text-[10px] sm:text-xs text-white/80 font-bold mt-0.5">Ringkasan program hafalan per Juz, progres Level, dan peringatan murojaah.</p></div></div>
+              </div>
+              <div class="min-w-0 lg:w-80"><label class="block text-[10px] font-black text-white/80 mb-1">Pilih Santri</label><select id="rqDashboardSantriSelect" class="w-full p-3 rounded-xl bg-white text-slate-800 border-0 outline-none font-black text-xs"></select></div>
+            </div>
+          </div>
+        </div>
+        <div id="rqDashboardStudentInfo"></div>
+        <div id="rqDashboardJuzGrid" class="space-y-3"></div>
+        <div id="rqDashboardMurojaahWarning"></div>
+      </div>`;
+    const capaian=document.getElementById('tracker-panel-capaian');content.insertBefore(panel,capaian||content.firstElementChild);
+    const sel=document.getElementById('rqDashboardSantriSelect');
+    if(sel && !sel.dataset.bound){sel.dataset.bound='1';sel.addEventListener('change',()=>{const base=document.getElementById('trackingSantri');if(base){base.value=sel.value;base.dispatchEvent(new Event('change',{bubbles:true}));}window.renderTrackingDashboardPersantri();});}
+  }
+  function syncSelect(){
+    const sel=document.getElementById('rqDashboardSantriSelect');if(!sel)return;const current=selected();const list=santri().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'id'));
+    sel.innerHTML='<option value="">-- Pilih Santri --</option>'+list.map(s=>`<option value="${esc(s.name)}">${esc(s.name)}${s.class?' — '+esc(s.class):''}</option>`).join('');
+    if(current)sel.value=current;
+  }
+  function renderStudentInfo(name){
+    const box=document.getElementById('rqDashboardStudentInfo');if(!box)return;
+    if(!name){box.innerHTML='<div class="rounded-2xl border-2 border-dashed border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 p-6 text-center"><div class="text-sm font-black text-violet-800 dark:text-violet-300">Pilih santri untuk melihat laporan persantri</div><div class="text-[10px] font-bold text-slate-500 mt-1">Semua data dibaca dari penyimpanan lokal.</div></div>';return;}
+    const m=studentMeta(name);const all=JUZS.map(j=>juzState(name,j));const totalPct=Math.round(all.reduce((a,x)=>a+x.pct,0)/JUZS.length);
+    box.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-2"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Santri</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.name)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Kelas</div><div class="text-sm font-black text-violet-700 dark:text-violet-300 mt-1">${esc(m.kelas)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Pengajar</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.teacher)}</div></div><div class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-3"><div class="text-[9px] font-black text-violet-600 dark:text-violet-300">Rata-rata Progres 4 Juz</div><div class="text-xl font-black text-violet-700 dark:text-violet-300 mt-1">${totalPct}%</div></div></div>`;
+  }
+  function renderJuz(name){
+    const box=document.getElementById('rqDashboardJuzGrid');if(!box)return;if(!name){box.innerHTML='';return;}
+    const saved=read('rq_dashboard_juz_open_v1',{});
+    box.innerHTML=JUZS.map(j=>{
+      const z=juzState(name,j);const hasData=z.list.some(s=>suratState(name,j,s).last);const open=Object.prototype.hasOwnProperty.call(saved,j)?!!saved[j]:hasData;const color=COLORS[j];
+      const levels=LEVELS.map(l=>{const r=levelState(name,j,l);const label=LEVEL_LABELS[l];const special=l>=7;return `<div class="rq-level-row rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 p-2.5"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg grid place-items-center text-[10px] font-black shrink-0" style="background:${color}18;color:${color}">${l}</div><div class="min-w-0 flex-1"><div class="text-[10px] font-black text-slate-800 dark:text-slate-100">${esc(label)}</div><div class="text-[8px] font-bold text-slate-500 mt-0.5">${special?(r.done?'Sudah ditandai selesai':'Belum ditandai'):`${r.done} dari ${r.total} surat selesai`}</div></div><div class="text-right shrink-0"><strong class="text-xs font-black" style="color:${color}">${r.pct}%</strong></div></div><div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mt-2"><div class="h-full rounded-full" style="width:${r.pct}%;background:${color}"></div></div></div>`;}).join('');
+      return `<section class="rq-juz-dashboard-card rounded-2xl border-2 bg-white dark:bg-slate-800 shadow-sm overflow-hidden" style="border-color:${color}35"><div class="p-3 sm:p-4" style="background:linear-gradient(135deg,${SOFT[j]},transparent)"><div class="flex flex-col md:flex-row md:items-center gap-4"><div class="flex items-center gap-4 min-w-0 flex-1"><div class="rq-ring shrink-0" style="--ring-pct:${z.pct};--ring-color:${color};--ring-bg:${document.documentElement.classList.contains('dark')?'#0f172a':'#fff'}"><div><div class="text-xl font-black" style="color:${color}">${z.pct}%</div><div class="text-[8px] font-black text-slate-500">progres Juz</div></div></div><div class="min-w-0"><div class="flex items-center gap-2"><h3 class="text-base font-black text-slate-900 dark:text-slate-100">Program Juz ${j}</h3><span class="px-2 py-1 rounded-lg text-[8px] font-black" style="background:${color}18;color:${color}">${z.list.length} surat</span></div><div class="text-[10px] font-bold text-slate-500 mt-1">${z.doneSurat} surat selesai · ${z.partial} dalam proses</div><div class="text-[9px] font-black mt-1" style="color:${color}">Persentase berdasarkan progres ayat seluruh surat Juz ${j}.</div></div></div><div class="flex items-center gap-2 md:self-start"><button type="button" class="px-3 py-2 rounded-xl text-[9px] font-black border transition" style="border-color:${color}55;color:${color};background:${color}0d" onclick="window.rqToggleDashboardJuz('${j}')"><i class="fa-solid ${open?'fa-chevron-up':'fa-chevron-down'} mr-1"></i>${open?'Tutup':'Tampilkan'} Juz ${j}</button></div></div></div>${open?`<div class="border-t border-slate-100 dark:border-slate-700 p-3 sm:p-4"><div class="grid grid-cols-1 lg:grid-cols-2 gap-2">${levels}</div></div>`:`<div class="px-4 pb-4"><div class="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-3 text-center text-[9px] font-bold text-slate-400">Level Juz ${j} disembunyikan. Tekan “Tampilkan” untuk melihat Level 1–8.</div></div>`}</section>`;
+    }).join('');
+  }
+  function renderWarning(name){
+    const box=document.getElementById('rqDashboardMurojaahWarning');if(!box)return;if(!name){box.innerHTML='';return;}
+    const rows=warningList(name);
+    box.innerHTML=`<div class="rounded-2xl border-2 ${rows.length?'border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20':'border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/20'} overflow-hidden"><div class="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><div class="flex items-center gap-2"><span class="w-9 h-9 rounded-xl grid place-items-center ${rows.length?'bg-amber-500 text-white':'bg-emerald-500 text-white'}"><i class="fa-solid ${rows.length?'fa-triangle-exclamation':'fa-circle-check'}"></i></span><div><h3 class="text-sm font-black ${rows.length?'text-amber-900 dark:text-amber-200':'text-emerald-900 dark:text-emerald-200'}">${rows.length?'Warning — Surat Perlu Murojaah':'Murojaah Terkendali'}</h3><p class="text-[9px] font-bold text-slate-500 mt-0.5">${rows.length?'Surat dengan setoran terakhir ≥ 30 hari yang lalu.':'Tidak ada surat yang mencapai batas peringatan 30 hari.'}</p></div></div></div><span class="px-3 py-2 rounded-xl ${rows.length?'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200':'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'} text-[9px] font-black">${rows.length} surat</span></div>${rows.length?`<div class="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">${rows.map(x=>`<div class="rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 p-3"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[11px] font-black text-slate-900 dark:text-slate-100 truncate">${esc(x.surat)}</div><div class="text-[8px] font-bold text-slate-500 mt-1">Juz ${x.juz} · progres ${x.pct}%</div></div><span class="px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-[8px] font-black shrink-0">${x.days} hari</span></div><div class="text-[8px] font-bold text-slate-400 mt-2">Setoran terakhir: ${esc(x.tanggal||'-')}</div></div>`).join('')}</div>`:''}</div>`;
+  }
+  window.rqToggleDashboardJuz=function(j){const d=read('rq_dashboard_juz_open_v1',{});d[j]=!d[j];try{localStorage.setItem('rq_dashboard_juz_open_v1',JSON.stringify(d));}catch(e){}window.renderTrackingDashboardPersantri();};
+  window.renderTrackingDashboardPersantri=function(){ensurePanel();syncSelect();const name=selected();renderStudentInfo(name);renderJuz(name);renderWarning(name);};
+  window.renderTrackingDashboard=window.renderTrackingDashboardPersantri;
+  function hook(){ensurePanel();const base=document.getElementById('trackingSantri');if(base&&!base.dataset.rqDashboardHook){base.addEventListener('change',()=>{const s=document.getElementById('rqDashboardSantriSelect');if(s)s.value=base.value;window.renderTrackingDashboardPersantri();});base.dataset.rqDashboardHook='1';}window.renderTrackingDashboardPersantri();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,0));else setTimeout(hook,0);
+  window.addEventListener('load',()=>setTimeout(hook,50));
+  document.addEventListener('change',e=>{if(e.target?.id==='trackingSantri')setTimeout(window.renderTrackingDashboardPersantri,0);});
+})();
+</script>
+<script id="rq-dashboard-persantri-v1-dispatch">
+(function(){
+  'use strict';
+  function install(){
+    const old=window.switchTrackerMenu;
+    if(typeof old!=='function'||old.__rqDashboardWrapped)return;
+    function wrapped(menu){
+      if(menu==='dashboard'){
+        document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{p.style.display='none';p.dataset.panelHidden='1';});
+        const p=document.getElementById('tracker-panel-dashboard');if(p){p.style.display='block';p.dataset.panelHidden='0';}
+        document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{btn.classList.remove('bg-white','text-emerald-900','shadow');btn.classList.remove('text-emerald-50','hover:bg-emerald-700');if(btn.id==='trackerMenu-dashboard')btn.classList.add('bg-white','text-emerald-900','shadow');else btn.classList.add('text-emerald-50','hover:bg-emerald-700');});
+        window.renderTrackingDashboardPersantri();window.scrollTo({top:0,behavior:'smooth'});return;
+      }
+      return old(menu);
+    }
+    wrapped.__rqDashboardWrapped=true;wrapped.__rqDashboardOriginal=old;window.switchTrackerMenu=wrapped;
+  }
+  function ready(){setTimeout(install,20);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
+  window.addEventListener('load',()=>setTimeout(install,120));
+})();
+</script>
 </html>
 
 <style id="rq-final-menu-readability-v1">
@@ -7646,6 +7814,17 @@ function renderOptions(){
         hideAll();
         showPanel('tracker-panel-wa-kelas');
         setButtons(menu);
+        return;
+      }
+      if(menu==='dashboard'){
+        hideAll();
+        if(!showPanel('tracker-panel-dashboard')){
+          if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+          showPanel('tracker-panel-dashboard');
+        }
+        setButtons(menu);
+        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+        window.scrollTo({top:0,behavior:'smooth'});
         return;
       }
       var panelMap={
