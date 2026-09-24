@@ -3442,6 +3442,71 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
     min-height:48px!important;
     padding-right:42px!important;
   }
+
+  /* HP saja: daftar kelas juga dibuat dropdown. Daftar kelas desktop disembunyikan. */
+  #trackingClassSearch,
+  #trackingClassSearchClear,
+  #trackingClassResults{
+    display:none!important;
+  }
+  #trackingMobileClassPickerWrap,
+  #trackingMobileStudentPickerWrap{
+    display:block!important;
+  }
+  #trackingMobileClassPicker,
+  #trackingMobileStudentPicker{
+    display:block!important;
+    width:100%!important;
+    min-height:46px!important;
+    padding:10px 38px 10px 12px!important;
+    border:2px solid #dbe4ef!important;
+    border-radius:12px!important;
+    background:#f8fafc!important;
+    color:#0f172a!important;
+    font-size:12px!important;
+    font-weight:900!important;
+    outline:none!important;
+    appearance:auto!important;
+  }
+  .dark #trackingMobileClassPicker,
+  .dark #trackingMobileStudentPicker{
+    background:#0f172a!important;
+    border-color:#334155!important;
+    color:#f8fafc!important;
+  }
+  #trackingMobileClassPicker:focus,
+  #trackingMobileStudentPicker:focus{
+    border-color:#10b981!important;
+    box-shadow:0 0 0 3px rgba(16,185,129,.12)!important;
+  }
+
+  /* HP saja: daftar nama santri dibuat dropdown agar sidebar tidak memenuhi layar. */
+  #trackingMobileStudentPicker{
+    display:block!important;
+    width:100%!important;
+    min-height:46px!important;
+    padding:10px 38px 10px 12px!important;
+    border:2px solid #dbe4ef!important;
+    border-radius:12px!important;
+    background:#f8fafc!important;
+    color:#0f172a!important;
+    font-size:12px!important;
+    font-weight:900!important;
+    outline:none!important;
+    appearance:auto!important;
+  }
+  .dark #trackingMobileStudentPicker{
+    background:#0f172a!important;
+    border-color:#334155!important;
+    color:#f8fafc!important;
+  }
+  #trackingMobileStudentPicker:focus{
+    border-color:#10b981!important;
+    box-shadow:0 0 0 3px rgba(16,185,129,.12)!important;
+  }
+  #trackingStudentList, #trackingStudentCount{
+    display:none!important;
+  }
 }
 </style>
 
@@ -3503,6 +3568,18 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 <div class="relative mb-3"> <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i> <input autocomplete="off" class="w-full pl-9 pr-10 py-3 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-xs focus:border-emerald-500 outline-none" id="trackingClassSearch" oninput="window.renderTrackingClassSearch(this.value)" placeholder="Cari nama kelas..." type="text"/> <button aria-label="Hapus pencarian kelas" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-rose-100 hover:text-rose-600 transition items-center justify-center" id="trackingClassSearchClear" onclick="window.clearTrackingClassSearch()" title="Hapus pencarian" type="button"><i class="fa-solid fa-xmark text-xs"></i></button> </div>
 <div class="space-y-1.5 mb-4" id="trackingClassResults"></div>
+<div class="hidden max-[767px]:block mb-3" id="trackingMobileClassPickerWrap">
+<label class="block text-xs font-black text-slate-700 dark:text-slate-200 mb-2">Pilih Kelas</label>
+<select id="trackingMobileClassPicker" aria-label="Pilih kelas" onchange="window.selectTrackingClass(this.value)">
+<option value="">-- Pilih kelas --</option>
+</select>
+</div>
+<div class="hidden max-[767px]:block mb-4" id="trackingMobileStudentPickerWrap">
+<label class="block text-xs font-black text-slate-700 dark:text-slate-200 mb-2">Pilih Nama Santri</label>
+<select id="trackingMobileStudentPicker" aria-label="Pilih nama santri" onchange="window.selectTrackingSantri(this.value)">
+<option value="">-- Pilih nama santri --</option>
+</select>
+</div>
 <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-3 mb-2">
 <div class="text-xs font-black text-slate-800 dark:text-slate-100">Nama Santri</div>
 <div class="text-[10px] font-black text-slate-400" id="trackingStudentCount">0 santri</div>
@@ -4155,6 +4232,12 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
     const students=santriList().slice();
     const classes=[...new Set(students.map(s=>String(s.class||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
     const filtered=classes.filter(c=>!q || c.toLowerCase().includes(q));
+    const mobileClassPicker=document.getElementById('trackingMobileClassPicker');
+    if(mobileClassPicker){
+      const current=window.trackingSelectedClass||'';
+      mobileClassPicker.innerHTML='<option value="">-- Pilih kelas --</option>'+classes.map(c=>`<option value="${safe(c)}">${safe(c)}</option>`).join('');
+      if(current && classes.includes(current)) mobileClassPicker.value=current;
+    }
     const box=document.getElementById('trackingClassResults');
     if(!box) return;
     box.innerHTML=filtered.length ? filtered.map(c=>`<button type="button" onclick="window.selectTrackingClass('${safe(c)}')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-black transition ${window.trackingSelectedClass===c?'bg-emerald-600 text-white':'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'}"><i class="fa-solid fa-users mr-2"></i>${safe(c)}</button>`).join('') : '<div class="text-[10px] font-bold text-slate-400 px-2 py-2">Kelas tidak ditemukan.</div>';
@@ -4174,6 +4257,12 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
     const q=String(document.getElementById('trackingStudentSearch')?.value||'').trim().toLowerCase();
     const list=santriList().filter(s=>!cls || String(s.class||'')===cls).filter(s=>!q || String(s.name||'').toLowerCase().includes(q)).sort((a,b)=>String(a.name).localeCompare(String(b.name),'id'));
     if(count) count.textContent=`${list.length} santri`;
+    const mobilePicker=document.getElementById('trackingMobileStudentPicker');
+    if(mobilePicker){
+      const current=document.getElementById('trackingSantri')?.value||'';
+      mobilePicker.innerHTML='<option value="">-- Pilih nama santri --</option>'+list.map(s=>`<option value="${safe(s.name)}">${safe(s.name)}${s.class?' — '+safe(s.class):''}</option>`).join('');
+      if(current && list.some(s=>s.name===current)) mobilePicker.value=current;
+    }
     box.innerHTML=list.length ? list.map(s=>`<button type="button" onclick="window.selectTrackingSantri('${safe(s.name)}')" class="w-full text-left px-3 py-2.5 rounded-xl border ${document.getElementById('trackingSantri')?.value===s.name?'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/40':'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'} hover:border-emerald-300 transition"><div class="text-xs font-black text-slate-800 dark:text-slate-100 truncate">${safe(s.name)}</div><div class="text-[9px] font-bold text-slate-400">${safe(s.class||'-')}</div></button>`).join('') : '<div class="text-center text-xs font-bold text-slate-400 py-8">Nama santri tidak ditemukan.</div>';
   };
 
@@ -4508,6 +4597,8 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
     }
     window.renderTrackingClassSearch(window.trackingSelectedClass||'');
     window.renderTrackingStudentList();
+    const mobilePicker=document.getElementById('trackingMobileStudentPicker');
+    if(mobilePicker) mobilePicker.value=name||'';
     updateMobileStudentListVisibility();
     const ps=document.getElementById('trackingPerSuratSantri'); if(ps){ps.value=name;}
     const last=lastRecordFor(name);
@@ -6696,6 +6787,30 @@ function renderOptions(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
+
+<script id="wa-menu-final-direct-bind-v1">
+(function(){
+  'use strict';
+  function bind(){
+    // Restore the application's original menu dispatcher. The WA modules now
+    // open their own panels directly, avoiding a chain of nested wrappers.
+    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
+      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
+    }
+    const personal=document.getElementById('trackerMenu-wa-wali');
+    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
+      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
+    }
+    const kelas=document.getElementById('trackerMenu-wa-kelas');
+    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
+      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
+  else setTimeout(bind,150);
+  window.addEventListener('load',()=>setTimeout(bind,150));
+})();
+</script>
 </body>
 
 <script id="sync-information-menu-stability-v1">
@@ -7123,13 +7238,11 @@ function renderOptions(){
         if(level<=6){
           lines.push(`☑ ${title} — ${Number(r.pct||0)}%`);
           lines.push(`   ${r.done||0} dari ${r.total||0} surat selesai`);
-          // Versi lengkap perkelas hanya menampilkan progres level,
-          // tanpa daftar nama surat agar laporan WA lebih ringkas dan rapi.
         }else{
           lines.push(`☑ ${title} — ${Number(r.pct||0)}%`);
         }
-        lines.push('');
       }
+      if(i<list.length-1) lines.push('');
     });
     out.value=lines.join('\n').trim();
   }
@@ -7200,6 +7313,8 @@ function renderOptions(){
     document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(btn.id===BTN)btn.classList.add('bg-white','text-emerald-900','shadow');else btn.classList.add('text-emerald-50','hover:bg-emerald-700')});
     populate(); renderPreview(); window.scrollTo({top:0,behavior:'smooth'});
   }
+
+  window.__openWaKelasLevelPanel = openMenu;
 
   function install(){
     if(!window.__rqOriginalSwitchTrackerMenu)window.__rqOriginalSwitchTrackerMenu=window.switchTrackerMenu;
@@ -7408,6 +7523,8 @@ function renderOptions(){
     }
   }
 
+  window.__openWaWaliPersonalPanel = showPanel;
+
   function installSwitchGuard(){
     const current=window.switchTrackerMenu;
     if(typeof current!=='function' || current.__waWaliFinalFix) return;
@@ -7435,5 +7552,248 @@ function renderOptions(){
   window.addEventListener('load',function(){ setTimeout(init,100); });
 })();
 </script>
+
+<script id="wa-menu-final-direct-bind-v1b">
+(function(){
+  'use strict';
+  function bind(){
+    // Restore the application's original menu dispatcher. The WA modules now
+    // open their own panels directly, avoiding a chain of nested wrappers.
+    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
+      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
+    }
+    const personal=document.getElementById('trackerMenu-wa-wali');
+    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
+      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
+    }
+    const kelas=document.getElementById('trackerMenu-wa-kelas');
+    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
+      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
+  else setTimeout(bind,150);
+  window.addEventListener('load',()=>setTimeout(bind,150));
+})();
+</script>
+<script id="rq-input-universal-sync-v2">
+(function(){
+  'use strict';
+  const MASTER_KEY='rq_santri_master';
+  const HAF_KEY='rq_history_hafalan';
+  const TRACK_KEY='rq_tracking_tahfidz_local_v1';
+  const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
+  const aliases={
+    'Abasa':["'Abasa"],"'Abasa":['Abasa'],
+    'An-Naba':["An-Naba'"],"An-Naba'":['An-Naba'],
+    "An-Nazi'at":["An-Nazi’at"],"An-Nazi’at":["An-Nazi'at"],
+    'Al-Infitar':['Al-Infithar'],'Al-Infithar':['Al-Infitar'],
+    'Al-Mutaffifin':['Al-Muthaffifin'],'Al-Muthaffifin':['Al-Mutaffifin'],
+    'Al-Insyiqaq':['Al-Inshiqaq'],'Al-Inshiqaq':['Al-Insyiqaq'],
+    "Al-A'la":['Al-Ala'],'Al-Ala':["Al-A'la"],
+    'Al-Ghasyiyah':['Al-Ghashiyah'],'Al-Ghashiyah':['Al-Ghasyiyah'],
+    "Al-'Alaq":['Al-Alaq'],'Al-Alaq':["Al-'Alaq"],
+    "Al-'Adiyat":['Al-Adiyat'],'Al-Adiyat':["Al-'Adiyat"],
+    "Al-Qari'ah":['Al-Qariah'],'Al-Qariah':["Al-Qari'ah"],
+    "Al-'Ashr":['Al-Asr'],'Al-Asr':["Al-'Ashr"],
+    "Al-Ma'un":['Al-Maun'],'Al-Maun':["Al-Ma'un"],
+    'Al-Ikhlas':['Al-Ikhlash'],'Al-Ikhlash':['Al-Ikhlas'],
+    'Al-Muddatstsir':['Al-Muddaththir'],'Al-Muddaththir':['Al-Muddatstsir'],
+    "Al-Ma'arij":['Al-Maarij'],'Al-Maarij':["Al-Ma'arij"],
+    'Al-Waqiah':["Al-Waqi'ah"],"Al-Waqi'ah":['Al-Waqiah']
+  };
+  const same=(a,b)=>{const A=norm(a),B=norm(b);return A===B || (aliases[a]||[]).some(x=>norm(x)===B) || (aliases[b]||[]).some(x=>norm(x)===A)};
+  const read=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}};
+  const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.error('sync write',e);return false}};
+  const juzLevels=()=>window.__RQ_TRACKING_JUZ_LEVELS||{};
+  function student(name){return (Array.isArray(window.santriList)?window.santriList:[]).find(x=>norm(x.name)===norm(name));}
+  function persistStudentMaster(){
+    const list=Array.isArray(window.santriList)?window.santriList:[];
+    if(list.length) write(MASTER_KEY,list);
+  }
+  function levelMatches(juz,surat){
+    const b=juzLevels()[String(juz)]||{}; const out=[];
+    ['depan','belakang'].forEach(arah=>{
+      const levels=b[arah]||{};
+      Object.keys(levels).forEach(level=>{
+        if(Number(level)>6)return;
+        if((levels[level]||[]).some(x=>same(x,surat))) out.push({level:Number(level),arah});
+      });
+    });
+    const seen=new Set(); return out.filter(x=>{const k=x.level+'|'+x.arah;if(seen.has(k))return false;seen.add(k);return true});
+  }
+  function inferJuz(surat){
+    for(const juz of ['30','29','28','27']) if(levelMatches(juz,surat).length)return juz;
+    return '';
+  }
+  function syncHafalanToTracker(){
+    const history=read(HAF_KEY,[]); if(!Array.isArray(history))return;
+    const tracker=read(TRACK_KEY,[]); const rows=Array.isArray(tracker)?tracker.slice():[];
+    const key=r=>[norm(r.santri),String(r.juz||''),norm(r.surat),String(r.tanggal||''),String(r.ayatDari||''),String(r.ayatSampai||'')].join('|');
+    const existing=new Set(rows.map(key));
+    history.forEach(h=>{
+      if(!h?.name)return;
+      const slots=Array.isArray(h.slots)?h.slots:[];
+      const candidates=slots.length?slots:[];
+      candidates.forEach(sl=>{
+        const surat=String(sl?.item||'').trim(), start=Number(sl?.start)||1, end=Number(sl?.end)||0;
+        if(!surat||surat==='-'||!end)return;
+        const juz=String(sl?.juz||h.juz||inferJuz(surat)||'');
+        if(!juz)return;
+        const matches=levelMatches(juz,surat);
+        const use=matches.length?matches:[{level:Number(h.level)||1,arah:String(sl?.arah||h.arah||'depan')}];
+        use.forEach(m=>{
+          const row={id:Date.now()+Math.floor(Math.random()*1000),timestamp:h.timestamp||new Date().toISOString(),santri:h.name,tanggal:h.tanggal||'',juz,arah:m.arah,level:m.level,surat,ayatDari:start,ayatSampai:end,kualitas:h.status||'',penilaianBacaan:'',penilaianHafalan:h.status||'',catatan:h.catatan||''};
+          const k=key(row); if(!existing.has(k)){rows.push(row);existing.add(k)}
+        });
+      });
+    });
+    write(TRACK_KEY,rows);
+  }
+  function syncAll(){
+    try{
+      // Pastikan perubahan Input Setoran tidak hanya hidup di objek RAM.
+      persistStudentMaster();
+      syncHafalanToTracker();
+      try{window.loadLocalData?.(true)}catch(e){}
+      try{window.rqRefreshUnifiedHafalanReports?.()}catch(e){}
+      try{window.renderTrackingLevelSuratList?.()}catch(e){}
+      try{window.renderTrackingDashboard?.()}catch(e){}
+    }catch(e){console.error('Universal input sync error:',e)}
+  }
+  function install(){
+    if(typeof window.saveSectionData==='function' && !window.saveSectionData.__universalSync){
+      const original=window.saveSectionData;
+      const wrapped=function(){const result=original.apply(this,arguments);setTimeout(syncAll,0);return result;};
+      wrapped.__universalSync=true; wrapped.__original=original; window.saveSectionData=wrapped;
+    }
+    // Input massal juga harus masuk ke sumber lokal yang sama setelah proses async selesai.
+    ['saveMassalMurojaah','saveMassalTugas'].forEach(fn=>{
+      const original=window[fn];
+      if(typeof original==='function' && !original.__universalSync){
+        const wrapped=async function(){
+          const result=await original.apply(this,arguments);
+          setTimeout(syncAll,0);
+          return result;
+        };
+        wrapped.__universalSync=true; wrapped.__original=original; window[fn]=wrapped;
+      }
+    });
+    setTimeout(syncAll,50);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+  window.addEventListener('load',()=>setTimeout(syncAll,150));
+  window.rqSyncAllInputData=syncAll;
+})();
+</script>
 </body>
 </html>
+
+<style id="rq-final-menu-readability-v1">
+/* Perbesar tulisan menu utama tanpa mengubah ukuran kotak/tombol secara berlebihan. */
+#appHeader nav .tracker-menu-btn{
+  font-size:13px !important;
+  line-height:1.25 !important;
+  font-weight:800 !important;
+}
+@media (min-width:1280px){
+  #appHeader nav .tracker-menu-btn{font-size:14px !important;}
+}
+</style>
+<script id="rq-final-menu-dispatcher-v1">
+(function(){
+  'use strict';
+  function hideAll(){
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
+      p.style.display='none';
+      p.dataset.panelHidden='1';
+    });
+  }
+  function setButtons(menu){
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
+      btn.classList.remove('bg-white','text-emerald-900','shadow');
+      btn.classList.remove('text-emerald-50','hover:bg-emerald-700');
+      if(btn.id==='trackerMenu-'+menu){
+        btn.classList.add('bg-white','text-emerald-900','shadow');
+      }else{
+        btn.classList.add('text-emerald-50','hover:bg-emerald-700');
+      }
+    });
+  }
+  function showPanel(id){
+    var p=document.getElementById(id);
+    if(!p)return false;
+    p.style.display='block';
+    p.dataset.panelHidden='0';
+    return true;
+  }
+  function dispatch(menu){
+    try{
+      document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
+      if(menu==='wa-wali'){
+        if(typeof window.__openWaWaliPersonalPanel==='function') window.__openWaWaliPersonalPanel();
+        else if(typeof window.renderWaWaliSantriReport==='function') window.renderWaWaliSantriReport();
+        hideAll();
+        showPanel('tracker-panel-wa-wali');
+        setButtons(menu);
+        return;
+      }
+      if(menu==='wa-kelas'){
+        if(typeof window.__openWaKelasLevelPanel==='function') window.__openWaKelasLevelPanel();
+        else if(typeof window.renderWaKelasReport==='function') window.renderWaKelasReport();
+        hideAll();
+        showPanel('tracker-panel-wa-kelas');
+        setButtons(menu);
+        return;
+      }
+      var panelMap={
+        input:'tracker-panel-input',
+        hafalan:'tracker-panel-hafalan',
+        capaian:'tracker-panel-capaian',
+        history:'tracker-panel-history',
+        bacaan:'tracker-panel-bacaan'
+      };
+      if(panelMap[menu]){
+        hideAll();
+        showPanel(panelMap[menu]);
+        setButtons(menu);
+        if(menu==='hafalan' && typeof window.renderHafalanTracker==='function') window.renderHafalanTracker();
+        if(menu==='capaian' && typeof window.renderCapaianLevelSantri==='function') window.renderCapaianLevelSantri();
+        if(menu==='history' && typeof window.renderTrackingHistory==='function') window.renderTrackingHistory();
+        if(menu==='bacaan' && typeof window.renderBacaanSantriMenu==='function') window.renderBacaanSantriMenu();
+        if(menu==='input'){
+          if(typeof window.renderTrackingPerSuratOptions==='function') window.renderTrackingPerSuratOptions();
+          if(typeof window.renderTrackingPerSurat==='function') window.renderTrackingPerSurat();
+        }
+        window.scrollTo({top:0,behavior:'smooth'});
+        return;
+      }
+      /* Menu lain yang memang dikelola sistem lama tetap memakai dispatcher asli. */
+      var base=window.__rqOriginalSwitchTrackerMenu;
+      if(typeof base==='function') base(menu);
+      hideAll();
+      var p=document.getElementById('tracker-panel-'+menu);
+      if(p){p.style.display='block';p.dataset.panelHidden='0';}
+      setButtons(menu);
+    }catch(err){
+      console.error('Final menu dispatcher error:',err);
+    }
+  }
+  function install(){
+    window.switchTrackerMenu=dispatch;
+    window.__rqFinalMenuDispatcherInstalled=true;
+    /* Pastikan dua menu dinamis tetap bisa dibuka meskipun script lama mencoba membungkus switchTrackerMenu. */
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
+      if(btn.id==='trackerMenu-wa-wali' || btn.id==='trackerMenu-wa-kelas'){
+        btn.onclick=function(e){e.preventDefault();dispatch(btn.id==='trackerMenu-wa-wali'?'wa-wali':'wa-kelas');};
+      }
+    });
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){setTimeout(install,0);});
+  }else{
+    setTimeout(install,0);
+  }
+  window.addEventListener('load',function(){setTimeout(install,0);});
+})();
+</script>
