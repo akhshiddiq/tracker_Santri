@@ -42,6 +42,117 @@
             isolation: isolate;
         }
 
+        /* Tampilan santri yang sedang aktif di Form Setoran */
+        #trackingSelectedSantri {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(236,253,245,.98), rgba(240,253,250,.92));
+            border: 2px solid rgba(16,185,129,.55) !important;
+            box-shadow: 0 8px 20px rgba(16,185,129,.10);
+            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+        }
+        #trackingSelectedSantri::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: linear-gradient(180deg, #10b981, #059669);
+        }
+        #trackingSelectedSantri .selected-santri-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            background: rgba(16,185,129,.13);
+            color: #047857;
+            border: 1px solid rgba(16,185,129,.22);
+        }
+        #trackingSelectedSantri .selected-santri-label {
+            font-size: 9px;
+            line-height: 1.2;
+            font-weight: 900;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        #trackingSelectedSantri .selected-santri-name {
+            margin-top: 2px;
+            font-size: 14px;
+            line-height: 1.35;
+            font-weight: 900;
+            color: #065f46;
+            overflow-wrap: anywhere;
+        }
+        #trackingSelectedSantri .selected-santri-meta {
+            margin-top: 3px;
+            font-size: 9px;
+            line-height: 1.3;
+            font-weight: 800;
+            color: #64748b;
+        }
+        html.dark #trackingSelectedSantri {
+            background: linear-gradient(135deg, rgba(2,44,34,.72), rgba(6,78,59,.42));
+            border-color: rgba(16,185,129,.52) !important;
+            box-shadow: 0 8px 20px rgba(0,0,0,.18);
+        }
+        html.dark #trackingSelectedSantri .selected-santri-icon {
+            background: rgba(16,185,129,.14);
+            color: #6ee7b7;
+            border-color: rgba(110,231,183,.22);
+        }
+        html.dark #trackingSelectedSantri .selected-santri-label,
+        html.dark #trackingSelectedSantri .selected-santri-meta {
+            color: #94a3b8;
+        }
+        html.dark #trackingSelectedSantri .selected-santri-name {
+            color: #6ee7b7;
+        }
+
+        /* Tombol kembali ke header: tetap di kanan bawah dan muncul saat halaman sudah turun. */
+        #floatingScrollTopBtn {
+            position: fixed;
+            right: 16px;
+            bottom: 18px;
+            z-index: 2147483000;
+            min-height: 44px;
+            padding: 0 15px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(6,95,70,.96);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,.18);
+            box-shadow: 0 10px 28px rgba(2,44,34,.28);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            font-size: 11px;
+            font-weight: 900;
+            transition: opacity .2s ease, transform .2s ease, background .2s ease;
+        }
+        #floatingScrollTopBtn:hover {
+            background: rgba(4,120,87,.98);
+            transform: translateY(-2px);
+        }
+        #floatingScrollTopBtn:active {
+            transform: translateY(0) scale(.97);
+        }
+        @media (max-width: 640px) {
+            #floatingScrollTopBtn {
+                right: 12px;
+                bottom: 12px;
+                min-height: 42px;
+                padding: 0 13px;
+                font-size: 10px;
+            }
+        }
+
         @media (max-width: 1023px) {
             #inlineWaReportPanel { order: 2; width: 100%; }
             #santriGridContainer { order: 1; width: 100%; }
@@ -171,6 +282,9 @@
         html.dark .shadow-sm,
         html.dark .shadow-md,
         html.dark .shadow-lg { --tw-shadow-color: rgba(0,0,0,.35); }
+        /* Laporan Level Perkelas: nama santri berada di header terang, jadi tetap gelap saat mode gelap */
+        html.dark #tracker-panel-wa-kelas .wa-kelas-santri-name { color: #0f172a !important; }
+        html.dark #tracker-panel-wa-kelas .wa-kelas-santri-class { color: #475569 !important; }
 </style>
 <script>
         window.santriList = [
@@ -329,21 +443,9 @@
         // ============================================================
         // PENYIMPANAN LOKAL — 100% LOCAL / OFFLINE
         // ============================================================
-        window.openBackendSettings = function() {
-            const modal = document.getElementById('backendSettingsModal');
-            if (modal) modal.classList.remove('hidden');
-            const info = document.getElementById('localStorageInfoText');
-            if (info && navigator.storage?.estimate) {
-                navigator.storage.estimate().then(e => {
-                    const used = Number(e.usage || 0), quota = Number(e.quota || 0);
-                    info.textContent = quota ? `Penyimpanan lokal terpakai: ${(used/1024/1024).toFixed(2)} MB dari ${(quota/1024/1024).toFixed(0)} MB` : 'Data tersimpan di Local Storage browser.';
-                }).catch(() => {});
-            }
-        };
-        window.closeBackendSettings = function() {
-            const modal = document.getElementById('backendSettingsModal');
-            if (modal) modal.classList.add('hidden');
-        };
+        // Penyimpanan Lokal sekarang tampil langsung di header dan tidak menggunakan popup.
+        window.openLocalStorageSettings = function() { return true; };
+        window.closeLocalStorageSettings = function() { return true; };
 
         window.cleanReportDetail = function(detailStr) {
             if (!detailStr) return '-';
@@ -439,7 +541,7 @@
             if (tabId === 'laporan') window.switchLaporanSubTab('wa');
             if (tabId === 'riwayat') window.renderRiwayatInputMenu();
             if (tabId === 'export') {
-                window.openBackendSettings();
+                // Tidak membuka popup penyimpanan; status lokal tampil langsung di header.
             }
         };
 
@@ -572,18 +674,17 @@
         };
 
         // ============================================================
-        // LOCAL STORAGE SYNC
-        // Nama fungsi lama dipertahankan agar fitur lain tidak rusak,
-        // tetapi sekarang TIDAK melakukan request jaringan.
+        // LOCAL STORAGE ONLY
+        // Semua perubahan hanya dicatat dan dimuat dari Local Storage.
         // ============================================================
-        window.syncToCloud = async function(payload) {
+        window.saveLocalChange = async function(payload) {
             window.setSyncIndicator('pending');
             try {
                 const log = JSON.parse(localStorage.getItem('rq_local_save_log') || '[]');
                 log.unshift({ timestamp: new Date().toISOString(), type: payload?.type || '', name: payload?.name || '', mode: 'local' });
                 localStorage.setItem('rq_local_save_log', JSON.stringify(log.slice(0, 200)));
                 window.setSyncIndicator('success');
-                window.fetchAllDataFromCloud(true);
+                window.loadLocalData(true);
                 return { ok: true, local: true };
             } catch (err) {
                 console.error('Local save error:', err);
@@ -595,7 +696,7 @@
         window._lokalFingerprint = '';
         window._lokalPollingBusy = false;
 
-        window.fetchAllDataFromCloud = async function(forceRender = false) {
+        window.loadLocalData = async function(forceRender = false) {
             if (window._lokalPollingBusy) return;
             window._lokalPollingBusy = true;
             window.setSyncIndicator('pending');
@@ -613,13 +714,13 @@
                     murojaah: JSON.parse(localStorage.getItem('rq_history_murojaah') || '[]'),
                     tugas: JSON.parse(localStorage.getItem('rq_history_tugas') || '[]')
                 };
-                window._laporanWaPersonalCloud = [];
-                window._laporanGrupWaCloud = [];
-                window._riwayatInputCloud = [];
+                window._laporanWaPersonalLocal = [];
+                window._laporanGrupWaLocal = [];
+                window._riwayatInputLocal = [];
                 Object.entries(histories).forEach(([type, rows]) => {
                     (Array.isArray(rows) ? rows : []).forEach(r => {
                         const student = (window.santriList || []).find(x => String(x.name || '') === String(r.name || '')) || {};
-                        window._riwayatInputCloud.push({
+                        window._riwayatInputLocal.push({
                             kelas: student.class || r.class || '',
                             nama: r.name || '', name: r.name || '',
                             jenis: type, type, tanggal: r.tanggal || '',
@@ -667,7 +768,7 @@
             window.showToast("Materi berhasil disimpan di perangkat!", "success");
             window.renderMateriList(type);
 
-            window.syncToCloud({ type: 'materi', subType: type, kelas, judul, bab, tanggal, ket, tampilWa });
+            window.saveLocalChange({ type: 'materi', subType: type, kelas, judul, bab, tanggal, ket, tampilWa });
         };
 
         window.renderMateriList = function(type) {
@@ -707,7 +808,7 @@
                 window.renderMateriList(type);
                 window.showToast("Status tampil laporan diperbarui", "success");
 
-                window.syncToCloud({
+                window.saveLocalChange({
                     type: 'toggle_materi',
                     subType: type,
                     kelas: list[idx].kelas,
@@ -727,7 +828,7 @@
             window.showToast("Materi dihapus", "success");
 
             if (target) {
-                window.syncToCloud({
+                window.saveLocalChange({
                     type: 'delete_materi',
                     subType: type,
                     kelas: target.kelas,
@@ -886,8 +987,8 @@
                 const isFirst = slot === 1;
                 const stateKey = `${santriName}_${category}_slot_${slot}`;
                 const slotData = lokalSlots && lokalSlots[slot-1] ? lokalSlots[slot-1] : null;
-                const isCloudActive = slotData && slotData.item && slotData.item !== '-';
-                const isVisible = isFirst || !!window.activeSlotState[stateKey] || isCloudActive;
+                const hasSavedData = slotData && slotData.item && slotData.item !== '-';
+                const isVisible = isFirst || !!window.activeSlotState[stateKey] || hasSavedData;
 
                 const cacheKeySurah = `${santriName}_${category}_surah_${slot}`;
                 const cacheKeyStart = `${santriName}_${category}_start_${slot}`;
@@ -1002,12 +1103,6 @@
                 'Murojaah': 'rq_history_murojaah',
                 'Tugas': 'rq_history_tugas'
             };
-            const sheetNameMap = {
-                'Bacaan': 'bacaan',
-                'Hafalan': 'hafalan',
-                'Murojaah': 'murojaah',
-                'Tugas': 'tugas'
-            };
             const key = storageKeyMap[categoryKey];
             let list = JSON.parse(localStorage.getItem(key) || '[]');
             const santriHistory = list.filter(item => (item.name || '').toLowerCase() === santriName.toLowerCase());
@@ -1022,9 +1117,9 @@
                 window.showToast(`Riwayat ${categoryKey} dihapus`, "success");
                 window.renderSantriCardsAndTable();
 
-                await window.syncToCloud({
+                await window.saveLocalChange({
                     type: 'delete_history',
-                    category: sheetNameMap[categoryKey],
+                    category: categoryKey,
                     name: santriName,
                     index: localIdx
                 });
@@ -1151,9 +1246,6 @@
                                         <span id="save_badge_bacaan_${s.name}" class="text-xs font-black text-emerald-600 hidden">Alhamdulillah sudah di input</span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <a href="https://docs.google.com/spreadsheets/d/1IOyHLFVH773lA6B8uOi8G0kPBk6eIjhCV03gD6CC0II/edit?gid=852117400#gid=852117400" target="_blank" class="px-3.5 py-2 bg-emerald-100 dark:bg-emerald-950 hover:bg-emerald-200 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition shadow-xs">
-                                            <i class="fa-solid fa-table"></i> Sheet
-                                        </a>
                                         <button type="button" id="card_section_btn_bacaan_${s.name}" onclick="window.toggleCardSection('${s.name}', 'bacaan')" class="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-black shadow-xs transition flex items-center gap-1.5">
                                             <i class="fa-solid ${isBacaanOpen ? 'fa-chevron-up' : 'fa-chevron-down'}"></i> ${isBacaanOpen ? 'Tutup Form' : 'Buka Form'}
                                         </button>
@@ -1219,9 +1311,6 @@
                                         <span id="save_badge_hafalan_${s.name}" class="text-xs font-black text-rose-600 hidden">Alhamdulillah sudah di input</span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <a href="https://docs.google.com/spreadsheets/d/1IOyHLFVH773lA6B8uOi8G0kPBk6eIjhCV03gD6CC0II/edit?gid=26717689#gid=26717689" target="_blank" class="px-3.5 py-2 bg-rose-100 dark:bg-rose-950 hover:bg-rose-200 text-rose-800 dark:text-rose-300 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition shadow-xs">
-                                            <i class="fa-solid fa-table"></i> Sheet
-                                        </a>
                                         <button type="button" id="card_section_btn_hafalan_${s.name}" onclick="window.toggleCardSection('${s.name}', 'hafalan')" class="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-black shadow-xs transition flex items-center gap-1.5">
                                             <i class="fa-solid ${isHafalanOpen ? 'fa-chevron-up' : 'fa-chevron-down'}"></i> ${isHafalanOpen ? 'Tutup Form' : 'Buka Form'}
                                         </button>
@@ -1287,9 +1376,6 @@
                                         <span id="save_badge_murojaah_${s.name}" class="text-xs font-black text-purple-600 hidden">Alhamdulillah sudah di input</span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <a href="https://docs.google.com/spreadsheets/d/1IOyHLFVH773lA6B8uOi8G0kPBk6eIjhCV03gD6CC0II/edit?gid=461137054#gid=461137054" target="_blank" class="px-3.5 py-2 bg-sky-100 dark:bg-sky-950 hover:bg-sky-200 text-sky-800 dark:text-sky-300 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition shadow-xs">
-                                            <i class="fa-solid fa-table"></i> Sheet
-                                        </a>
                                         <button type="button" id="card_section_btn_murojaah_${s.name}" onclick="window.toggleCardSection('${s.name}', 'murojaah')" class="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-black shadow-xs transition flex items-center gap-1.5">
                                             <i class="fa-solid ${isMurojaahOpen ? 'fa-chevron-up' : 'fa-chevron-down'}"></i> ${isMurojaahOpen ? 'Tutup Form' : 'Buka Form'}
                                         </button>
@@ -1354,9 +1440,6 @@
                                         <span id="save_badge_tugas_${s.name}" class="text-xs font-black text-amber-700 hidden">Alhamdulillah sudah di input</span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <a href="https://docs.google.com/spreadsheets/d/1IOyHLFVH773lA6B8uOi8G0kPBk6eIjhCV03gD6CC0II/edit?gid=316920389#gid=316920389" target="_blank" class="px-3.5 py-2 bg-amber-100 dark:bg-amber-950 hover:bg-amber-200 text-amber-800 dark:text-amber-300 rounded-xl text-xs sm:text-sm font-black flex items-center gap-1.5 transition shadow-xs">
-                                            <i class="fa-solid fa-table"></i> Sheet
-                                        </a>
                                         <button type="button" id="card_section_btn_tugas_${s.name}" onclick="window.toggleCardSection('${s.name}', 'tugas')" class="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-black shadow-xs transition flex items-center gap-1.5">
                                             <i class="fa-solid ${isTugasOpen ? 'fa-chevron-up' : 'fa-chevron-down'}"></i> ${isTugasOpen ? 'Tutup Form' : 'Buka Form'}
                                         </button>
@@ -1484,7 +1567,7 @@
                 hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: bacaanFormatted, status: bacaanStat, progressStatus: bacaanProgressStatus, catatan: bacaanCatCombined, type: 'bacaan' });
                 localStorage.setItem('rq_history_bacaan', JSON.stringify(hist));
                 
-                window.syncToCloud({
+                window.saveLocalChange({
                     type: 'bacaan',
                     timestamp: nowObj.toISOString(),
                     tanggal: tanggalVal,
@@ -1529,10 +1612,11 @@
                 s.lokalHafCat = hafalanCatCombined;
 
                 const hist = JSON.parse(localStorage.getItem('rq_history_hafalan') || '[]');
-                hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: hafalanFormatted, status: hafalanStat, progressStatus: hafalanProgressStatus, catatan: hafalanCatCombined, type: 'hafalan' });
+                hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: hafalanFormatted, status: hafalanStat, progressStatus: hafalanProgressStatus, catatan: hafalanCatCombined, type: 'hafalan', slots: structuredSlotsHaf });
                 localStorage.setItem('rq_history_hafalan', JSON.stringify(hist));
+                try { window.rqRefreshUnifiedHafalanReports?.(); } catch (e) {}
                 
-                window.syncToCloud({
+                window.saveLocalChange({
                     type: 'hafalan',
                     timestamp: nowObj.toISOString(),
                     tanggal: tanggalVal,
@@ -1580,7 +1664,7 @@
                 hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: murojaahFormatted, status: murojaahStat, progressStatus: murojaahProgressStatus, catatan: murojaahCatCombined, type: 'murojaah' });
                 localStorage.setItem('rq_history_murojaah', JSON.stringify(hist));
                 
-                window.syncToCloud({
+                window.saveLocalChange({
                     type: 'murojaah',
                     timestamp: nowObj.toISOString(),
                     tanggal: tanggalVal,
@@ -1620,7 +1704,7 @@
                 const hist = JSON.parse(localStorage.getItem('rq_history_tugas') || '[]');
                 hist.unshift({ timestamp: formattedTimeStr, tanggal: tanggalVal, rawTime: nowObj.getTime(), name: s.name, detail: tugasVal, status: '-', catatan: tugasCat, type: 'tugas' });
                 localStorage.setItem('rq_history_tugas', JSON.stringify(hist));
-                window.syncToCloud({
+                window.saveLocalChange({
                     type: 'tugas',
                     timestamp: nowObj.toISOString(),
                     tanggal: tanggalVal,
@@ -1722,7 +1806,7 @@
             if (phoneInput) phoneInput.value = targetPhone;
             if (inlinePhoneInput) inlinePhoneInput.value = targetPhone;
 
-            const personalRows = Array.isArray(window._laporanWaPersonalCloud) ? window._laporanWaPersonalCloud : [];
+            const personalRows = Array.isArray(window._laporanWaPersonalLocal) ? window._laporanWaPersonalLocal : [];
             const targetKeyId = String(s.id || '').trim().toLowerCase();
             const targetKeyName = String(s.name || '').trim().toLowerCase();
             const personal = personalRows.find(r => String(r?.id || '').trim().toLowerCase() === targetKeyId) ||
@@ -1983,7 +2067,7 @@
             const btn = document.getElementById('waRefreshBtn');
             if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Loading berjalan...`;
             
-            await window.fetchAllDataFromCloud();
+            await window.loadLocalData();
             window.generateWaReport();
             
             if (btn) {
@@ -2028,8 +2112,8 @@
             // Untuk Laporan Grup WA, gunakan snapshot dari penyimpanan lokal sebagai
             // sumber utama. Snapshot sudah menyimpan input TERAKHIR per kategori
             // (Bacaan, Hafalan, Muroja'ah, Tugas) dan tidak menyimpan Nilai/Keterangan.
-            const laporanGrupWa = Array.isArray(window._laporanGrupWaCloud)
-                ? window._laporanGrupWaCloud
+            const laporanGrupWa = Array.isArray(window._laporanGrupWaLocal)
+                ? window._laporanGrupWaLocal
                 : [];
             const laporanById = {};
             const laporanByNameClass = {};
@@ -2118,7 +2202,7 @@
             const btn = document.getElementById('classRefreshBtn');
             if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Loading berjalan...`;
 
-            await window.fetchAllDataFromCloud();
+            await window.loadLocalData();
             window.generateClassReport();
 
             if (btn) {
@@ -2546,7 +2630,7 @@
         };
 
         window.massalEsc = function(v) {
-            return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            return String(v ?? '').replace(/&/g, '&').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         };
 
         window.getMassalClassSelectId = function(modalType) {
@@ -2830,7 +2914,7 @@
                     s.lokalMurStat = stat;
                     s.lokalMurCat = catatan;
                     hist.unshift({ timestamp: formattedTimeStr, tanggal, rawTime: nowObj.getTime(), name: s.name, detail: detailStr, status: stat, catatan, type: 'murojaah' });
-                    return window.syncToCloud({
+                    return window.saveLocalChange({
                         type: 'murojaah', timestamp: nowObj.toISOString(), tanggal,
                         id: s.id, name: s.name, class: s.class, teacher: s.teacher,
                         detail: detailStr, status: stat, catatan, groupId,
@@ -2855,7 +2939,7 @@
 
                 setTimeout(() => {
                     window.closeMurojaahMassalModal();
-                    window.fetchAllDataFromCloud(true);
+                    window.loadLocalData(true);
                 }, 900);
             } catch (err) {
                 console.error('Gagal simpan Murojaah Bersama:', err);
@@ -2903,7 +2987,7 @@
                     s.lastTugasDate = tanggal;
                     s.lokalTugCat = catatan;
                     hist.unshift({ timestamp: formattedTimeStr, tanggal, rawTime: nowObj.getTime(), name: s.name, detail, status: '-', catatan, type: 'tugas' });
-                    return window.syncToCloud({
+                    return window.saveLocalChange({
                         type: 'tugas', timestamp: nowObj.toISOString(), tanggal,
                         id: s.id, name: s.name, class: s.class, teacher: s.teacher,
                         detail, status: '-', catatan, groupId
@@ -2927,7 +3011,7 @@
 
                 setTimeout(() => {
                     window.closeTugasMassalModal();
-                    window.fetchAllDataFromCloud(true);
+                    window.loadLocalData(true);
                 }, 900);
             } catch (err) {
                 console.error('Gagal simpan Tugas Bersama:', err);
@@ -2944,11 +3028,11 @@
         // ============================================================
         // RIWAYAT INPUT PER NAMA
         // Data utama diambil dari riwayat lokal perangkat.
-        // Filter kelas dan nama hanya memfilter tampilan, tidak mengubah data Sheet.
+        // Filter kelas dan nama hanya memfilter tampilan, tidak mengubah data lokal.
         // ============================================================
         window.riwayatInputEsc = function(value) {
             return String(value ?? '')
-                .replace(/&/g, '&amp;')
+                .replace(/&/g, '&')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
@@ -2959,7 +3043,7 @@
             if (!value) return '-';
             const raw = String(value).trim();
 
-            // Tanggal dari Sheet umumnya YYYY-MM-DD. Buat tanggal lokal
+            // Tanggal tersimpan umumnya YYYY-MM-DD. Buat tanggal lokal
             // agar nama hari tidak bergeser karena timezone.
             let d;
             const isoDate = raw.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
@@ -3049,8 +3133,8 @@
             const countEl = document.getElementById('riwayatInputCount');
             if (!container || !classSelect || !nameSelect || !typeSelect) return;
 
-            const allData = Array.isArray(window._riwayatInputCloud)
-                ? window._riwayatInputCloud
+            const allData = Array.isArray(window._riwayatInputLocal)
+                ? window._riwayatInputLocal
                 : [];
 
             const previousName = nameSelect.value || 'ALL';
@@ -3183,18 +3267,27 @@
             // Load awal penuh hanya sekali.
             // Setoran dan checklist tersimpan langsung di perangkat.
             // Data lama tetap bisa dimuat ulang lewat menu/refresh yang sudah ada.
-            window.fetchAllDataFromCloud(true);
+            window.loadLocalData(true);
 
             // Refresh penuh dibuat jarang agar penyimpanan lokal tidak dibaca seluruhnya setiap beberapa detik.
             // Ini tidak mengubah fungsi laporan lama; hanya mengurangi polling yang boros.
             window._lokalSyncInterval = setInterval(() => {
-                if (document.visibilityState === 'visible') window.fetchAllDataFromCloud(false);
+                if (document.visibilityState === 'visible') window.loadLocalData(false);
             }, 60000);
 
             document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') window.fetchAllDataFromCloud(false);
+                if (document.visibilityState === 'visible') window.loadLocalData(false);
             });
         });
+
+        window.scrollToAppHeader = function() {
+            const header = document.getElementById('appHeader');
+            if (header) {
+                header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
 
         window.addEventListener('scroll', () => {
             const btn = document.getElementById('floatingScrollTopBtn');
@@ -3355,6 +3448,9 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-full flex flex-col antialiased">
 <div class="fixed top-4 right-4 z-[20000] space-y-2 w-[min(92vw,420px)] pointer-events-none" id="toastContainer"></div>
+<button aria-label="Kembali ke atas" class="opacity-0 pointer-events-none" id="floatingScrollTopBtn" onclick="window.scrollToAppHeader()" title="Kembali ke atas" type="button">
+<i class="fa-solid fa-arrow-up"></i><span>Kembali ke atas</span>
+</button>
 <header class="bg-emerald-800 dark:bg-emerald-950 text-white shadow-md sticky top-0 z-40 border-b border-emerald-700/50" id="appHeader">
 <div class="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-2.5 flex items-center gap-3">
 <div class="flex items-center gap-2.5 min-w-0 shrink-0">
@@ -3369,31 +3465,16 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <nav aria-label="Menu Tahfidz Tracker" class="flex-1 min-w-0 overflow-x-auto custom-scrollbar">
 <div class="flex items-center justify-center gap-1.5 min-w-max">
 <button class="tracker-menu-btn px-3 py-2 rounded-xl bg-white text-emerald-900 shadow text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-input" onclick="window.switchTrackerMenu('input')" type="button"><i class="fa-solid fa-pen-to-square mr-1"></i> Input Setoran</button>
-<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Hafalan Santri</button>
-<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-history" onclick="window.switchTrackerMenu('history')" type="button"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat Setoran</button>
-<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-bacaan" onclick="window.switchTrackerMenu('bacaan')" type="button"><i class="fa-solid fa-book-open-reader mr-1"></i> Bacaan Santri</button>
-<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-pengaturan" onclick="window.openBackendSettings()" type="button" title="Penyimpanan Lokal"><i class="fa-solid fa-gear mr-1"></i> Penyimpanan Lokal</button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Surat Persantri</button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-capaian" onclick="window.switchTrackerMenu('capaian')" type="button"><i class="fa-solid fa-user-check mr-1"></i> Materi Hafalan &amp; Capaian Level Santri</button>
 </div>
 </nav>
 <button class="p-2.5 bg-emerald-700 dark:bg-emerald-900 rounded-xl text-amber-300 hover:bg-emerald-600 transition shadow-xs shrink-0" onclick="window.toggleDarkMode()" title="Fitur Malam (Dark Mode)">
 <i class="fa-solid fa-moon text-xs" id="darkModeIcon"></i>
 </button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl bg-emerald-700/80 dark:bg-emerald-900 text-emerald-50 text-[10px] sm:text-xs font-black transition whitespace-nowrap shrink-0 border border-emerald-600/60" id="trackerMenu-pengaturan" type="button" title="Penyimpanan Lokal"><i class="fa-solid fa-database mr-1"></i> Penyimpanan Lokal</button>
 </div>
 </header>
-
-<!-- Pengaturan Penyimpanan Lokal -->
-<div id="backendSettingsModal" class="hidden fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="backendSettingsTitle">
-  <div class="w-full max-w-xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-    <div class="p-4 sm:p-5 bg-emerald-700 text-white flex items-center justify-between gap-3">
-      <div><h2 id="backendSettingsTitle" class="font-black text-base sm:text-lg">Penyimpanan Lokal</h2><p class="text-[10px] sm:text-xs text-emerald-100 font-bold mt-1">Semua data disimpan langsung di browser/perangkat ini.</p></div>
-      <button type="button" onclick="window.closeBackendSettings()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 font-black" aria-label="Tutup">×</button>
-    </div>
-    <div class="p-4 sm:p-5 space-y-3">
-      <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-[10px] sm:text-xs font-bold text-emerald-800 dark:text-emerald-200">Mode <b>100% Lokal</b> aktif. Semua data disimpan langsung di perangkat ini dan tidak dikirim ke server eksternal.</div>
-      <div id="localStorageInfoText" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-[10px] font-bold text-slate-600 dark:text-slate-300">Data tersimpan di Local Storage browser.</div>
-    </div>
-  </div>
-</div>
 
 <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 lg:p-6 space-y-4 relative"><section class="space-y-4" id="section-tracking">
 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-emerald-200 dark:border-emerald-900/60 overflow-hidden">
@@ -3437,7 +3518,14 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </div>
 <div>
 <label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Santri Terpilih</label>
-<div class="w-full p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl font-black text-sm min-h-[52px] flex items-center text-emerald-800 dark:text-emerald-300" id="trackingSelectedSantri">Belum ada santri dipilih</div>
+<div class="w-full p-3.5 sm:p-4 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl min-h-[64px] flex items-center text-emerald-800 dark:text-emerald-300" id="trackingSelectedSantri">
+<div class="selected-santri-icon"><i class="fa-solid fa-user-check"></i></div>
+<div class="min-w-0 ml-3">
+<div class="selected-santri-label">Santri yang sedang diinput</div>
+<div class="selected-santri-name">Belum ada santri dipilih</div>
+<div class="selected-santri-meta">Silakan pilih santri dari daftar di sebelah.</div>
+</div>
+</div>
 <select class="hidden" id="trackingSantri" onchange="window.renderTrackingLevelSuratList();window.renderTrackingPerSuratOptions();window.renderTrackingPerSurat();window.updateTrackingMurojaahInfo();"></select>
 </div>
 <div class="p-4 rounded-2xl bg-violet-50 dark:bg-violet-950/20 border-2 border-violet-200 dark:border-violet-900/50">
@@ -3667,9 +3755,9 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <div class="text-center">
 <div class="flex items-center justify-center gap-2">
 <i class="fa-solid fa-book-quran text-lg"></i>
-<h3 class="text-lg sm:text-xl font-black">Tracker Hafalan Santri</h3>
+<h3 class="text-lg sm:text-xl font-black">Tracker Surat Persantri</h3>
 </div>
-<p class="text-[10px] sm:text-xs text-emerald-100 font-bold mt-1">Pantau hafalan Juz 27–30 secara lengkap dan rapi.</p>
+<p class="text-[10px] sm:text-xs text-emerald-100 font-bold mt-1">Pantau progres hafalan setiap surat per santri.</p>
 <div class="mt-3 mx-auto w-fit max-w-full px-5 py-2.5 rounded-2xl bg-white/20 border-2 border-white/35 shadow-sm backdrop-blur-sm">
 <div class="text-sm sm:text-base font-black text-white break-words" id="hafalanTrackerSelectedName">Belum ada santri dipilih</div>
 <div class="text-[10px] font-black text-emerald-50 mt-0.5" id="hafalanTrackerSelectedClass">Kelas: -</div>
@@ -3700,26 +3788,6 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <div class="text-xl font-black text-amber-700 dark:text-amber-300" id="hafalanTrackerReview">0</div>
 </div>
 </div>
-<!-- Target hafalan -->
-<div class="rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/20 p-3 sm:p-4" id="hafalanTargetSummary">
-<div class="flex flex-wrap items-center justify-between gap-2">
-<div>
-<div class="flex items-center gap-2 text-indigo-900 dark:text-indigo-300"><i class="fa-solid fa-bullseye"></i><span class="text-sm font-black" id="hafalanTargetTitle">Target Hafalan</span></div>
-<div class="text-[10px] font-black text-slate-600 dark:text-slate-300 mt-1" id="hafalanTargetRoute">Juz 30 → Juz 29 → Juz 28 → Juz 27</div>
-</div>
-<div class="text-right"><div class="text-sm font-black text-indigo-700 dark:text-indigo-300" id="hafalanTargetText">0% tercapai</div><div class="text-[9px] font-bold text-slate-500" id="hafalanTargetDetail">0 dari 0 surat selesai</div></div>
-</div>
-<div class="h-2 bg-white/80 dark:bg-slate-800 rounded-full overflow-hidden mt-3"><div class="h-full bg-indigo-500 rounded-full" id="hafalanTargetBar" style="width:0%"></div></div>
-</div>
-<!-- Ringkasan murojaah santri terpilih -->
-<div class="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 p-3 sm:p-4" id="hafalanMurojaahSummary">
-<div class="flex items-center gap-2 text-amber-900 dark:text-amber-300"><i class="fa-solid fa-rotate"></i><span class="text-sm font-black">Murojaah Santri Terpilih</span></div>
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
-<div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700"><div class="text-[8px] font-black text-slate-400">Setoran Terakhir</div><div class="text-[10px] font-black mt-1" id="hmLast">-</div></div>
-<div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700"><div class="text-[8px] font-black text-slate-400">Jarak Waktu</div><div class="text-[10px] font-black mt-1" id="hmDays">-</div></div>
-<div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700" id="hmStatusBox"><div class="text-[8px] font-black text-slate-400">Status</div><div class="text-[10px] font-black mt-1" id="hmStatus">Belum ada setoran</div></div>
-</div>
-</div>
 <!-- Daftar Juz -->
 <div class="space-y-2.5" id="hafalanTrackerSections"></div>
 <div class="flex flex-wrap items-center gap-3 px-1 py-1 text-[9px] sm:text-[10px] font-black text-slate-500">
@@ -3729,6 +3797,29 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-amber-500"></i> Perlu Murojaah</span>
 </div>
 </div>
+</div>
+<div class="tracker-menu-panel" id="tracker-panel-capaian" style="display:none;">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-emerald-200 dark:border-emerald-800 overflow-hidden">
+    <div class="p-4 sm:p-5 bg-gradient-to-r from-emerald-700 to-teal-600 text-white">
+      <div class="text-center max-w-3xl mx-auto">
+        <div class="flex items-center justify-center gap-2">
+          <span class="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><i class="fa-solid fa-user-check text-sm"></i></span>
+          <h2 class="text-lg sm:text-xl font-black leading-tight">Materi Hafalan &amp; Capaian Level Santri</h2>
+        </div>
+        <p class="text-[10px] sm:text-xs text-emerald-100 mt-1.5 font-bold leading-relaxed">Materi hafalan per Juz dan Level, sekaligus nama santri yang sudah mencapai level tersebut.</p>
+      </div>
+      <div class="mt-4 pt-3 border-t border-white/15 flex flex-wrap items-center justify-center gap-2">
+        <button type="button" onclick="window.closeCapaianAll()" class="px-3 py-2 rounded-xl bg-emerald-950/40 text-white border border-white/20 text-[9px] sm:text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-chevron-up mr-1"></i>Tutup Semua</button>
+        <button type="button" onclick="window.openCapaianMateriOnly()" class="px-3 py-2 rounded-xl bg-white text-emerald-800 text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-book-open mr-1"></i>Buka Materi Hafalan Saja</button>
+        <button type="button" onclick="window.openCapaianMateriAndSantri()" class="px-3 py-2 rounded-xl bg-emerald-950/40 text-white border border-white/20 text-[9px] sm:text-[10px] font-black whitespace-nowrap"><i class="fa-solid fa-users mr-1"></i>Buka Materi + Capaian Santri</button>
+        <button type="button" onclick="window.downloadMateriHafalanPDF()" class="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi Hafalan (PDF)</button>
+        <button type="button" onclick="window.downloadMateriSantriPDF()" class="px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[9px] sm:text-[10px] font-black shadow-sm whitespace-nowrap"><i class="fa-solid fa-file-pdf mr-1"></i>Download Materi + Santri (PDF)</button>
+      </div>
+    </div>
+    <div class="p-3 sm:p-4">
+      <div id="capaianLevelContent" class="space-y-2"></div>
+    </div>
+  </div>
 </div>
 <div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-history" style="display:none;"><div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
 <div class="flex items-center justify-between gap-2 mb-3">
@@ -3952,12 +4043,12 @@ if(initialDarkIcon){
   const JUZ30 = JUZ_LEVELS["30"];
   window.__RQ_TRACKING_JUZ_LEVELS = JUZ_LEVELS;
   const LEVEL_NAMES = {
-    1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 - Ujian Tertulis',8:'Level 8 - Ujian Lengkap'
+    1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 — Evaluasi & Pertanyaan',8:'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut'
   };
-  const SPECIAL = {7:'Ujian Tertulis',8:'Ujian Lengkap'};
+  const SPECIAL = {7:'Evaluasi & Pertanyaan',8:"Ujian Tasmi\' Semua Surat Juz tersebut"};
   function specialLabel(juz, level){
-    if(Number(level)===7) return `Ujian Tertulis Juz ${juz}`;
-    if(Number(level)===8) return `Ujian Lengkap Juz ${juz} — dari awal Juz sampai akhir`;
+    if(Number(level)===7) return `Evaluasi & Pertanyaan Juz ${juz}`;
+    if(Number(level)===8) return `Ujian Tasmi\' Semua Surat Juz tersebut ${juz} — dari awal Juz sampai akhir`;
     return SPECIAL[level] || `Level ${level}`;
   }
   const DEFAULT_AYAT = {
@@ -4403,7 +4494,16 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
     }
     const selectedObj=santriList().find(s=>s.name===name);
     if(selectedObj){ window.trackingSelectedClass=selectedObj.class||''; const ci=document.getElementById('trackingClassSearch'); if(ci) ci.value=selectedObj.class||''; }
-    const selectedBox=document.getElementById('trackingSelectedSantri'); if(selectedBox) selectedBox.textContent=name||'Belum ada santri dipilih';
+    const selectedBox=document.getElementById('trackingSelectedSantri');
+    if(selectedBox){
+      const selectedStudent=santriList().find(s=>s.name===name);
+      if(name){
+        const kelas=selectedStudent?.class ? 'Kelas '+safe(selectedStudent.class) : 'Santri aktif';
+        selectedBox.innerHTML=`<div class="selected-santri-icon"><i class="fa-solid fa-user-check"></i></div><div class="min-w-0 ml-3"><div class="selected-santri-label">Santri yang sedang diinput</div><div class="selected-santri-name">${safe(name)}</div><div class="selected-santri-meta"><i class="fa-solid fa-layer-group mr-1"></i>${kelas} <span class="mx-1">•</span> <span class="text-emerald-600 dark:text-emerald-400">Siap menerima setoran</span></div></div>`;
+      }else{
+        selectedBox.innerHTML=`<div class="selected-santri-icon"><i class="fa-solid fa-user-plus"></i></div><div class="min-w-0 ml-3"><div class="selected-santri-label">Santri yang sedang diinput</div><div class="selected-santri-name">Belum ada santri dipilih</div><div class="selected-santri-meta">Silakan pilih santri dari daftar di sebelah.</div></div>`;
+      }
+    }
     window.renderTrackingClassSearch(window.trackingSelectedClass||'');
     window.renderTrackingStudentList();
     updateMobileStudentListVisibility();
@@ -4418,18 +4518,13 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
 
     // Sinkronkan pilihan dari sidebar ke menu laporan WA yang sedang terbuka.
     // Tidak mengubah data setoran; hanya mengikuti santri yang dipilih.
-    const waliSel=document.getElementById('waWaliSantriSelect');
-    if(waliSel && [...waliSel.options].some(o=>o.value===name)){
-      waliSel.value=name;
-      if(typeof waliSel.onchange==='function') waliSel.onchange();
-      else waliSel.dispatchEvent(new Event('change',{bubbles:true}));
-    }
     const kondisiSel=document.getElementById('waKondisiSantriSelect');
     if(kondisiSel && [...kondisiSel.options].some(o=>o.value===name)){
       kondisiSel.value=name;
       if(typeof kondisiSel.onchange==='function') kondisiSel.onchange();
       else kondisiSel.dispatchEvent(new Event('change',{bubbles:true}));
     }
+    try{ if(typeof window.renderWaWaliSantriReport==='function') window.renderWaWaliSantriReport(); }catch(e){}
 
     document.getElementById('trackingSantri')?.scrollIntoView({behavior:'smooth',block:'center'});
   };
@@ -4762,7 +4857,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const KEY='rq_tracking_level_checklist_v1';
   const JUZS=['30','29','28','27'];
   const LEVELS=[1,2,3,4,5,6,7,8];
-  const labels={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 - Ujian Tertulis',8:'Level 8 - Ujian Lengkap'};
+  const labels={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 — Evaluasi & Pertanyaan',8:'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut'};
   const safeName=v=>String(v||'').trim();
   function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
   function save(data){try{localStorage.setItem(KEY,JSON.stringify(data));return true}catch(e){return false}}
@@ -4844,7 +4939,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     }catch(e){}
   }
   function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}catch(e){}}
-  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function allSurat(){return Array.isArray(window.surahList)?window.surahList:[]}
   function info(name){return allSurat().find(x=>String(x.name)===String(name))||{name,ayat:0}}
   function getRecords(){
@@ -4944,13 +5039,13 @@ document.addEventListener('DOMContentLoaded',()=>{
         const bar=perlu?'bg-amber-500':status==='Sudah Setor'?'bg-emerald-500':status==='Dalam Proses'?'bg-blue-500':'bg-slate-400';
         return `<div class="shrink-0 w-[142px] sm:w-[150px] rounded-xl border ${border} p-2 shadow-sm">
           <div class="flex items-center justify-between gap-1">
-            <span class="text-[8px] font-black text-slate-400">${inf.no||''}</span>
+            <span class="text-[10px] font-black text-slate-400">${inf.no||''}</span>
             <span class="w-2 h-2 rounded-full ${bar}"></span>
           </div>
-          <div class="font-black text-[10px] text-slate-800 dark:text-slate-100 truncate mt-1" title="${esc(surat)}">${esc(surat)}</div>
-          <div class="flex justify-between mt-1 text-[8px] font-bold text-slate-500"><span>${totalAyat||'-'} ayat</span><span>${pct}%</span></div>
+          <div class="font-black text-[13px] leading-tight text-slate-800 dark:text-slate-100 truncate mt-1" title="${esc(surat)}">${esc(surat)}</div>
+          <div class="flex justify-between mt-1 text-[11px] font-bold text-slate-500"><span>${totalAyat||'-'} ayat</span><span>${pct}%</span></div>
           <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-1"><div class="h-full ${bar} rounded-full" style="width:${pct}%"></div></div>
-          <div class="mt-1 text-[7px] font-black ${perlu?'text-amber-600 dark:text-amber-300':'text-slate-400'} truncate">${perlu?'Perlu Murojaah':d.last?'Terakhir: '+esc(d.last.tanggal):'Belum setor'}</div>
+          <div class="mt-1 text-[10px] font-black ${perlu?'text-amber-600 dark:text-amber-300':'text-slate-400'} truncate">${perlu?'Perlu Murojaah':d.last?'Terakhir: '+esc(d.last.tanggal):'Belum setor'}</div>
         </div>`;
       }).join('');
       const juzPct=z.surat.length?Math.round(zd/z.surat.length*100):0;
@@ -4959,11 +5054,11 @@ document.addEventListener('DOMContentLoaded',()=>{
           <div class="flex items-center gap-2 min-w-0 ${cc[2]}">
             <i class="fa-solid fa-book-open text-base"></i>
             <span class="font-black text-base whitespace-nowrap">${z.label}</span>
-            <span class="text-[9px] font-bold opacity-70">${z.surat.length} surat</span>
+            <span class="text-[10px] font-bold opacity-70">${z.surat.length} surat</span>
           </div>
           <div class="flex items-center gap-2 ${cc[2]} whitespace-nowrap">
-            <span class="text-[9px] font-black">${zd} / ${z.surat.length} sudah setor</span>
-            <span class="text-[9px] font-black">${juzPct}%</span>
+            <span class="text-[11px] font-black">${zd} / ${z.surat.length} sudah setor</span>
+            <span class="text-[11px] font-black">${juzPct}%</span>
           </div>
         </div>
         <div class="flex gap-1.5 overflow-x-auto p-2 custom-scrollbar">${name?cards:'<div class="w-full py-6 text-center text-xs font-black text-slate-400">Pilih santri terlebih dahulu untuk melihat seluruh surat.</div>'}</div>
@@ -4975,6 +5070,29 @@ document.addEventListener('DOMContentLoaded',()=>{
     set('hafalanTrackerDone',done);set('hafalanTrackerProgress',process);set('hafalanTrackerTodo',todo);set('hafalanTrackerReview',review);set('hafalanTrackerPercent',pct+'%');
     const bar=document.getElementById('hafalanTrackerBar');if(bar)bar.style.width=pct+'%';
   };
+
+  function ensureWaWaliPreviewStyle(){
+    if(document.getElementById('wa-wali-preview-style')) return;
+    const st=document.createElement('style');
+    st.id='wa-wali-preview-style';
+    st.textContent=`
+      #tracker-panel-wa-wali .wa-wali-light-preview,
+      #tracker-panel-wa-wali .wa-wali-light-preview *{color-scheme:light;}
+      #tracker-panel-wa-wali .wa-wali-light-preview{background:#f8fafc !important;color:#0f172a !important;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-paper{background:#ffffff !important;color:#0f172a !important;border-color:#e2e8f0 !important;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info{background:#f8fafc !important;color:#0f172a !important;border-color:#cbd5e1 !important;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.8fr) !important;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-card{background:#ffffff !important;color:#0f172a !important;border-color:#cbd5e1 !important;min-width:0;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-card .label{color:#64748b !important;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-card .value{color:#0f172a !important;overflow-wrap:anywhere;word-break:break-word;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-levels{background:#f0fdf4 !important;color:#0f172a !important;border-color:#a7f3d0 !important;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-level-card{color:#0f172a !important;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-level-card *{color:inherit;}
+      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-level-card .muted{color:#64748b !important;}
+      @media(max-width:640px){#tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-grid{grid-template-columns:1fr !important;}}
+    `;
+    document.head.appendChild(st);
+  }
 
   function init(){
     loadSettings();renderHafalanJuzSettings();renderHafalanTracker();
@@ -4989,7 +5107,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   function moveTrackerPanels(){
     const content=document.getElementById('trackerPageContent');
     if(!content) return;
-    ['tracker-panel-hafalan','tracker-panel-history'].forEach(id=>{
+    ['tracker-panel-hafalan','tracker-panel-history','tracker-panel-capaian'].forEach(id=>{
       const panel=document.getElementById(id);
       if(panel && panel.parentElement!==content){
         content.appendChild(panel);
@@ -5019,10 +5137,17 @@ document.addEventListener('DOMContentLoaded',()=>{
     grid-template-columns:230px minmax(0,1fr)!important;
   }
 }
+
+      .wa-wali-kop{color:#0f172a;}
+      .dark .wa-wali-kop{background:#fff !important;color:#0f172a !important;border-color:#d1fae5 !important;}
+      .dark .wa-wali-kop *{color:inherit;}
+      .dark .wa-wali-kop .text-emerald-800{color:#065f46 !important;}
+      .dark .wa-wali-kop .text-slate-500{color:#64748b !important;}
+      .dark .wa-wali-kop .text-slate-400{color:#94a3b8 !important;}
 </style>
 <script>
 window.switchTrackerMenu=function(menu){
-  const pages=['input','hafalan','history','bacaan'];
+  const pages=['input','hafalan','materi','capaian','history','bacaan'];
   document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
   const perSuratSummary=document.getElementById('trackingPerSuratSummary');
   const perSuratTable=document.getElementById('trackingPerSuratTableWrap');
@@ -5051,6 +5176,7 @@ window.switchTrackerMenu=function(menu){
 
   if(menu==='dashboard' && typeof window.renderTrackingDashboard==='function') window.renderTrackingDashboard();
   if(menu==='hafalan' && typeof window.renderHafalanTracker==='function') window.renderHafalanTracker();
+  if(menu==='capaian' && typeof window.renderCapaianLevelSantri==='function') window.renderCapaianLevelSantri();
   if(menu==='bacaan' && typeof window.renderBacaanSantriMenu==='function') window.renderBacaanSantriMenu();
   if(menu==='persurat'){
     if(typeof window.renderTrackingPerSuratOptions==='function') window.renderTrackingPerSuratOptions();
@@ -5235,7 +5361,7 @@ function scan(){
     '27':['Adh-Dhariyat','At-Tur','An-Najm','Al-Qamar','Ar-Rahman','Al-Waqiah','Al-Hadid']
   };
   const aliases={"Abasa":["'Abasa"],"Al-Infitar":["Al-Infithar"],"Al-Mutaffifin":["Al-Muthaffifin"],"Al-Insyiqaq":["Al-Inshiqaq"],"Al-A'la":["Al-Ala"],"Al-Ghasyiyah":["Al-Ghashiyah"],"Al-'Alaq":["Al-Alaq"],"Al-'Adiyat":["Al-Adiyat"],"Al-Qari'ah":["Al-Qariah"],"Al-'Ashr":["Al-Asr"],"Al-Ma'un":["Al-Maun"],"Al-Ikhlas":["Al-Ikhlash"],"Al-Muddatstsir":["Al-Muddaththir"],"Al-Ma'arij":["Al-Maarij"],"Al-Waqiah":["Al-Waqi'ah"]};
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const read=(k,def)=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(def))}catch(e){return def}};
   const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
   const records=()=>read(RECORD_KEY,[]);
@@ -5384,9 +5510,9 @@ function renderLevelHistory(){
 (function(){
   'use strict';
   var KEY='rq_hafalan_target_per_santri_v1';
-  var LEVEL_NAMES={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 - Ujian Tertulis',8:'Level 8 - Ujian Lengkap'};
+  var LEVEL_NAMES={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 — Evaluasi & Pertanyaan',8:'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut'};
   var JUZS=[]; for(var i=1;i<=30;i++) JUZS.push(String(i));
-  function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]})}
+  function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,function(c){return {'&':'&','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]})}
   function selected(){var e=document.getElementById('trackingSantri');return String(e&&e.value||'').trim()}
   function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
   function save(d){try{localStorage.setItem(KEY,JSON.stringify(d));return true}catch(e){return false}}
@@ -5514,7 +5640,7 @@ function renderLevelHistory(){
   const LEVEL_HISTORY_KEY='rq_tracking_level_history_v1';
   const JUZ=window.__RQ_TRACKING_JUZ_LEVELS || {};
 
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
   const context=()=>({
     juz:String(document.getElementById('trackingJuz')?.value||'30'),
@@ -5567,7 +5693,7 @@ function renderOptions(){
     const c=context(), list=suratList(c.juz,c.arah,c.level), name=String(document.getElementById('trackingSantri')?.value||'');
     box.dataset.juz=c.juz; box.dataset.arah=c.arah; box.dataset.level=c.level;
     if(!list.length){
-      box.innerHTML=`<div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50"><div class="text-xs font-black text-emerald-800 dark:text-emerald-300">${Number(c.level)===8?'Ujian Lengkap Juz '+esc(c.juz):'Level '+esc(c.level)+' Juz '+esc(c.juz)}</div></div>`;
+      box.innerHTML=`<div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50"><div class="text-xs font-black text-emerald-800 dark:text-emerald-300">${Number(c.level)===8?'Ujian Tasmi\' Semua Surat Juz tersebut '+esc(c.juz):'Level '+esc(c.level)+' Juz '+esc(c.juz)}</div></div>`;
       return;
     }
     box.innerHTML=`<div class="flex items-center justify-between gap-2 mb-2"><span class="text-[10px] font-black text-cyan-800 dark:text-cyan-300">Semua Surat Level ${esc(c.level)}</span><span class="text-[9px] font-bold text-slate-400">${list.length} surat</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${list.map((surat,i)=>{
@@ -5592,7 +5718,7 @@ function renderOptions(){
     const levels=levelData(c0.juz,c0.arah), keys=Object.keys(levels);
     if(!keys.length)return;
     const activeLevel=keys.includes(c0.level)?c0.level:keys[0];
-    l.innerHTML=keys.map(k=>`<option value="${esc(k)}">${Number(k)===7?'Level 7 - Ujian Tertulis':Number(k)===8?'Level 8 - Ujian Lengkap':'Level '+esc(k)}</option>`).join('');
+    l.innerHTML=keys.map(k=>`<option value="${esc(k)}">${Number(k)===7?'Level 7 — Evaluasi & Pertanyaan':Number(k)===8?'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut':'Level '+esc(k)}</option>`).join('');
     l.value=activeLevel;
     const c=context(), allowed=suratList(c.juz,c.arah,c.level), main=document.getElementById('trackingSurat');
     if(main && main.value && !allowed.some(s=>norm(s)===norm(main.value))){main.value='';clearMainAyat();}
@@ -5785,7 +5911,7 @@ function renderOptions(){
   'use strict';
   const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
   const JUZ_ORDER=['30','29','28','27'];
-  const LEVEL_LABELS={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 - Ujian Tertulis',8:'Level 8 - Ujian Lengkap'};
+  const LEVEL_LABELS={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 — Evaluasi & Pertanyaan',8:'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut'};
   const ALIASES={
     'Abasa':["'Abasa"],'Al-Infitar':['Al-Infithar'],'Al-Mutaffifin':['Al-Muthaffifin'],
     'Al-Insyiqaq':['Al-Inshiqaq'],'Al-A\'la':['Al-Ala'],'Al-Ghasyiyah':['Al-Ghashiyah'],
@@ -5794,7 +5920,7 @@ function renderOptions(){
     'Al-Muddatstsir':['Al-Muddaththir'],'Al-Ma\'arij':['Al-Maarij'],
     'Al-Jumu\'ah':['Al-Jumu\'ah'],'Al-Waqiah':["Al-Waqi'ah"]
   };
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function selected(){return String(document.getElementById('trackingSantri')?.value||'').trim();}
   function checklistState(name){
     try{
@@ -5861,7 +5987,7 @@ function renderOptions(){
       const detail=r.total?`${r.done} dari ${r.total} surat selesai`:'Belum ada daftar surat untuk level ini';
       return `<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/70 p-2.5">
         <div class="flex items-center justify-between gap-2">
-          <div class="min-w-0"><div class="text-[10px] font-black text-violet-800 dark:text-violet-300">Juz ${esc(item.juz)} · ${esc(label)}</div><div class="text-[8px] font-bold text-slate-500 mt-0.5">${esc(detail)}${r.total?' · Arah '+esc(r.arah==='depan'?'Depan':'Belakang'):''}</div></div>
+          <div class="min-w-0"><div class="text-[10px] font-black text-violet-800 dark:text-violet-300">Juz ${esc(item.juz)} · ${esc(label)}</div><div class="text-[8px] font-bold text-slate-500 mt-0.5">${esc(detail)}</div></div>
           <strong class="text-xs font-black text-violet-700 dark:text-violet-300">${r.pct}%</strong>
         </div>
         <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-2"><div class="h-full bg-violet-500 rounded-full transition-all" style="width:${r.pct}%"></div></div>
@@ -5893,23 +6019,87 @@ function renderOptions(){
   'use strict';
   const RECORD_KEY='rq_tracking_tahfidz_local_v1';
   const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
-  const LEVEL_NAMES={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 - Ujian Tertulis',8:'Level 8 - Ujian Lengkap'};
+  const LEVEL_NAMES={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 — Evaluasi & Pertanyaan',8:'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut'};
   const ALIASES={
     'Abasa':["'Abasa"],'Al-Infitar':['Al-Infithar'],'Al-Mutaffifin':['Al-Muthaffifin'],'Al-Insyiqaq':['Al-Inshiqaq'],
     'Al-A\'la':['Al-Ala'],'Al-Ghasyiyah':['Al-Ghashiyah'],'Al-\'Alaq':['Al-Alaq'],'Al-\'Adiyat':['Al-Adiyat'],
     'Al-Qari\'ah':['Al-Qariah'],'Al-\'Ashr':['Al-Asr'],'Al-Ma\'un':['Al-Maun'],'Al-Ikhlas':['Al-Ikhlash'],
     'Al-Muddatstsir':['Al-Muddaththir'],'Al-Ma\'arij':['Al-Maarij']
   };
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
   const read=(key,fallback)=>{try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}};
-  const records=()=>{const r=read(RECORD_KEY,[]);return Array.isArray(r)?r:[]};
+  // Cache Local Storage selama datanya tidak berubah. Sebelumnya setiap surat
+  // memanggil JSON.parse(localStorage) berulang-ulang sehingga klik template
+  // dapat terasa macet pada data yang besar.
+  let _recordsRaw=null;
+  let _recordsCache=[];
+  const records=()=>{
+    try{
+      const raw=localStorage.getItem(RECORD_KEY)||'[]';
+      if(raw===_recordsRaw)return _recordsCache;
+      _recordsRaw=raw;
+      const parsed=JSON.parse(raw);
+      _recordsCache=Array.isArray(parsed)?parsed:[];
+    }catch(e){_recordsCache=[];}
+    return _recordsCache;
+  };
   const santri=()=>Array.isArray(window.santriList)?window.santriList:[];
   const juzData=()=>window.__RQ_TRACKING_JUZ_LEVELS||{};
   const aliases=s=>[s].concat(ALIASES[s]||[]);
   const totalAyat=s=>{try{return Number(window.surahInfo?.(s)?.ayat||0)}catch(e){return 0}};
   const maxAyat=(name,juz,surat)=>records().filter(r=>String(r.santri||'')===String(name)&&String(r.juz||'')===String(juz)&&aliases(surat).some(a=>norm(a)===norm(r.surat))).reduce((m,r)=>Math.max(m,Number(r.ayatSampai)||0),0);
-  const checked=(name,juz,level)=>{const all=read(CHECKLIST_KEY,{});return !!(all?.[name]?.[String(juz)]?.[String(level)]);};
+  let _checklistRaw=null;
+  let _checklistCache={};
+  const checklist=()=>{
+    try{
+      const raw=localStorage.getItem(CHECKLIST_KEY)||'{}';
+      if(raw===_checklistRaw)return _checklistCache;
+      _checklistRaw=raw;
+      const parsed=JSON.parse(raw);
+      _checklistCache=parsed&&typeof parsed==='object'?parsed:{};
+    }catch(e){_checklistCache={};}
+    return _checklistCache;
+  };
+  const checked=(name,juz,level)=>{const all=checklist();return !!(all?.[name]?.[String(juz)]?.[String(level)]);};
+  const ARABIC_NAMES={
+    "An-Naba":"سورة النبأ","An-Naba'":"سورة النبأ",
+    "An-Nazi'at":"سورة النازعات","An-Nazi’at":"سورة النازعات",
+    "'Abasa":"سورة عبس","Abasa":"سورة عبس",
+    "At-Takwir":"سورة التكوير","Al-Infithar":"سورة الانفطار",
+    "Al-Mutaffifin":"سورة المطففين","Al-Muthaffifin":"سورة المطففين",
+    "Al-Insyiqaq":"سورة الانشقاق","Al-Buruj":"سورة البروج",
+    "Ath-Thariq":"سورة الطارق","At-Tariq":"سورة الطارق",
+    "Al-A'la":"سورة الأعلى","Al-A’la":"سورة الأعلى",
+    "Al-Ghasyiyah":"سورة الغاشية","Al-Ghasyiah":"سورة الغاشية",
+    "Al-Fajr":"سورة الفجر","Al-Balad":"سورة البلد","Asy-Syams":"سورة الشمس",
+    "Al-Lail":"سورة الليل","Adh-Dhuha":"سورة الضحى","Ad-Duha":"سورة الضحى",
+    "Asy-Syarh":"سورة الشرح","At-Tin":"سورة التين","Al-'Alaq":"سورة العلق",
+    "Al-Alaq":"سورة العلق","Al-Qadr":"سورة القدر","Al-Bayyinah":"سورة البينة",
+    "Az-Zalzalah":"سورة الزلزلة","Al-'Adiyat":"سورة العاديات","Al-Adiyat":"سورة العاديات",
+    "Al-Qari'ah":"سورة القارعة","Al-Qariah":"سورة القارعة","At-Takatsur":"سورة التكاثر",
+    "Al-'Ashr":"سورة العصر","Al-Asr":"سورة العصر","Al-Humazah":"سورة الهمزة",
+    "Al-Fil":"سورة الفيل","Quraisy":"سورة قريش","Al-Ma'un":"سورة الماعون",
+    "Al-Maun":"سورة الماعون","Al-Kautsar":"سورة الكوثر","Al-Kafirun":"سورة الكافرون",
+    "An-Nashr":"سورة النصر","Al-Lahab":"سورة المسد","Al-Masad":"سورة المسد",
+    "Al-Ikhlas":"سورة الإخلاص","Al-Ikhlash":"سورة الإخلاص","Al-Falaq":"سورة الفلق","An-Nas":"سورة الناس",
+    "Al-Haqqah":"سورة الحاقة","Al-Qalam":"سورة القلم","Al-Ma'arij":"سورة المعارج",
+    "Al-Maarij":"سورة المعارج","Nuh":"سورة نوح","Al-Jinn":"سورة الجن","Al-Muzzammil":"سورة المزمل",
+    "Al-Muddatstsir":"سورة المدثر","Al-Muddaththir":"سورة المدثر","Al-Qiyamah":"سورة القيامة",
+    "Al-Insan":"سورة الإنسان","Al-Mursalat":"سورة المرسلات","Al-Mulk":"سورة الملك",
+    "Al-Mujadilah":"سورة المجادلة","Al-Hasyr":"سورة الحشر","Al-Mumtahanah":"سورة الممتحنة",
+    "Ash-Shaff":"سورة الصف","Al-Jumu'ah":"سورة الجمعة","Al-Munafiqun":"سورة المنافقون",
+    "At-Taghabun":"سورة التغابن","Ath-Thalaq":"سورة الطلاق","At-Talaq":"سورة الطلاق",
+    "At-Tahrim":"سورة التحريم","Al-Waqi'ah":"سورة الواقعة","Al-Waqiah":"سورة الواقعة",
+    "Adz-Dzariyat":"سورة الذاريات","Ath-Thur":"سورة الطور","An-Najm":"سورة النجم",
+    "Al-Qamar":"سورة القمر","Ar-Rahman":"سورة الرحمن","Al-Hadid":"سورة الحديد"
+  };
+  function arabicFor(surat){
+    const raw=String(surat||'').trim();
+    if(ARABIC_NAMES[raw]) return ARABIC_NAMES[raw];
+    const key=raw.replace(/[’`]/g,"'").replace(/\s+/g,' ');
+    return ARABIC_NAMES[key]||'';
+  }
   function levelsFor(juz,arah){
     const book=juzData()[String(juz)]||{};
     return book[String(arah)]||book.depan||{};
@@ -5921,16 +6111,10 @@ function renderOptions(){
     return rr[0]?.arah==='belakang'?'belakang':'depan';
   }
   function levelReport(name,juz,level){
-    const arah=chooseArah(name,juz,level);
-    const list=Array.isArray(levelsFor(juz,arah)[String(level)])?levelsFor(juz,arah)[String(level)]:[];
-    let done=0;
-    const rows=list.map(s=>{
-      const total=totalAyat(s), sampai=maxAyat(name,juz,s), selesai=total>0&&sampai>=total;
-      if(selesai)done++;
-      return {surat:s,total,sampai,selesai};
-    });
-    const pct=list.length?Math.round(done/list.length*100):0;
-    return {arah,rows,pct,done,total:list.length,checked:checked(name,juz,level)};
+    try{
+      if(typeof window.rqUnifiedLevelReport==='function') return window.rqUnifiedLevelReport(name,juz,level);
+    }catch(e){}
+    return {arah:'depan',rows:[],pct:0,done:0,total:0,checked:checked(name,juz,level)};
   }
   function selectedJuzSet(){
     const ids=['30','29','28'];
@@ -5943,7 +6127,7 @@ function renderOptions(){
     return latestPerSurat(name).filter(r=>set.has(String(r.juz||'')));
   }
   function reportText(){
-    const name=document.getElementById('waWaliSantriSelect')?.value||'';
+    const name=document.getElementById('trackingSantri')?.value||document.getElementById('waWaliSantriSelect')?.value||'';
     const juz=document.getElementById('waWaliJuzSelect')?.value||'';
     const out=document.getElementById('waWaliReportOutput');
 
@@ -5954,46 +6138,7 @@ function renderOptions(){
     const s=santri().find(x=>String(x.name)===String(name));
     const kelas=s?.class||'-';
 
-    // Nama Arab surat hanya untuk tampilan laporan WA.
-    // Tidak mengubah data surat, tracker, atau penyimpanan.
-    const arabicNames={
-      "An-Naba":"سورة النبأ","An-Naba'":"سورة النبأ",
-      "An-Nazi'at":"سورة النازعات","An-Nazi’at":"سورة النازعات",
-      "'Abasa":"سورة عبس","Abasa":"سورة عبس",
-      "At-Takwir":"سورة التكوير","Al-Infithar":"سورة الانفطار",
-      "Al-Mutaffifin":"سورة المطففين","Al-Muthaffifin":"سورة المطففين",
-      "Al-Insyiqaq":"سورة الانشقاق","Al-Buruj":"سورة البروج",
-      "Ath-Thariq":"سورة الطارق","At-Tariq":"سورة الطارق",
-      "Al-A'la":"سورة الأعلى","Al-A’la":"سورة الأعلى",
-      "Al-Ghasyiyah":"سورة الغاشية","Al-Ghasyiah":"سورة الغاشية",
-      "Al-Fajr":"سورة الفجر","Al-Balad":"سورة البلد","Asy-Syams":"سورة الشمس",
-      "Al-Lail":"سورة الليل","Adh-Dhuha":"سورة الضحى","Ad-Duha":"سورة الضحى",
-      "Asy-Syarh":"سورة الشرح","At-Tin":"سورة التين","Al-'Alaq":"سورة العلق",
-      "Al-Alaq":"سورة العلق","Al-Qadr":"سورة القدر","Al-Bayyinah":"سورة البينة",
-      "Az-Zalzalah":"سورة الزلزلة","Al-'Adiyat":"سورة العاديات","Al-Adiyat":"سورة العاديات",
-      "Al-Qari'ah":"سورة القارعة","Al-Qariah":"سورة القارعة","At-Takatsur":"سورة التكاثر",
-      "Al-'Ashr":"سورة العصر","Al-Asr":"سورة العصر","Al-Humazah":"سورة الهمزة",
-      "Al-Fil":"سورة الفيل","Quraisy":"سورة قريش","Al-Ma'un":"سورة الماعون",
-      "Al-Maun":"سورة الماعون","Al-Kautsar":"سورة الكوثر","Al-Kafirun":"سورة الكافرون",
-      "An-Nashr":"سورة النصر","Al-Lahab":"سورة المسد","Al-Masad":"سورة المسد",
-      "Al-Ikhlas":"سورة الإخلاص","Al-Falaq":"سورة الفلق","An-Nas":"سورة الناس",
-      "Al-Haqqah":"سورة الحاقة","Al-Qalam":"سورة القلم","Al-Ma'arij":"سورة المعارج",
-      "Nuh":"سورة نوح","Al-Jinn":"سورة الجن","Al-Muzzammil":"سورة المزمل",
-      "Al-Muddatstsir":"سورة المدثر","Al-Muddaththir":"سورة المدثر",
-      "Al-Qiyamah":"سورة القيامة","Al-Insan":"سورة الإنسان","Al-Mursalat":"سورة المرسلات",
-      "Al-Mulk":"سورة الملك","Al-Mujadilah":"سورة المجادلة","Al-Hasyr":"سورة الحشر",
-      "Al-Mumtahanah":"سورة الممتحنة","Ash-Shaff":"سورة الصف","Al-Jumu'ah":"سورة الجمعة",
-      "Al-Munafiqun":"سورة المنافقون","At-Taghabun":"سورة التغابن","Ath-Thalaq":"سورة الطلاق",
-      "At-Tahrim":"سورة التحريم","At-Talaq":"سورة الطلاق","Al-Munafiqun":"سورة المنافقون",
-      "Al-Balad":"سورة البلد"
-    };
-
-    function arabicFor(surat){
-      const raw=String(surat||'').trim();
-      if(arabicNames[raw]) return arabicNames[raw];
-      const key=raw.replace(/[’`]/g,"'").replace(/\s+/g,' ');
-      return arabicNames[key]||'';
-    }
+    // Nama Arab surat memakai sumber terpusat agar preview template dan teks WA konsisten.
 
     const lines=[
       'Berikut laporan hafalan ananda:',
@@ -6011,6 +6156,19 @@ function renderOptions(){
       return out.value;
     }
 
+    const reportType=document.getElementById('waWaliReportType')?.value||'full';
+    if(reportType==='summary'){
+      for(let level=1;level<=8;level++){
+        const r=levelReport(name,juz,level);
+        const mark=r.checked?'☑':'☐';
+        lines.push(`*${mark} Level ${level} — ${r.pct}%*`);
+        lines.push(r.rows.length ? `   ${r.done} dari ${r.total} surat selesai` : `   ${level===7?'Evaluasi & Pertanyaan':'Ujian Tasmi\' Semua Surat Juz tersebut'}`);
+        lines.push('');
+      }
+      out.value=lines.join('\n').trim();
+      return out.value;
+    }
+
     for(let level=1;level<=8;level++){
       const r=levelReport(name,juz,level);
       const mark=r.checked?'☑':'☐';
@@ -6019,7 +6177,7 @@ function renderOptions(){
       lines.push(`*${mark} Level ${level} — ${r.pct}%*`);
 
       if(r.rows.length){
-        lines.push(`   ${r.done} dari ${r.total} surat selesai · *Arah ${r.arah==='depan'?'Depan':'Belakang'}*`);
+        lines.push(`   ${r.done} dari ${r.total} surat selesai`);
 
         r.rows.forEach((x,index)=>{
           const nomor=index+1;
@@ -6038,9 +6196,9 @@ function renderOptions(){
         });
       }else{
         const special=level===7
-          ? 'Ujian Tertulis'
+          ? 'Evaluasi & Pertanyaan'
           : level===8
-            ? 'Ujian Lengkap dari awal Juz sampai akhir'
+            ? 'Ujian Tasmi\' Semua Surat Juz tersebut'
             : 'Belum ada daftar surat untuk level ini.';
         lines.push(`   ${special}`);
       }
@@ -6052,21 +6210,55 @@ function renderOptions(){
     return out.value;
   
   }
+  function currentTemplate(){ return window.__waWaliTemplate || 'full'; }
+  function setTemplate(t){
+    window.__waWaliTemplate=t==='summary'?'summary':'full';
+    const f=document.getElementById('waWaliTemplateFull'), q=document.getElementById('waWaliTemplateSummary');
+    [f,q].forEach(x=>x&&x.classList.remove('border-emerald-500','bg-emerald-50'));
+    const active=window.__waWaliTemplate==='full'?f:q;
+    active&&active.classList.add('border-emerald-500','bg-emerald-50');
+    renderPreview();
+  }
+  window.setWaWaliTemplate=setTemplate;
+
+
   function renderPreview(){
-    const name=document.getElementById('waWaliSantriSelect')?.value||'';
+    const name=document.getElementById('trackingSantri')?.value||document.getElementById('waWaliSantriSelect')?.value||'';
     const juz=document.getElementById('waWaliJuzSelect')?.value||'';
-    const box=document.getElementById('waWaliLevelPreview');
+    const box=document.getElementById('waWaliVisualPreview');
+    const selectedBox=document.getElementById('waWaliSelectedStudent');
+    if(selectedBox){const ss=santri().find(x=>String(x.name)===String(name));selectedBox.innerHTML=name?`<i class="fa-solid fa-user-check mr-2"></i>${esc(name)}${ss?.class?` <span class="ml-1 text-xs opacity-70">— ${esc(ss.class)}</span>`:''}`:'Pilih santri dari pencarian di sebelah kiri.';}
     if(!box){reportText();return;}
-    if(!name||!juz){box.innerHTML='<div class="text-xs font-bold text-slate-400 text-center py-4">Pilih santri dan Juz terlebih dahulu.</div>';reportText();return;}
-    const rows=[];
+    if(!name||!juz){box.innerHTML='<div class="text-xs font-bold text-slate-400 text-center py-10">Pilih santri dan Juz terlebih dahulu.</div>';reportText();return;}
+    const s=santri().find(x=>String(x.name)===String(name));
+    const kelas=s?.class||'-';
+    const compact=currentTemplate()==='summary';
+    const cards=[];
     for(let level=1;level<=8;level++){
       const r=levelReport(name,juz,level);
-      const items=r.rows.map(x=>`${x.selesai?'☑':'☐'} ${esc(x.surat)}${x.total?` · ${x.sampai>0?`Ayat ${Math.min(x.sampai,x.total)}/${x.total}`:'Belum hafal'}`:''}`).join('<br>');
-      rows.push(`<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-3"><div class="flex items-center justify-between gap-2"><div class="text-xs font-black text-violet-800 dark:text-violet-300">${r.checked?'☑':'☐'} ${LEVEL_NAMES[level]}</div><strong class="text-sm font-black text-violet-700 dark:text-violet-300">${r.pct}%</strong></div><div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-2"><div class="h-full bg-violet-500" style="width:${r.pct}%"></div></div><div class="text-[9px] font-bold text-slate-500 mt-2">${r.rows.length?`${r.done} dari ${r.total} surat selesai · Arah ${r.arah==='depan'?'Depan':'Belakang'}`:'Ujian / belum ada daftar surat'}</div>${items?`<div class="mt-2 text-[10px] font-bold leading-5">${items}</div>`:''}</div>`);
+      const special=!r.rows.length;
+      const title=level<=6?`Level ${level}`:(level===7?'Level 7':'Level 8');
+      const desc=special?(level===7?'Evaluasi & Pertanyaan':'Ujian Tasmi\' Semua Surat Juz tersebut'):`${r.done} dari ${r.total} surat selesai`;
+      const items=(!compact&&r.rows.length)?`<div class="mt-2 grid gap-1.5">${r.rows.map((x,i)=>{const arabic=arabicFor(x.surat);const nama=arabic?`${x.surat} ${arabic}`:x.surat;return `<div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[12px] leading-5 font-black ${x.selesai?'text-emerald-700':'text-slate-700'}">${i+1}. ${x.selesai?'☑':'☐'} ${esc(nama)}</div><div class="text-[11px] leading-4 text-slate-600 mt-0.5">${x.total?(x.selesai?'Sudah hafal, sampai ayat '+x.total+'/'+x.total:(x.sampai>0?'Sampai ayat '+Math.min(x.sampai,x.total)+'/'+x.total:'Belum hafal')):''}</div>${x.selesai?"<div class='text-[10px] font-bold text-amber-700 mt-1'>Jangan lupa dimuroja'ah</div>":''}</div><span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-md ${x.selesai?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-500'}">${x.selesai?'Selesai':'Proses'}</span></div></div>`}).join('')}</div>`:'';
+      cards.push(`<div class="wa-wali-level-card rounded-xl border ${r.pct===100?'border-emerald-200 bg-emerald-50/50':'border-slate-200 bg-slate-50'} p-3.5"><div class="flex items-center justify-between gap-2"><div class="font-black text-sm text-slate-800">${r.checked?'☑':'☐'} ${title} <span class="text-emerald-700">— ${r.pct}%</span></div><span class="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded-md">${r.pct}%</span></div><div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-2"><div class="h-full bg-emerald-500" style="width:${r.pct}%"></div></div><div class="mt-2 text-[10px] font-bold text-slate-500">${desc}</div>${items}</div>`);
     }
-    box.innerHTML=rows.join('');
+    box.innerHTML=`<div class="space-y-3.5">
+      <div class="wa-wali-info rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div class="text-[11px] font-black uppercase tracking-wide text-slate-400 mb-2">Informasi Santri</div>
+        <div class="wa-wali-info-grid grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="wa-wali-info-card rounded-lg bg-white border border-slate-200 p-3"><div class="label text-[10px] font-bold text-slate-400">Nama</div><div class="value text-sm font-black text-slate-800 mt-0.5">${esc(name)}</div></div>
+          <div class="wa-wali-info-card rounded-lg bg-white border border-slate-200 p-3"><div class="label text-[10px] font-bold text-slate-400">Kelas</div><div class="value text-sm font-black text-slate-800 mt-0.5">${esc(kelas)}</div></div>
+          <div class="wa-wali-info-card rounded-lg bg-white border border-slate-200 p-3"><div class="label text-[10px] font-bold text-slate-400">Juz</div><div class="value text-sm font-black text-slate-800 mt-0.5">${esc(juz)}</div></div>
+        </div>
+      </div>
+      <div class="wa-wali-levels rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+        <div class="flex items-center justify-between gap-2"><div class="text-sm font-black text-slate-900">Level Hafalan dan Progres</div><span class="text-[10px] font-black text-emerald-700 bg-white border border-emerald-200 px-2 py-1 rounded-lg">${compact?'Ringkas':'Lengkap'}</span></div>
+        <div class="mt-3 space-y-2.5">${cards.join('')}</div>
+      </div>
+    </div>`;
     reportText();
   }
+
   function copy(){
     const out=document.getElementById('waWaliReportOutput');if(!out)return;
     const done=()=>{try{window.showToast('Laporan WA Wali Santri berhasil disalin!','success')}catch(e){alert('Laporan berhasil disalin.')}};
@@ -6074,12 +6266,13 @@ function renderOptions(){
   }
   function send(){
     const text=document.getElementById('waWaliReportOutput')?.value||'';if(!text)return;
-    const s=santri().find(x=>String(x.name)===(document.getElementById('waWaliSantriSelect')?.value||''));
+    const s=santri().find(x=>String(x.name)===(document.getElementById('trackingSantri')?.value||document.getElementById('waWaliSantriSelect')?.value||''));
     const phone=String(s?.phone||s?.noHp||s?.nomorHp||s?.wa||'').replace(/\D/g,'');
     const url=phone?`https://wa.me/${phone}?text=${encodeURIComponent(text)}`:`https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url,'_blank');
   }
   function init(){
+    ensureWaWaliPreviewStyle();
     const nav=document.querySelector('#appHeader nav > div');
     const content=document.getElementById('trackerPageContent');
     if(!nav||!content)return;
@@ -6088,23 +6281,78 @@ function renderOptions(){
     }
     if(!document.getElementById('tracker-panel-wa-wali')){
       const panel=document.createElement('div');panel.id='tracker-panel-wa-wali';panel.className='tracker-menu-panel';panel.dataset.panelHidden='1';panel.style.display='none';
-      panel.innerHTML=`<div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 class="font-black text-base text-emerald-800 dark:text-emerald-300"><i class="fa-brands fa-whatsapp mr-1"></i> Laporan WA Wali Santri Per Santri</h3></div><span class="text-[9px] font-black px-2 py-1 rounded-lg bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300">Per Santri</span></div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Nama Santri</label><select id="waWaliSantriSelect" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm"></select></div><div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Juz Laporan</label><select id="waWaliJuzSelect" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm"></select></div></div>
-        <div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Pesan WhatsApp</label><textarea id="waWaliReportOutput" class="w-full min-h-[360px] p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold leading-relaxed outline-none" readonly></textarea></div>
-        <div class="flex flex-wrap gap-2"><button type="button" onclick="window.copyWaWaliSantriReport()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black"><i class="fa-regular fa-copy mr-1"></i> Salin Laporan</button><button type="button" onclick="window.sendWaWaliSantriReport()" class="px-4 py-2.5 rounded-xl bg-green-700 hover:bg-green-800 text-white text-xs font-black"><i class="fa-brands fa-whatsapp mr-1"></i> Buka WhatsApp</button></div>
+      panel.innerHTML=`
+      <div class="space-y-4">
+        <div class="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-100 dark:border-emerald-900/40 p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white grid place-items-center text-2xl shadow-sm"><i class="fa-brands fa-whatsapp"></i></div><div><h3 class="font-black text-xl text-slate-900 dark:text-white">Laporan WA Wali Santri</h3><p class="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mt-1">Buat laporan progres hafalan per santri untuk dikirim ke wali santri melalui WhatsApp.</p></div></div>
+            </div>
+            <span class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/70 border border-emerald-100 dark:border-emerald-800 text-[10px] font-black text-emerald-700 dark:text-emerald-300"><i class="fa-solid fa-database"></i> Data Lokal</span>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+            <div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Santri Terpilih</label><div id="waWaliSelectedStudent" class="w-full p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl font-black text-sm text-emerald-800 dark:text-emerald-300 min-h-[52px] flex items-center">Pilih santri dari pencarian di sebelah kiri.</div></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Pilih Juz</label><select id="waWaliJuzSelect" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm"></select></div>
+              <div><label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Jenis Laporan</label><select id="waWaliReportType" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm"><option value="full">Laporan Hafalan (Level & Surat)</option><option value="summary">Ringkasan Progres Level</option></select></div>
+            </div>
+            <button type="button" onclick="window.renderWaWaliSantriReport()" class="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-sm shadow-sm"><i class="fa-regular fa-file-lines mr-1"></i> Buat Laporan</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-5 min-w-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3"><div><h4 class="font-black text-lg text-slate-900 dark:text-white">Preview Laporan</h4><p class="text-[11px] font-bold text-slate-400">Pratinjau laporan dalam bentuk kotak yang rapi sebelum dikirim.</p></div><button type="button" id="waWaliCopyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-black hover:bg-emerald-100 transition"><i class="fa-regular fa-copy"></i><span>Salin Laporan</span></button></div>
+            <div class="wa-wali-light-preview rounded-2xl bg-slate-50 border border-slate-200 p-3 sm:p-5 min-h-[620px] overflow-auto">
+              <div class="wa-wali-paper max-w-[720px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="wa-wali-kop px-5 py-4 border-b-2 border-emerald-100 bg-white"><div class="flex items-center gap-3"><div class="shrink-0 w-12 h-12 rounded-full bg-white border-2 border-emerald-200 p-1 overflow-hidden shadow-sm"><img src="https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" alt="Logo Rumah Quran Al-Khansa" class="w-full h-full object-contain" onerror="this.style.display='none'"></div><div class="min-w-0"><div class="font-black text-emerald-800 text-base leading-tight">Rumah Quran Al-Khansa</div><div class="text-[10px] font-bold text-slate-500 mt-0.5">Laporan Hafalan Santri</div><div class="text-[9px] font-semibold text-slate-400 mt-0.5">Monitoring hafalan dan progres level santri</div></div></div></div><div id="waWaliVisualPreview" class="p-4 sm:p-5"></div></div>
+            </div>
+            <textarea id="waWaliReportOutput" class="sr-only" readonly></textarea>
+          </div>
+
+          <div class="space-y-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h4 class="font-black text-base text-slate-900 dark:text-white">Template Tampilan</h4><p class="text-[10px] font-bold text-slate-400 mt-1 mb-3">Pilih desain tampilan laporan.</p>
+              <div class="grid grid-cols-2 gap-2"><button type="button" id="waWaliTemplateFull" data-wa-template="full" class="p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-left"><div class="space-y-1 mb-2"><div class="h-1.5 bg-emerald-200 rounded"></div><div class="h-1.5 bg-emerald-300 rounded w-4/5"></div><div class="h-5 bg-violet-100 rounded"></div><div class="h-5 bg-blue-100 rounded"></div></div><div class="text-[10px] font-black text-slate-800">Template 1</div><div class="text-[9px] font-bold text-slate-400">Lengkap (Level & Surat)</div></button><button type="button" id="waWaliTemplateSummary" data-wa-template="summary" class="p-3 rounded-xl border-2 border-slate-200 bg-white dark:bg-slate-900 text-left"><div class="space-y-1 mb-2"><div class="h-1.5 bg-slate-200 rounded"></div><div class="h-1.5 bg-slate-300 rounded w-3/4"></div><div class="h-5 bg-slate-100 rounded"></div><div class="h-5 bg-slate-100 rounded"></div></div><div class="text-[10px] font-black text-slate-800 dark:text-white">Template 2</div><div class="text-[9px] font-bold text-slate-400">Ringkas (Level Saja)</div></button></div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <h4 class="font-black text-base text-slate-900 dark:text-white">Isi Laporan</h4><p class="text-[10px] font-bold text-slate-400 mt-1 mb-3">Laporan difokuskan pada hafalan.</p>
+              <div class="space-y-2 text-xs font-bold text-slate-600 dark:text-slate-300"><label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-600"> Informasi Santri (nama, kelas, juz)</label><label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-600"> Level Hafalan</label><label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-600"> Nama Surat + Arab</label><label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-600"> Progress Persentase</label><label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-600"> Jumlah Ayat</label><label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-600"> Status Hafalan</label><label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-600"> Catatan Muroja'ah</label></div>
+              <button type="button" onclick="window.sendWaWaliSantriReport()" class="w-full mt-4 px-4 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm"><i class="fa-brands fa-whatsapp mr-1"></i> Kirim ke WhatsApp <i class="fa-solid fa-arrow-right ml-1"></i></button>
+            </div>
+          </div>
+        </div>
       </div>`;
       content.appendChild(panel);
+      // Bind template buttons once. Use addEventListener so the buttons remain
+      // responsive even when the report panel is re-rendered/switched.
+      panel.querySelectorAll('[data-wa-template]').forEach(btn=>{
+        if(btn.dataset.bound==='1')return;
+        btn.addEventListener('click',()=>setTemplate(btn.dataset.waTemplate));
+        btn.dataset.bound='1';
+      });
+      const copyBtn=panel.querySelector('#waWaliCopyBtn');
+      if(copyBtn&&!copyBtn.dataset.bound){
+        copyBtn.addEventListener('click',()=>{
+          copy();
+          const old=copyBtn.innerHTML;
+          copyBtn.innerHTML='<i class="fa-solid fa-check"></i><span>Tersalin</span>';
+          copyBtn.classList.add('bg-emerald-600','text-white','border-emerald-600');
+          copyBtn.classList.remove('bg-emerald-50','text-emerald-700');
+          setTimeout(()=>{copyBtn.innerHTML=old;copyBtn.classList.remove('bg-emerald-600','text-white','border-emerald-600');copyBtn.classList.add('bg-emerald-50','text-emerald-700');},1400);
+        });
+        copyBtn.dataset.bound='1';
+      }
+
     }
-    const sel=document.getElementById('waWaliSantriSelect'), juz=document.getElementById('waWaliJuzSelect');
-    if(sel&&!sel.dataset.bound){
-      const list=santri().slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'id'));sel.innerHTML=list.map(s=>`<option value="${esc(s.name)}">${esc(s.name)} — ${esc(s.class||'-')}</option>`).join('');
-      const active=document.getElementById('trackingSantri')?.value||'';if(list.some(s=>s.name===active))sel.value=active;sel.addEventListener('change',renderPreview);sel.dataset.bound='1';
-    }
+    const juz=document.getElementById('waWaliJuzSelect');
     if(juz&&!juz.dataset.bound){
       const keys=Object.keys(juzData()).sort((a,b)=>Number(b)-Number(a));juz.innerHTML=keys.map(j=>`<option value="${esc(j)}">Juz ${esc(j)}</option>`).join('');
       const active=document.getElementById('trackingJuz')?.value||'';if(keys.includes(active))juz.value=active; juz.addEventListener('change',renderPreview);juz.dataset.bound='1';
     }
+    const type=document.getElementById('waWaliReportType');
+    if(type&&!type.dataset.bound){type.addEventListener('change',renderPreview);type.dataset.bound='1';}
     renderPreview();
   }
   window.renderWaWaliSantriReport=function(){init();renderPreview();};
@@ -6132,7 +6380,7 @@ function renderOptions(){
 (function(){
   'use strict';
   const RECORD_KEY='rq_tracking_tahfidz_local_v1';
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
   const read=()=>{try{const v=JSON.parse(localStorage.getItem(RECORD_KEY)||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}};
   const santri=()=>Array.isArray(window.santriList)?window.santriList:[];
@@ -6200,13 +6448,13 @@ function renderOptions(){
     if(!name){box.innerHTML='<div class="p-5 text-center text-xs font-bold text-slate-400">Pilih santri untuk melihat kondisi hafalan persurat.</div>';reportText();return;}
     const selected=[...selectedJuzSet()];if(!selected.length){box.innerHTML='<div class="p-5 text-center text-xs font-bold text-slate-400">Pilih minimal satu Juz untuk ditampilkan.</div>';reportText();return;}
     const rows=filteredRows(name);if(!rows.length){box.innerHTML='<div class="p-5 text-center text-xs font-bold text-slate-400">Belum ada surat yang memiliki informasi setoran pada Juz yang dipilih.</div>';reportText();return;}
-    let lastJuz=null;const html=[];rows.forEach(r=>{if(String(r.juz)!==String(lastJuz)){lastJuz=r.juz;html.push(`<div class="pt-2 text-sm font-black text-emerald-800 dark:text-emerald-300">Juz ${esc(r.juz||'-')}</div>`);}const m=murojaah(r),total=totalAyat(r.surat),sampai=Number(r.ayatSampai||0);html.push(`<div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm"><div class="flex flex-wrap items-center justify-between gap-2"><div><div class="text-sm font-black text-slate-800 dark:text-slate-100">${esc(r.surat)}</div><div class="text-[9px] font-bold text-slate-400 mt-1">${esc(fmtDateTime(r))}</div></div>${badge(m.label,m.cls)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><div class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/20"><div class="text-[9px] font-black text-sky-700 dark:text-sky-300">SEGI BACAAN</div><div class="text-[10px] font-black mt-1">${esc(bacaan(r.penilaianBacaan||r.kualitas||r.nilaiBacaan))}</div></div><div class="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/20"><div class="text-[9px] font-black text-violet-700 dark:text-violet-300">KEKUATAN HAFALAN</div><div class="text-[10px] font-black mt-1">${esc(hafalan(r.penilaianHafalan||r.kekuatanHafalan||r.nilaiHafalan||r.kualitas))}</div></div></div><div class="mt-2 text-[10px] font-bold text-slate-500">${sampai?`Setoran terakhir sampai ayat <b>${sampai}${total?`/${total}`:''}</b>`:'Belum ada ayat tercatat'}</div><div class="mt-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20"><div class="text-[9px] font-black text-amber-700 dark:text-amber-300">CATATAN WAKTU &amp; STATUS MUROJA'AH</div><div class="text-[10px] font-black mt-1">${esc(m.label)}</div><div class="text-[9px] font-bold text-slate-500 mt-1">${esc(m.desc)}</div></div>${String(r.catatan||'').trim()?`<div class="mt-2 text-[10px] font-bold text-slate-600 dark:text-slate-300"><b>Catatan Ustadz:</b> ${esc(r.catatan)}</div>`:''}</div>`);});box.innerHTML=html.join('');reportText();
+    let lastJuz=null;const html=[];rows.forEach(r=>{if(String(r.juz)!==String(lastJuz)){lastJuz=r.juz;html.push(`<div class="pt-2 text-sm font-black text-emerald-800 dark:text-emerald-300">Juz ${esc(r.juz||'-')}</div>`);}const m=murojaah(r),total=totalAyat(r.surat),sampai=Number(r.ayatSampai||0);html.push(`<div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm"><div class="flex flex-wrap items-center justify-between gap-2"><div><div class="text-sm font-black text-slate-800 dark:text-slate-100">${esc(r.surat)}</div><div class="text-[9px] font-bold text-slate-400 mt-1">${esc(fmtDateTime(r))}</div></div>${badge(m.label,m.cls)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><div class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/20"><div class="text-[9px] font-black text-sky-700 dark:text-sky-300">SEGI BACAAN</div><div class="text-[10px] font-black mt-1">${esc(bacaan(r.penilaianBacaan||r.kualitas||r.nilaiBacaan))}</div></div><div class="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/20"><div class="text-[9px] font-black text-violet-700 dark:text-violet-300">KEKUATAN HAFALAN</div><div class="text-[10px] font-black mt-1">${esc(hafalan(r.penilaianHafalan||r.kekuatanHafalan||r.nilaiHafalan||r.kualitas))}</div></div></div><div class="mt-2 text-[10px] font-bold text-slate-500">${sampai?`Setoran terakhir sampai ayat <b>${sampai}${total?`/${total}`:''}</b>`:'Belum ada ayat tercatat'}</div><div class="mt-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20"><div class="text-[9px] font-black text-amber-700 dark:text-amber-300">CATATAN WAKTU & STATUS MUROJA'AH</div><div class="text-[10px] font-black mt-1">${esc(m.label)}</div><div class="text-[9px] font-bold text-slate-500 mt-1">${esc(m.desc)}</div></div>${String(r.catatan||'').trim()?`<div class="mt-2 text-[10px] font-bold text-slate-600 dark:text-slate-300"><b>Catatan Ustadz:</b> ${esc(r.catatan)}</div>`:''}</div>`);});box.innerHTML=html.join('');reportText();
   }
   function copy(){const out=document.getElementById('waKondisiReportOutput');if(!out)return;const done=()=>{try{window.showToast('Laporan kondisi persurat berhasil disalin!','success')}catch(e){alert('Laporan berhasil disalin.')}};if(navigator.clipboard?.writeText){navigator.clipboard.writeText(out.value).then(done).catch(()=>{out.select();document.execCommand('copy');done();});}else{out.select();document.execCommand('copy');done();}}
   function send(){const text=document.getElementById('waKondisiReportOutput')?.value||'';if(!text)return;const s=santri().find(x=>String(x.name)===(document.getElementById('waKondisiSantriSelect')?.value||''));const phone=String(s?.phone||s?.noHp||s?.nomorHp||s?.wa||'').replace(/\D/g,'');window.open(phone?`https://wa.me/${phone}?text=${encodeURIComponent(text)}`:`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');}
   function ensure(){
     const nav=document.querySelector('#appHeader nav > div'),content=document.getElementById('trackerPageContent');if(!nav||!content)return false;
-    let b=document.getElementById('trackerMenu-wa-kondisi');if(!b){b=document.createElement('button');b.type='button';b.id='trackerMenu-wa-kondisi';b.className='tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap';b.innerHTML='<i class="fa-brands fa-whatsapp mr-1"></i> Laporan Kondisi Persurat';nav.appendChild(b);}
+    let b=document.getElementById('trackerMenu-wa-kondisi');if(b)b.style.display='none';
     b.onclick=openMenu;
     let panel=document.getElementById('tracker-panel-wa-kondisi');if(!panel){panel=document.createElement('div');panel.id='tracker-panel-wa-kondisi';panel.className='tracker-menu-panel';panel.style.display='none';panel.dataset.panelHidden='1';panel.innerHTML=`<div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
   <div>
@@ -6257,11 +6505,11 @@ function renderOptions(){
   const panelMap={
     'input':'tracker-panel-input',
     'hafalan':'tracker-panel-hafalan',
+    'capaian':'tracker-panel-capaian',
     'bacaan':'tracker-panel-bacaan',
     'history':'tracker-panel-history',
     'wa-wali':'tracker-panel-wa-wali',
-    'wa-kondisi':'tracker-panel-wa-kondisi',
-    'level-perkelas':'tracker-panel-level-perkelas'
+    'wa-kondisi':'tracker-panel-wa-kondisi'
   };
 
   function normalize(menu){
@@ -6322,10 +6570,10 @@ function renderOptions(){
 
 
 <!-- PENYIMPANAN LOKAL SAJA -->
-<script id="backend-settings-close-v1">
+<script id="local-storage-settings-close-v1">
 (function(){
   document.addEventListener('keydown',function(e){
-    if(e.key==='Escape' && typeof window.closeBackendSettings==='function') window.closeBackendSettings();
+    if(e.key==='Escape' && typeof window.closeLocalStorageSettings==='function') window.closeLocalStorageSettings();
   });
 })();
 </script>
@@ -6377,148 +6625,7 @@ function renderOptions(){
 })();
 </script>
 
-<script id="tracking-quick-input-v1">
-(function(){
-  'use strict';
-  const RECORD_KEY='rq_tracking_tahfidz_local_v1';
-  const LEVEL_KEY='rq_tracking_level_checklist_v1';
-  const LEVEL_HISTORY_KEY='rq_tracking_level_history_v1';
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
-  const read=(k,def)=>{try{const v=JSON.parse(localStorage.getItem(k)||'null');return v==null?def:v}catch(e){return def}};
-  const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
-  const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
-  const selected=()=>String(document.getElementById('trackingSantri')?.value||'').trim();
-  const juz=()=>String(document.getElementById('trackingJuz')?.value||'30');
-  const arah=()=>String(document.getElementById('trackingArah')?.value||'depan');
-  const level=()=>Number(document.getElementById('trackingLevel')?.value||1);
-  const listFor=(j,a,l)=>{
-    const data=window.__RQ_TRACKING_JUZ_LEVELS||{};
-    return data[String(j)]?.[String(a)]?.[Number(l)]||[];
-  };
-  const totalAyat=s=>{try{return Number(window.surahInfo?.(s)?.ayat||0)}catch(e){return 0}};
-  const toast=(msg,type='success')=>{try{if(typeof window.showToast==='function')window.showToast(msg,type);else alert(msg)}catch(e){alert(msg)}};
-  function refresh(){
-    try{window.renderTrackingLevelSuratList?.()}catch(e){}
-    try{window.updateTrackingProgress?.()}catch(e){}
-    try{window.renderTrackingDashboard?.()}catch(e){}
-    try{window.renderTrackingHistory?.()}catch(e){}
-    try{window.refreshTrackingLevelChecklistProgress?.()}catch(e){}
-    try{window.renderLevelHistory?.()}catch(e){}
-    try{window.renderTarget?.()}catch(e){}
-  }
-  function saveLevelCheck(j,l,name,date){
-    const data=read(LEVEL_KEY,{});
-    data[name]=data[name]||{};data[name][j]=data[name][j]||{};data[name][j][l]=true;write(LEVEL_KEY,data);
-    const hist=read(LEVEL_HISTORY_KEY,[]);
-    const idx=hist.findIndex(x=>x.santri===name&&String(x.juz)===String(j)&&Number(x.level)===Number(l));
-    const item={santri:name,juz:String(j),level:Number(l),tanggal:date||today(),timestamp:new Date().toISOString(),source:'Input Cepat'};
-    if(idx>=0)hist[idx]=Object.assign({},hist[idx],item);else hist.push(item);
-    write(LEVEL_HISTORY_KEY,hist);
-  }
-  function currentMeta(){
-    const name=selected();
-    return {name,juz:juz(),arah:arah(),level:level(),tanggal:document.getElementById('trackingTanggal')?.value||today(),pb:document.getElementById('trackingPenilaianBacaan')?.value||'',ph:document.getElementById('trackingPenilaianHafalan')?.value||'',catatan:document.getElementById('trackingCatatan')?.value||''};
-  }
-  function appendCompleteRecord(meta,surat){
-    const records=read(RECORD_KEY,[]);
-    const total=totalAyat(surat);if(!total)return false;
-    const existing=records.filter(r=>String(r.santri||'')===meta.name&&String(r.juz||'')===meta.juz&&String(r.arah||'')===meta.arah&&Number(r.level||0)===meta.level&&norm(r.surat)===norm(surat));
-    const max=existing.reduce((m,r)=>Math.max(m,Number(r.ayatSampai)||0),0);
-    if(max>=total)return false;
-    records.push({
-      id:Date.now()+Math.floor(Math.random()*1000),timestamp:new Date().toISOString(),
-      santri:meta.name,tanggal:meta.tanggal,juz:meta.juz,arah:meta.arah,level:meta.level,surat,
-      ayatDari:1,ayatSampai:total,kualitas:meta.ph||meta.pb||'',penilaianBacaan:meta.pb,penilaianHafalan:meta.ph,catatan:meta.catatan
-    });
-    write(RECORD_KEY,records);return true;
-  }
-  function requireStudent(){
-    const name=selected();
-    if(!name){toast('Pilih nama santri terlebih dahulu.','error');return null;}
-    return name;
-  }
-  function markAllLevels(){
-    const name=requireStudent();if(!name)return;
-    const j=juz(),a=arah(),date=document.getElementById('trackingTanggal')?.value||today(),meta=currentMeta();
-    const all=[];
-    for(let l=1;l<=8;l++){
-      const list=listFor(j,a,l);
-      let added=0;
-      // Untuk level yang memiliki daftar surat, buat record hafalan lengkap
-      // sampai ayat terakhir agar sumber data Tracker Hafalan benar-benar sama
-      // dengan data Input Cepat. Level 7–8 dapat tetap memakai checklist
-      // karena merupakan level ujian/special dan tidak selalu memiliki daftar surat.
-      list.forEach(s=>{
-        if(appendCompleteRecord({...meta,level:l},s))added++;
-      });
-      saveLevelCheck(j,l,name,date);
-      all.push({level:l,added});
-    }
-    const totalAdded=all.reduce((n,x)=>n+x.added,0);
-    refresh();
-    toast(`Level 1–8 Juz ${j} berhasil diproses. ${totalAdded} surat ditambahkan ke data hafalan.`, 'success');
-  }
-  function markCurrentLevel(){
-    const name=requireStudent();if(!name)return;
-    const j=juz(),a=arah(),l=level(),list=listFor(j,a,l),meta=currentMeta();
-    if(!list.length){saveLevelCheck(j,l,name,meta.tanggal);refresh();toast(`Level ${l} Juz ${j} berhasil ditandai selesai.`,'success');return;}
-    if(!confirm(`Tandai semua ${list.length} surat pada Level ${l} Juz ${j} sebagai sudah hafal sampai ayat terakhir untuk ${name}?`))return;
-    let added=0;
-    list.forEach(s=>{if(appendCompleteRecord(meta,s))added++});
-    saveLevelCheck(j,l,name,meta.tanggal);
-    refresh();
-    toast(`${added} surat pada Level ${l} berhasil ditandai sampai ayat terakhir.`,'success');
-  }
-  function markCurrentSurah(){
-    const name=requireStudent();if(!name)return;
-    const surah=String(document.getElementById('trackingSurat')?.value||'').trim();
-    const total=totalAyat(surah);
-    if(!surah||!total){toast('Pilih surat terlebih dahulu.','error');return;}
-    const meta=currentMeta();
-    const records=read(RECORD_KEY,[]);
-    const existing=records.filter(r=>String(r.santri||'')===name&&String(r.juz||'')===meta.juz&&String(r.arah||'')===meta.arah&&Number(r.level||0)===meta.level&&norm(r.surat)===norm(surah));
-    const max=existing.reduce((m,r)=>Math.max(m,Number(r.ayatSampai)||0),0);
-    if(max>=total){toast(`${surah} sudah tercatat sampai ayat terakhir.`,'success');return;}
-    if(!confirm(`Tandai ${surah} sampai ayat terakhir (${total}) sebagai sudah hafal?`))return;
-    const ok=appendCompleteRecord(meta,surah);
-    if(ok){
-      const list=listFor(meta.juz,meta.arah,meta.level);
-      if(list.length&&list.every(s=>{
-        const rr=read(RECORD_KEY,[]).filter(r=>String(r.santri||'')===name&&String(r.juz||'')===meta.juz&&String(r.arah||'')===meta.arah&&Number(r.level||0)===meta.level&&norm(r.surat)===norm(s));
-        const m=rr.reduce((x,r)=>Math.max(x,Number(r.ayatSampai)||0),0);return m>=totalAyat(s);
-      }))saveLevelCheck(meta.juz,meta.level,name,meta.tanggal);
-      refresh();toast(`${surah} berhasil ditandai sudah hafal sampai ayat ${total}.`,'success');
-    }
-  }
-  function setCurrentSurahFull(){
-    const surah=document.getElementById('trackingSurat');const end=document.getElementById('trackingAyatSampai');const start=document.getElementById('trackingAyatDari');
-    const total=totalAyat(surah?.value||'');
-    if(!total){toast('Pilih surat terlebih dahulu.','error');return;}
-    if(start)start.value='1';if(end)end.value=String(total);
-    try{window.updateTrackingProgress?.()}catch(e){}
-    toast(`Rentang ayat diisi 1–${total}. Tinggal tekan SIMPAN SETORAN.`,'success');
-  }
-  function ensure(){
-    const anchor=document.getElementById('trackingLevelSuratList');if(!anchor)return false;
-    let box=document.getElementById('trackingQuickInputBox');
-    if(!box){
-      box=document.createElement('div');box.id='trackingQuickInputBox';
-      box.className='mt-3 p-4 rounded-2xl border-2 border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/20';
-      box.innerHTML=`<div class="flex items-start justify-between gap-3 mb-3"><div><h4 class="text-sm font-black text-amber-900 dark:text-amber-300"><i class="fa-solid fa-bolt mr-1"></i> INPUT CEPAT HAFALAN</h4><p class="text-[10px] font-bold text-slate-500 mt-1">Mempercepat pengisian tanpa mengubah data input biasa.</p></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><button type="button" onclick="window.quickMarkAllLevels()" class="w-full p-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-list-check mr-1"></i> Ceklis Level 1–8</button><button type="button" onclick="window.quickMarkCurrentLevel()" class="w-full p-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-check-double mr-1"></i> Semua Surat Level Ini Sudah Hafal</button><button type="button" onclick="window.quickSetCurrentSurahFull()" class="w-full p-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-arrows-to-circle mr-1"></i> Isi Semua Ayat Surat Ini</button><button type="button" onclick="window.quickMarkCurrentSurah()" class="w-full p-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-sm"><i class="fa-solid fa-bolt mr-1"></i> Surat Ini Sudah Hafal</button></div><div class="mt-3 text-[9px] font-bold text-slate-500">• <b>Ceklis Level 1–8</b> menandai checklist level. • <b>Semua Surat Level Ini</b> membuat setoran penuh sampai ayat terakhir. • <b>Isi Semua Ayat</b> hanya mengisi form, belum menyimpan.</div>`;
-      anchor.parentNode.insertBefore(box,anchor.nextSibling);
-    }
-    return true;
-  }
-  window.quickMarkAllLevels=markAllLevels;
-  window.quickMarkCurrentLevel=markCurrentLevel;
-  window.quickSetCurrentSurahFull=setCurrentSurahFull;
-  window.quickMarkCurrentSurah=markCurrentSurah;
-  function boot(){ensure();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  setInterval(ensure,1500);
-})();
-</script>
+
 
 <script id="bacaan-santri-menu-v1">
 (function(){
@@ -6526,7 +6633,7 @@ function renderOptions(){
   const KEY='rq_bacaan_santri_progress_v1';
   let filter='iqro';
 
-  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function list(){return Array.isArray(window.santriList)?window.santriList:[];}
   function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){return {};}}
   function save(data){localStorage.setItem(KEY,JSON.stringify(data));}
@@ -6602,182 +6709,642 @@ function renderOptions(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch,{once:true});else patch();
 })();
 </script>
-</html>
-
-<script id="laporan-level-perkelas-v1">
+<script id="capaian-level-santri-menu-v1">
 (function(){
   'use strict';
-  const RECORD_KEY='rq_tracking_tahfidz_local_v1';
   const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
-  const LEVEL_NAMES={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7',8:'Level 8'};
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const read=(key,fallback)=>{try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}};
-  const records=()=>{const r=read(RECORD_KEY,[]);return Array.isArray(r)?r:[]};
-  const santri=()=>Array.isArray(window.santriList)?window.santriList:[];
-  const checklist=()=>read(CHECKLIST_KEY,{});
-  function hasJuz(name,juz){
-    const rec=records().some(r=>String(r.santri||'')===String(name)&&String(r.juz||'')===String(juz));
-    const c=checklist()?.[name]?.[String(juz)];
-    const checked=!!(c&&Object.keys(c).some(k=>c[k]));
-    return rec||checked;
+  const VIEW_KEY='rq_capaian_level_santri_view_v1';
+  const JUZS=['30','29','28','27'];
+  const LEVELS=[1,2,3,4,5,6,7,8];
+  const LEVEL_NAMES={1:'Level 1',2:'Level 2',3:'Level 3',4:'Level 4',5:'Level 5',6:'Level 6',7:'Level 7 — Evaluasi & Pertanyaan',8:'Level 8 — Ujian Tasmi\' Semua Surat Juz tersebut'};
+  // Level 5 tetap mengikuti nama yang ada pada materi; Level 6 adalah level materi gabungan.
+  const COLORS={
+    '30':['border-purple-400 dark:border-purple-600','bg-purple-200 dark:bg-purple-900/60','text-purple-950 dark:text-purple-100'],
+    '29':['border-orange-400 dark:border-orange-600','bg-orange-200 dark:bg-orange-900/60','text-orange-950 dark:text-orange-100'],
+    '28':['border-gray-400 dark:border-gray-600','bg-gray-200 dark:bg-gray-800/80','text-gray-900 dark:text-gray-100'],
+    '27':['border-pink-400 dark:border-pink-600','bg-pink-200 dark:bg-pink-900/60','text-pink-950 dark:text-pink-100']
+  };
+  let openJuz={30:false,29:false,28:false,27:false};
+  let openLevel={};
+  let openStudents={};
+  let openAllMode='none';
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function read(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}}
+  function save(){try{localStorage.setItem(VIEW_KEY,JSON.stringify({openJuz,openLevel,openStudents,openAllMode}));}catch(e){}}
+  function load(){const x=read(VIEW_KEY,null);if(!x)return;openJuz={...openJuz,...(x.openJuz||{})};openLevel={...(x.openLevel||{})};openStudents={...(x.openStudents||{})};openAllMode=x.openAllMode||'none';}
+  function checklist(){const x=read(CHECKLIST_KEY,{});return x&&typeof x==='object'?x:{}}
+  function allSantri(){return Array.isArray(window.santriList)?window.santriList:[]}
+  function achieved(juz,level){
+    const data=checklist(), names=new Set();
+    Object.keys(data||{}).forEach(name=>{if(data?.[name]?.[String(juz)]?.[String(level)])names.add(String(name));});
+    return [...names].map(name=>{const st=allSantri().find(x=>String(x.name||'')===name);return {name,className:st?.class||st?.kelas||''};}).sort((a,b)=>a.name.localeCompare(b.name,'id'));
   }
-  function levelState(name,juz,level){
-    const checked=!!(checklist()?.[name]?.[String(juz)]?.[String(level)]);
-    if(checked) return {icon:'✅',text:'sudah tes',cls:'text-emerald-700 dark:text-emerald-300'};
-    const rows=records().filter(r=>String(r.santri||'')===String(name)&&String(r.juz||'')===String(juz)&&Number(r.level)===Number(level));
-    if(rows.length) return {icon:'⏳',text:'sedang proses',cls:'text-amber-700 dark:text-amber-300'};
-    return {icon:'⬜',text:'belum mulai',cls:'text-slate-500 dark:text-slate-400'};
+  function levelMaterials(juz,level){
+    const d=window.__RQ_TRACKING_JUZ_LEVELS||{};
+    const depan=Array.isArray(d?.[juz]?.depan?.[level])?d[juz].depan[level]:[];
+    const belakang=Array.isArray(d?.[juz]?.belakang?.[level])?d[juz].belakang[level]:[];
+    return {depan,belakang};
   }
-  function waReport(){
-    const cls=document.getElementById('laporanLevelKelasSelect')?.value||'';
-    const list=santri().filter(s=>!cls||String(s.class||'')===String(cls)).sort((a,b)=>String(a.name).localeCompare(String(b.name),'id'));
-    const lines=[];
-    lines.push(`*LAPORAN LEVEL PERKELAS*`);
-    lines.push(`Kelas : *${cls||'-'}*`);
-    lines.push('');
-
-    if(!list.length){
-      lines.push('Belum ada santri pada kelas ini.');
-      return lines.join('\n');
-    }
-
-    // Semua nama santri di kelas tetap dilaporkan.
-    list.forEach((s,idx)=>{
-      lines.push(`*${idx+1}. ${s.name}*`);
-
-      const juzList=[30,29,28,27].filter(j=>j===30||hasJuz(s.name,j));
-      let adaLevel=false;
-
-      juzList.forEach(j=>{
-        const activeLevels=[];
-        for(let level=1;level<=8;level++){
-          const st=levelState(s.name,j,level);
-          // Hanya Level yang sudah tes / sedang proses yang dilaporkan.
-          if(st.text==='sudah tes' || st.text==='sedang proses'){
-            activeLevels.push({level,st});
-          }
-        }
-
-        if(activeLevels.length){
-          adaLevel=true;
-          lines.push('');
-          lines.push(`*Juz ${j}*`);
-          activeLevels.forEach(({level,st})=>{
-            lines.push(`- Level ${level} ${st.icon} ${st.text}`);
-          });
-          lines.push('Insyaa Allah lanjut level berikutnya');
-        }
-      });
-
-      // Nama tetap ditampilkan walaupun belum ada Level yang dimulai.
-      if(!adaLevel){
-        lines.push('- Sedang Prosses Level');
-      }
-
-      lines.push('');
-    });
-
-    return lines.join('\n').trim();
+  function setMode(mode){
+    openAllMode=mode;
+    JUZS.forEach(j=>{openJuz[j]=true;});
+    LEVELS.forEach(l=>JUZS.forEach(j=>{openLevel[j+'-'+l]=true;}));
+    if(mode==='both'){LEVELS.forEach(l=>JUZS.forEach(j=>{openStudents[j+'-'+l]=true;}));}
+    else {openStudents={};}
+    save();render();
   }
-
-  function updateWaReport(){
-    const out=document.getElementById('laporanLevelKelasWaOutput');
-    if(out) out.value=waReport();
-  }
-
   function render(){
-    const cls=document.getElementById('laporanLevelKelasSelect')?.value||'';
-    updateWaReport();
-    const box=document.getElementById('laporanLevelKelasOutput');
-    if(!box)return;
-    const list=santri().filter(s=>!cls||String(s.class||'')===String(cls)).sort((a,b)=>String(a.name).localeCompare(String(b.name),'id'));
-    if(!list.length){box.innerHTML='<div class="text-center text-xs font-bold text-slate-400 py-8">Belum ada santri pada kelas ini.</div>';return;}
-    box.innerHTML=list.map(s=>{
-      const juzBlocks=[30,29,28,27].filter(j=>j===30||hasJuz(s.name,j)).map(j=>{
-        const levels=Array.from({length:8},(_,i)=>i+1).map(l=>{
-          const st=levelState(s.name,j,l);
-          return `<div class="flex items-center justify-between gap-3 py-1.5 border-b border-slate-100 dark:border-slate-700 last:border-0"><span class="text-xs font-black text-slate-700 dark:text-slate-200">${LEVEL_NAMES[l]}</span><span class="text-xs font-black ${st.cls}">${st.icon} ${st.text}</span></div>`;
-        }).join('');
-        return `<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-3"><div class="text-sm font-black text-emerald-800 dark:text-emerald-300 mb-1">Juz ${j}</div>${levels}</div>`;
-      }).join('');
-      return `<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm"><div class="font-black text-sm text-slate-900 dark:text-white mb-3">${esc(s.name)}</div><div class="space-y-2">${juzBlocks}</div></div>`;
+    const box=document.getElementById('capaianLevelContent'); if(!box)return;
+    const data=window.__RQ_TRACKING_JUZ_LEVELS||{};
+    box.innerHTML=JUZS.map(j=>{
+      const c=COLORS[j], jo=!!openJuz[j];
+      return `<div class="rounded-2xl border ${c[0]} bg-white dark:bg-slate-900/70 overflow-hidden shadow-sm">
+        <button type="button" onclick="window.toggleCapaianJuz('${j}')" class="w-full px-3 py-2.5 flex items-center gap-2 text-left ${c[1]}">
+          <span class="w-8 h-8 rounded-xl bg-white/80 dark:bg-slate-900/70 border ${c[0]} flex items-center justify-center ${c[2]} shrink-0"><i class="fa-solid fa-book-quran"></i></span>
+          <span class="min-w-0 flex-1"><span class="block text-sm font-black ${c[2]}">Juz ${j}</span><span class="block text-[9px] font-bold text-slate-500 dark:text-slate-400">Materi hafalan + capaian santri</span></span>
+          <i class="fa-solid ${jo?'fa-chevron-up':'fa-chevron-down'} ${c[2]} text-xs"></i>
+        </button>
+        <div class="${jo?'':'hidden'} p-2 space-y-1.5 bg-white dark:bg-slate-900">
+          ${LEVELS.map(l=>{
+            const m=levelMaterials(j,l), has=m.depan.length||m.belakang.length, key=j+'-'+l, lo=!!openLevel[key], students=achieved(j,l), so=!!openStudents[key];
+            return `<div class="rounded-xl border ${c[0]} overflow-hidden">
+              <button type="button" onclick="window.toggleCapaianLevel('${j}',${l})" class="w-full px-2.5 py-2 flex items-center gap-2 text-left ${c[1]} hover:brightness-95 dark:hover:brightness-110 transition">
+                <span class="w-6 h-6 rounded-lg bg-white/75 dark:bg-slate-900/45 border ${c[0]} ${c[2]} flex items-center justify-center text-[9px] font-black">${l}</span>
+                <span class="flex-1 text-[10px] font-black ${c[2]}">${l===7?`Level 7 - Juz ${j} : Evaluasi & Pertanyaan`:l===8?`Level 8 - Juz ${j} : Ujian Tasmi\' Semua Surat Juz tersebut`:`Level ${l} - Juz ${j}`}</span>
+                <span class="text-[8px] font-bold ${c[2]} opacity-70">${students.length} santri tercapai</span>
+                <i class="fa-solid ${lo?'fa-chevron-up':'fa-chevron-down'} text-[9px] ${c[2]} opacity-70"></i>
+              </button>
+              <div class="${lo?'':'hidden'} p-2 bg-white dark:bg-slate-900 space-y-2">
+                ${has?`<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div class="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-200 dark:bg-blue-900/60 p-2"><div class="text-[9px] font-black text-blue-700 dark:text-blue-300 mb-1.5">Depan</div>${m.depan.length?'<div class="flex flex-wrap gap-1">'+m.depan.map((s,i)=>`<span class="px-2 py-1 rounded-md bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-900/60 text-[9px] font-black text-slate-700 dark:text-slate-200">${i+1}. ${esc(s)}</span>`).join('')+'</div>':'<span class="text-[9px] font-bold text-slate-400">Belum ada materi.</span>'}</div>
+                  <div class="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-200 dark:bg-emerald-900/60 p-2"><div class="text-[9px] font-black text-emerald-700 dark:text-emerald-300 mb-1.5">Belakang</div>${m.belakang.length?'<div class="flex flex-wrap gap-1">'+m.belakang.map((s,i)=>`<span class="px-2 py-1 rounded-md bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/60 text-[9px] font-black text-slate-700 dark:text-slate-200">${i+1}. ${esc(s)}</span>`).join('')+'</div>':'<span class="text-[9px] font-bold text-slate-400">Belum ada materi.</span>'}</div>
+                </div>`:`<div class="p-2.5 rounded-lg bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 text-[9px] font-bold text-violet-700 dark:text-violet-300">${l===7?'Evaluasi & Pertanyaan Juz '+j:l===8?'Ujian Tasmi\' Semua Surat Juz tersebut '+j+' — dari awal Juz sampai akhir':'Belum ada daftar materi untuk level ini.'}</div>`}
+                <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 overflow-hidden">
+                  <button type="button" onclick="window.toggleCapaianStudents('${j}',${l})" class="w-full px-2.5 py-2 flex items-center gap-2 text-left">
+                    <i class="fa-solid fa-users text-emerald-700 dark:text-emerald-300 text-xs"></i><span class="flex-1 text-[10px] font-black text-emerald-800 dark:text-emerald-300">Lihat santri yang sudah mencapai Level ${l}</span><span class="px-2 py-1 rounded-lg bg-white dark:bg-slate-900 text-[8px] font-black text-emerald-700 dark:text-emerald-300">${students.length} santri</span><i class="fa-solid ${so?'fa-chevron-up':'fa-chevron-down'} text-[9px] text-emerald-600"></i>
+                  </button>
+                  <div class="${so?'':'hidden'} p-2 border-t border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900">
+                    ${students.length?`<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">${students.map((st,i)=>`<div class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"><span class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-[8px] font-black">${i+1}</span><div class="min-w-0"><div class="text-[9px] font-black text-slate-800 dark:text-slate-100 truncate">${esc(st.name)}</div>${st.className?`<div class="text-[8px] font-bold text-slate-400">${esc(st.className)}</div>`:''}</div></div>`).join('')}</div>`:'<div class="text-[9px] font-bold text-slate-400 text-center py-2">Belum ada santri yang ditandai mencapai level ini.</div>'}
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
     }).join('');
-    updateWaReport();
   }
-  function init(){
-    const nav=document.querySelector('#appHeader nav > div'), content=document.getElementById('trackerPageContent');
-    if(!nav||!content)return;
-    if(!document.getElementById('trackerMenu-level-perkelas')){
-      const b=document.createElement('button');b.type='button';b.id='trackerMenu-level-perkelas';b.className='tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap';b.innerHTML='<i class="fa-solid fa-list-check mr-1"></i> Laporan Level Perkelas';b.onclick=()=>window.switchTrackerMenu('level-perkelas');nav.appendChild(b);
-    }
-    if(!document.getElementById('tracker-panel-level-perkelas')){
-      const p=document.createElement('div');p.id='tracker-panel-level-perkelas';p.className='tracker-menu-panel';p.dataset.panelHidden='1';p.style.display='none';
-      p.innerHTML=`<div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
-  <div>
-    <h3 class="font-black text-base text-emerald-800 dark:text-emerald-300"><i class="fa-brands fa-whatsapp mr-1"></i> Laporan Level Perkelas untuk WhatsApp</h3>
-    <p class="text-[10px] font-bold text-slate-400 mt-1">Pilih kelas. Semua nama santri dalam kelas akan masuk ke laporan WhatsApp.</p>
-  </div>
-  <div>
-    <label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Kelas</label>
-    <select id="laporanLevelKelasSelect" class="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl font-black text-sm"></select>
-  </div>
-  <div>
-    <label class="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">Pesan WhatsApp</label>
-    <textarea id="laporanLevelKelasWaOutput" readonly class="w-full min-h-[520px] p-4 bg-slate-50 dark:bg-slate-900 border-2 border-emerald-200 dark:border-emerald-900/60 rounded-xl text-xs sm:text-sm font-bold leading-6"></textarea>
-  </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-    <button type="button" id="laporanLevelKelasWaCopy" class="py-3 px-4 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-black text-xs sm:text-sm"><i class="fa-solid fa-copy mr-1"></i> Salin Laporan</button>
-    <button type="button" id="laporanLevelKelasWaOpen" class="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm"><i class="fa-brands fa-whatsapp mr-1"></i> Buka WhatsApp</button>
-  </div>
-</div>`;
-      content.appendChild(p);
-    }
-    const sel=document.getElementById('laporanLevelKelasSelect');
-    if(sel&&!sel.dataset.bound){
-      const classes=[...new Set(santri().map(s=>String(s.class||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
-      sel.innerHTML=classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      sel.addEventListener('change',render);sel.dataset.bound='1';
-    }
-    const copyBtn=document.getElementById('laporanLevelKelasWaCopy');
-    if(copyBtn&&!copyBtn.dataset.bound){
-      copyBtn.addEventListener('click',()=>{
-        const out=document.getElementById('laporanLevelKelasWaOutput');
-        if(!out)return;
-        const done=()=>{try{window.showToast('Laporan Level Perkelas berhasil disalin!','success')}catch(e){}};
-        if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(out.value).then(done).catch(()=>{out.select();document.execCommand('copy');done();});
-        else {out.select();document.execCommand('copy');done();}
-      });
-      copyBtn.dataset.bound='1';
-    }
-    const waBtn=document.getElementById('laporanLevelKelasWaOpen');
-    if(waBtn&&!waBtn.dataset.bound){
-      waBtn.addEventListener('click',()=>{
-        const out=document.getElementById('laporanLevelKelasWaOutput');
-        if(!out)return;
-        window.open('https://wa.me/?text='+encodeURIComponent(out.value),'_blank');
-      });
-      waBtn.dataset.bound='1';
-    }
-    render();
+  window.closeCapaianAll=function(){openAllMode='none';openJuz={30:false,29:false,28:false,27:false};openLevel={};openStudents={};save();render();};
+  window.openCapaianMateriOnly=function(){setMode('materi');};
+  window.openCapaianMateriAndSantri=function(){setMode('both');};
+  window.toggleCapaianJuz=function(j){openJuz[j]=!openJuz[j];openAllMode='none';save();render();};
+  window.toggleCapaianLevel=function(j,l){const k=j+'-'+l;openLevel[k]=!openLevel[k];openAllMode='none';save();render();};
+  window.toggleCapaianStudents=function(j,l){const k=j+'-'+l;openStudents[k]=!openStudents[k];openAllMode='none';save();render();};
+  window.renderCapaianLevelSantri=render;
+  function init(){load();render();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>\n
+<script id="materi-capaian-pdf-export-v4">
+(function(){
+  'use strict';
+  const JUZS=['30','29','28','27'];
+  const LEVELS=[1,2,3,4,5,6,7,8];
+  const CHECKLIST_KEY='rq_tracking_level_checklist_v1';
+  const LOGO_URL='https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi';
+  const COLORS={
+    '30':{main:'#7c3aed',light:'#f3e8ff',soft:'#faf5ff',text:'#5b21b6'},
+    '29':{main:'#f97316',light:'#ffedd5',soft:'#fff7ed',text:'#c2410c'},
+    '28':{main:'#64748b',light:'#e2e8f0',soft:'#f8fafc',text:'#475569'},
+    '27':{main:'#ec4899',light:'#fce7f3',soft:'#fdf2f8',text:'#be185d'}
+  };
+  const read=(key,fallback)=>{try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fallback:v}catch(e){return fallback}};
+  function materials(j,l){
+    const d=window.__RQ_TRACKING_JUZ_LEVELS||{};
+    return {depan:Array.isArray(d?.[j]?.depan?.[l])?d[j].depan[l]:[],belakang:Array.isArray(d?.[j]?.belakang?.[l])?d[j].belakang[l]:[]};
   }
-  function switchMenu(menu){
-    if(menu!=='level-perkelas') return false;
-    document.body.classList.remove('tracker-hafalan-active');
-    document.querySelectorAll('.tracker-menu-panel').forEach(p=>{p.dataset.panelHidden='1';p.style.display='none';});
-    document.querySelectorAll('.tracker-menu-btn').forEach(b=>{b.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';b.classList.add('text-emerald-50','hover:bg-emerald-700');});
-    const p=document.getElementById('tracker-panel-level-perkelas'),b=document.getElementById('trackerMenu-level-perkelas');
-    if(p){p.dataset.panelHidden='0';p.style.display='block';}
-    if(b){b.classList.remove('text-emerald-50','hover:bg-emerald-700');b.classList.add('bg-white','text-emerald-900','shadow');}
-    init();render();window.scrollTo({top:0,behavior:'smooth'});return true;
+  function achieved(j,l){
+    const data=read(CHECKLIST_KEY,{}), names=new Set();
+    Object.keys(data||{}).forEach(name=>{if(data?.[name]?.[String(j)]?.[String(l)]) names.add(String(name));});
+    return [...names].sort((a,b)=>a.localeCompare(b,'id'));
   }
-  function hook(){
-    const original=window.switchTrackerMenu;
-    if(typeof original!=='function'||original.__levelPerkelasWrapped)return;
-    function wrapped(menu){if(switchMenu(menu))return;return original(menu);}
-    wrapped.__levelPerkelasWrapped=true;window.switchTrackerMenu=wrapped;
+  function levelTitle(j,l){
+    if(l===7) return `Level 7 - Juz ${j} : Evaluasi & Pertanyaan`;
+    if(l===8) return `Level 8 - Juz ${j} : Ujian Tasmi\' Semua Surat Juz tersebut`;
+    return `Level ${l} - Juz ${j}`;
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init();hook();});else{init();hook();}
-  window.renderLaporanLevelPerkelas=render;
-  window.generateLaporanLevelPerkelasWa=waReport;
+  function hexRgb(hex){
+    const n=parseInt(hex.replace('#',''),16);
+    return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255];
+  }
+  function pdfEsc(v){
+    return String(v??'').replace(/[\\()]/g,m=>'\\'+m).replace(/[–—]/g,'-').replace(/·/g,'-').replace(/’/g,"'").replace(/[“”]/g,'"').replace(/[\r\n\t]/g,' ').replace(/[^\x00-\xFF]/g,'?');
+  }
+  function wrapText(text,maxChars){
+    text=String(text??'').trim();
+    if(!text) return [''];
+    const out=[];
+    while(text.length>maxChars){
+      let cut=text.lastIndexOf(' ',maxChars);
+      if(cut<Math.floor(maxChars*.55)) cut=maxChars;
+      out.push(text.slice(0,cut).trim());
+      text=text.slice(cut).trim();
+    }
+    if(text) out.push(text);
+    return out;
+  }
+  function approxChars(width,fs){ return Math.max(8,Math.floor(width/(fs*0.50))); }
+  function addText(page,x,y,text,fs,sizeColor,bold){
+    const [r,g,b]=sizeColor||[0.12,0.22,0.31];
+    page.ops.push(`${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)} rg`);
+    page.ops.push(`BT /${bold?'F2':'F1'} ${fs} Tf 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm (${pdfEsc(text)}) Tj ET`);
+  }
+  function addRect(page,x,y,w,h,fill,stroke,lw){
+    const [r,g,b]=hexRgb(fill); page.ops.push(`${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)} rg ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+    if(stroke){const [sr,sg,sb]=hexRgb(stroke);page.ops.push(`${sr.toFixed(3)} ${sg.toFixed(3)} ${sb.toFixed(3)} RG ${(lw||0.7).toFixed(2)} w ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`);}
+  }
+  function addLine(page,x1,y1,x2,y2,color,lw){const [r,g,b]=hexRgb(color);page.ops.push(`${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)} RG ${(lw||0.7).toFixed(2)} w ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S`);}
+
+  // Small, self-contained PDF writer. This avoids external html2pdf/html2canvas dependencies,
+  // which were producing a downloaded but blank PDF in some browsers.
+  function PdfDoc(){
+    this.W=595.28; this.H=841.89; this.margin=28; this.pages=[]; this.newPage();
+  }
+  PdfDoc.prototype.newPage=function(){const p={ops:[],y:this.H-this.margin};this.pages.push(p);return p;};
+  PdfDoc.prototype.page=function(){return this.pages[this.pages.length-1];};
+  PdfDoc.prototype.need=function(h){if(this.page().y-h<this.margin+22){this.newPage();return true}return false;};
+  PdfDoc.prototype.save=function(filename){
+    const objects=[]; const add=o=>{objects.push(o);return objects.length;};
+    const font1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    const font2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    const contentIds=[]; const pageIds=[];
+    this.pages.forEach(p=>{const stream=p.ops.join('\n');contentIds.push(add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`));pageIds.push(0);});
+    const pagesId=add('');
+    this.pages.forEach((p,i)=>{pageIds[i]=add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${this.W} ${this.H}] /Resources << /Font << /F1 ${font1} 0 R /F2 ${font2} 0 R >> >> /Contents ${contentIds[i]} 0 R >>`);});
+    objects[pagesId-1]=`<< /Type /Pages /Kids [${pageIds.map(id=>id+' 0 R').join(' ')}] /Count ${pageIds.length} >>`;
+    const catalogId=add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+    let pdf='%PDF-1.4\n%PDF\n'; const offsets=[0];
+    for(let i=0;i<objects.length;i++){offsets.push(pdf.length);pdf+=`${i+1} 0 obj\n${objects[i]}\nendobj\n`;}
+    const xref=pdf.length;pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+    for(let i=1;i<offsets.length;i++) pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+    pdf+=`trailer\n<< /Size ${objects.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+    const bytes=new Uint8Array(pdf.length); for(let i=0;i<pdf.length;i++) bytes[i]=pdf.charCodeAt(i)&255;
+    const blob=new Blob([bytes],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+  };
+
+  function drawHeader(doc,includeStudents){
+    const p=doc.page(), green='#087f68';
+    addRect(p,doc.margin,p.y-48,doc.W-doc.margin*2,48,'#f7fbfa',green,1.1);
+    addRect(p,doc.margin,p.y-48,5,48,green);
+    addText(p,doc.margin+14,p.y-18,'RUMAH QURAN AL-KHANSA',11,hexRgb('#087f68'),true);
+    addText(p,doc.margin+14,p.y-32,includeStudents?'Materi Hafalan & Capaian Level Santri':'Materi Hafalan',15,hexRgb('#163b5b'),true);
+    addText(p,doc.W-doc.margin-8,p.y-18,new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}),7,hexRgb('#60758a'),false);
+    addText(p,doc.W-doc.margin-8,p.y-32,'Juz 30, 29, 28, 27',7,hexRgb('#60758a'),false);
+    p.y-=58;
+  }
+  function drawJuz(doc,j,includeStudents){
+    const c=COLORS[j], main=hexRgb(c.main), light=hexRgb(c.light), text=hexRgb(c.text);
+    if(doc.need(32)) drawHeader(doc,includeStudents);
+    const p=doc.page();
+    addRect(p,doc.margin,p.y-22,doc.W-doc.margin*2,22,c.main,c.main,0.8);
+    addText(p,doc.margin+9,p.y-15,`Juz ${j}`,12,[1,1,1],true);
+    addText(p,doc.margin+75,p.y-14,'Materi hafalan dan capaian level santri',7,[1,1,1],false);
+    p.y-=30;
+    LEVELS.forEach(l=>{
+      const m=materials(j,l), students=achieved(j,l);
+      const max=Math.max(m.depan.length,m.belakang.length,1);
+      const title=levelTitle(j,l);
+      const studentText=includeStudents?(students.length?students.join(', '):'Belum ada santri yang mencapai level ini'):
+        '';
+      const col1=includeStudents?178:247, col2=includeStudents?178:247, col3=includeStudents?184:0;
+      const x0=doc.margin, gap=4;
+      let headerH=19;
+      if(doc.need(headerH+25)){drawHeader(doc,includeStudents)}
+      let q=doc.page();
+      addRect(q,x0,q.y-headerH,doc.W-doc.margin*2,headerH,c.soft,'#dbe5ef',0.6);
+      addRect(q,x0+6,q.y-15,14,14,c.light,c.main,0.5);
+      addText(q,x0+11,q.y-11,String(l),7,text,true);
+      addText(q,x0+27,q.y-11,title,8,[0.09,0.20,0.30],true);
+      if(includeStudents)addText(q,doc.W-doc.margin-8,q.y-11,`${students.length} santri`,6,[0.44,0.53,0.61],false);
+      q.y-=headerH+3;
+      const headH=17;
+      if(doc.need(headH+18)){drawHeader(doc,includeStudents);q=doc.page();}
+      const cols=includeStudents?[col1,col2,col3]:[col1,col2];
+      const total=cols.reduce((a,b)=>a+b,0)+gap*(cols.length-1);
+      let xx=x0;
+      ['Materi Depan (Awal)','Materi Belakang (Akhir)'].slice(0,2).forEach((label,idx)=>{addRect(q,xx,q.y-headH,cols[idx],headH,c.light,'#d7e1ea',0.5);addText(q,xx+5,q.y-11,label,6.5,text,true);xx+=cols[idx]+gap;});
+      if(includeStudents){addRect(q,xx,q.y-headH,cols[2],headH,c.light,'#d7e1ea',0.5);addText(q,xx+5,q.y-11,'Santri yang Sudah Mencapai',6.2,text,true);}
+      q.y-=headH;
+      for(let i=0;i<max;i++){
+        const a=m.depan[i]||'—', b=m.belakang[i]||'—';
+        const st=i===0?studentText:'';
+        const la=wrapText(a,approxChars(col1,6.5)), lb=wrapText(b,approxChars(col2,6.5)), ls=includeStudents?wrapText(st,approxChars(col3,6.1)):[];
+        const lines=Math.max(la.length,lb.length,includeStudents?ls.length:1); const rh=Math.max(17,lines*8+6);
+        if(doc.need(rh+3)){drawHeader(doc,includeStudents);q=doc.page();
+          addRect(q,x0,q.y-headH,cols[0],headH,c.light,'#d7e1ea',0.5);addText(q,x0+5,q.y-11,'Materi Depan (Awal)',6.5,text,true);
+          let hx=x0+cols[0]+gap;addRect(q,hx,q.y-headH,cols[1],headH,c.light,'#d7e1ea',0.5);addText(q,hx+5,q.y-11,'Materi Belakang (Akhir)',6.5,text,true);
+          if(includeStudents){hx+=cols[1]+gap;addRect(q,hx,q.y-headH,cols[2],headH,c.light,'#d7e1ea',0.5);addText(q,hx+5,q.y-11,'Santri yang Sudah Mencapai',6.2,text,true);}
+          q.y-=headH;
+        }
+        let cx=x0; addRect(q,cx,q.y-rh,col1,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);la.forEach((t,k)=>addText(q,cx+5,q.y-11-k*8,t,6.5,[0.13,0.27,0.36],false));
+        cx+=col1+gap;addRect(q,cx,q.y-rh,col2,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);lb.forEach((t,k)=>addText(q,cx+5,q.y-11-k*8,t,6.5,[0.13,0.27,0.36],false));
+        if(includeStudents){cx+=col2+gap;addRect(q,cx,q.y-rh,col3,rh,i%2?'#ffffff':c.soft,'#e0e7ee',0.4);ls.forEach((t,k)=>addText(q,cx+5,q.y-11-k*8,t,6.1,[0.20,0.32,0.40],false));}
+        q.y-=rh;
+      }
+      q.y-=7;
+    });
+  }
+  function buildPdf(includeStudents){
+    try{
+      if(typeof window.showToast==='function')window.showToast('Membuat PDF A4…','success');
+      const doc=new PdfDoc();drawHeader(doc,includeStudents);
+      JUZS.forEach(j=>drawJuz(doc,j,includeStudents));
+      doc.pages.forEach((p,i)=>{addLine(p,doc.margin,doc.margin-5,doc.W-doc.margin,doc.margin-5,'#087f68',1);addText(p,doc.margin,doc.margin-17,`Rumah Quran Al-Khansa · ${includeStudents?'Materi Hafalan & Capaian Level Santri':'Materi Hafalan'}`,6,[0.40,0.48,0.55],false);addText(p,doc.W-doc.margin,doc.margin-17,`Halaman ${i+1} / ${doc.pages.length}`,6,[0.40,0.48,0.55],false);});
+      doc.save(includeStudents?'Materi_Hafalan_dan_Capaian_Level_Santri.pdf':'Materi_Hafalan.pdf');
+      if(typeof window.showToast==='function')window.showToast('PDF A4 berhasil diunduh.','success');
+    }catch(e){console.error('PDF export error:',e);if(typeof window.showToast==='function')window.showToast('PDF gagal dibuat.','error');}
+  }
+  window.downloadMateriHafalanPDF=function(){buildPdf(false)};
+  window.downloadMateriSantriPDF=function(){buildPdf(true)};
 })();
 </script>
+
+<script id="laporan-level-perkelas-web-v1">
+(function(){
+  'use strict';
+  const MENU='wa-kelas';
+  const PANEL='tracker-panel-wa-kelas';
+  const BTN='trackerMenu-wa-kelas';
+
+  function escHtml(v){
+    const d=document.createElement('div'); d.textContent=String(v??''); return d.innerHTML;
+  }
+  function getSantri(){
+    try{
+      // Sumber data santri utama aplikasi adalah window.santriList.
+      // Jangan memanggil santri() karena fungsi tersebut tidak tersedia pada baseline ini.
+      return Array.isArray(window.santriList) ? window.santriList : [];
+    }catch(e){
+      console.error('Laporan perkelas: gagal membaca santriList',e);
+      return [];
+    }
+  }
+  function getLevelReport(name,juz,level){
+    try{return typeof window.rqUnifiedLevelReport==='function' ? window.rqUnifiedLevelReport(name,juz,level) : {done:0,total:0,pct:0,rows:[],checked:false,arah:'depan'}}
+    catch(e){return {done:0,total:0,pct:0,rows:[],checked:false,arah:'depan'}}
+  }
+  function classes(){
+    const set=new Set();
+    getSantri().forEach(s=>{const c=String(s?.class||'').trim();if(c)set.add(c)});
+    return [...set].sort((a,b)=>a.localeCompare(b,'id'));
+  }
+  function currentClass(){return document.getElementById('waKelasClassSelect')?.value||''}
+  function currentJuz(){return document.getElementById('waKelasJuzSelect')?.value||'30'}
+
+  function reportData(){
+    const cls=currentClass(), juz=currentJuz();
+    const list=getSantri().filter(s=>String(s?.class||'')===String(cls));
+    return {cls,juz,list};
+  }
+
+  function renderPreview(){
+    const box=document.getElementById('waKelasPreview');
+    const out=document.getElementById('waKelasReportOutput');
+    if(!box)return;
+    const {cls,juz,list}=reportData();
+    if(!cls){
+      box.innerHTML='<div class="rounded-2xl border-2 border-dashed border-slate-200 p-10 text-center text-sm font-bold text-slate-400">Pilih kelas untuk melihat laporan level perkelas.</div>';
+      const countNone=document.getElementById('waKelasCount'); if(countNone)countNone.textContent='0 Santri';
+      if(out)out.value=''; return;
+    }
+    if(!list.length){
+      box.innerHTML='<div class="rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50 p-10 text-center text-sm font-bold text-amber-700">Belum ada santri pada kelas ini.</div>';
+      const countEmpty=document.getElementById('waKelasCount'); if(countEmpty)countEmpty.textContent='0 Santri';
+      if(out)out.value=''; return;
+    }
+    const countEl=document.getElementById('waKelasCount'); if(countEl)countEl.textContent=`${list.length} Santri`;
+    const cards=list.map((s,idx)=>{
+      const levels=[];
+      for(let level=1;level<=8;level++){
+        const r=getLevelReport(s.name,juz,level);
+        const title=level<=6?`Level ${level}`:(level===7?'Level 7 — Evaluasi & Pertanyaan':"Level 8 — Ujian Tasmi' Semua Surat Juz tersebut");
+        const pct=Number(r.pct||0);
+        const detail=level<=6 ? `${r.done||0} dari ${r.total||0} surat selesai` : (level===7?'Evaluasi & Pertanyaan':"Ujian Tasmi' Semua Surat Juz tersebut");
+        levels.push(`<div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div class="flex items-center justify-between gap-2"><div class="text-xs font-black text-slate-800">${escHtml(title)}</div><span class="text-[10px] font-black px-2 py-1 rounded-lg ${pct===100?'bg-emerald-100 text-emerald-700':'bg-white text-slate-600 border border-slate-200'}">${pct}%</span></div>
+          <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-2"><div class="h-full bg-emerald-500" style="width:${Math.max(0,Math.min(100,pct))}%"></div></div>
+          <div class="mt-2 text-[10px] font-bold text-slate-500">${escHtml(detail)}</div>
+        </div>`);
+      }
+      return `<div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="px-4 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between gap-3"><div><div class="wa-kelas-santri-name text-sm font-black text-slate-900">${idx+1}. ${escHtml(s.name)}</div><div class="wa-kelas-santri-class text-[10px] font-bold text-slate-500 mt-0.5">Kelas ${escHtml(cls)} · Juz ${escHtml(juz)}</div></div><span class="text-[10px] font-black text-emerald-700 bg-white border border-emerald-200 px-2 py-1 rounded-lg">Santri</span></div>
+        <div class="p-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">${levels.join('')}</div>
+      </div>`;
+    }).join('');
+    box.innerHTML=`<div class="space-y-3">${cards}</div>`;
+    renderText();
+    renderShortText();
+  }
+
+  function renderShortText(){
+    const out=document.getElementById('waKelasShortOutput');
+    if(!out)return;
+    const {cls,juz,list}=reportData();
+    if(!cls||!list.length){out.value='';return;}
+    const lines=[];
+    lines.push('Laporan Perkelas Level Hafalan Quran');
+    lines.push(`Kelas ${cls}`);
+    lines.push('');
+    list.forEach((s,i)=>{
+      const completed=[];
+      let firstIncomplete=0;
+      for(let level=1;level<=6;level++){
+        const r=getLevelReport(s.name,juz,level);
+        const pct=Number(r.pct||0);
+        if(pct>=100) completed.push(level);
+        else if(!firstIncomplete && pct>0) firstIncomplete=level;
+        else if(!firstIncomplete && pct===0){ firstIncomplete=level; }
+      }
+      const numEmoji=['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+      lines.push(`*${numEmoji[i]||`${i+1}.`} ${s.name}*`);
+      if(completed.length){
+        const contiguous=[];
+        for(let level=1;level<=6;level++){
+          if(completed.includes(level)) contiguous.push(level); else break;
+        }
+        if(contiguous.length===1) lines.push(`📈 Level  : ${contiguous[0]}`);
+        else lines.push(`📈 Level  : ${contiguous[0]} - ${contiguous[contiguous.length-1]}`);
+        const next=contiguous[contiguous.length-1]+1;
+        if(next<=6){
+          const nr=getLevelReport(s.name,juz,next);
+          lines.push(`   Level ${next} ${Number(nr.pct||0)>0?'sedang proses':'belum dimulai'}`);
+        }else{
+          const r7=getLevelReport(s.name,juz,7);
+          const r8=getLevelReport(s.name,juz,8);
+          if(r7.checked) lines.push('   Level 7 selesai');
+          else lines.push('   Level 7 sedang proses');
+          if(r8.checked) lines.push("   Level 8 selesai");
+        }
+      }else{
+        const r1=getLevelReport(s.name,juz,1);
+        lines.push(`📈 Level  : Belum memulai`);
+        if(Number(r1.pct||0)>0) lines.push('   Level 1 sedang proses');
+      }
+      lines.push('');
+    });
+    out.value=lines.join('\n').trim();
+  }
+
+  function copyShort(){
+    const out=document.getElementById('waKelasShortOutput'); if(!out?.value)return;
+    const done=()=>{try{window.showToast('Laporan singkat berhasil disalin.','success')}catch(e){alert('Laporan singkat berhasil disalin.')}};
+    if(navigator.clipboard?.writeText)navigator.clipboard.writeText(out.value).then(done).catch(()=>{out.select();document.execCommand('copy');done()});
+    else{out.select();document.execCommand('copy');done()}
+  }
+
+  function renderText(){
+    const out=document.getElementById('waKelasReportOutput'); if(!out)return;
+    const {cls,juz,list}=reportData();
+    if(!cls||!list.length){out.value='';return;}
+    const lines=[];
+    lines.push('Berikut laporan progres hafalan kelas:');
+    lines.push(`Kelas : *${cls}*`);
+    lines.push(`Juz : ${juz}`);
+    lines.push('');
+    lines.push('*LAPORAN LEVEL PERKELAS*');
+    lines.push('');
+    list.forEach((s,i)=>{
+      lines.push(`*${i+1}. ${s.name}*`);
+      for(let level=1;level<=8;level++){
+        const r=getLevelReport(s.name,juz,level);
+        const title=level<=6?`Level ${level}`:(level===7?'Level 7 — Evaluasi & Pertanyaan':"Level 8 — Ujian Tasmi' Semua Surat Juz tersebut");
+        if(level<=6){
+          lines.push(`☑ ${title} — ${Number(r.pct||0)}%`);
+          lines.push(`   ${r.done||0} dari ${r.total||0} surat selesai`);
+          // Versi lengkap perkelas hanya menampilkan progres level,
+          // tanpa daftar nama surat agar laporan WA lebih ringkas dan rapi.
+        }else{
+          lines.push(`☑ ${title} — ${Number(r.pct||0)}%`);
+        }
+        lines.push('');
+      }
+    });
+    out.value=lines.join('\n').trim();
+  }
+
+  function populate(){
+    const sel=document.getElementById('waKelasClassSelect'); if(!sel)return;
+    const old=sel.value, cs=classes();
+    sel.innerHTML='<option value="">-- Pilih Kelas --</option>'+cs.map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    if(cs.includes(old))sel.value=old;
+  }
+  function copy(){
+    const out=document.getElementById('waKelasReportOutput'); if(!out?.value)return;
+    const done=()=>{try{window.showToast('Laporan perkelas berhasil disalin.','success')}catch(e){alert('Laporan berhasil disalin.')}};
+    if(navigator.clipboard?.writeText)navigator.clipboard.writeText(out.value).then(done).catch(()=>{out.select();document.execCommand('copy');done()});
+    else{out.select();document.execCommand('copy');done()}
+  }
+  function send(){
+    const text=document.getElementById('waKelasReportOutput')?.value||'';if(!text)return;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
+  }
+
+  function build(){
+    const nav=document.querySelector('#appHeader nav > div');
+    const content=document.getElementById('trackerPageContent');
+    if(!nav||!content)return false;
+    if(!document.getElementById(BTN)){
+      const b=document.createElement('button'); b.type='button'; b.id=BTN;
+      b.className='tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap';
+      b.innerHTML='<i class="fa-solid fa-users-viewfinder mr-1"></i> Laporan Level Perkelas untuk WhatsApp';
+      b.addEventListener('click',()=>window.switchTrackerMenu(MENU)); nav.appendChild(b);
+    }
+    if(!document.getElementById(PANEL)){
+      const p=document.createElement('div');p.id=PANEL;p.className='tracker-menu-panel';p.dataset.panelHidden='1';p.style.display='none';
+      p.innerHTML=`<div class="space-y-4">
+        <div class="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h3 class="font-black text-xl text-slate-900"><i class="fa-solid fa-users-viewfinder mr-2 text-emerald-600"></i>Laporan Level Perkelas untuk WhatsApp</h3><p class="text-xs sm:text-sm font-bold text-slate-500 mt-1">Lihat progres hafalan seluruh santri dalam satu kelas, lalu salin atau kirim laporan ke WhatsApp.</p></div><span class="px-3 py-2 rounded-xl bg-white border border-emerald-100 text-[10px] font-black text-emerald-700">Data Lokal</span></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+            <div><label class="block text-xs font-black text-slate-700 mb-1">Pilih Kelas</label><select id="waKelasClassSelect" class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-sm"></select></div>
+            <div><label class="block text-xs font-black text-slate-700 mb-1">Pilih Juz</label><select id="waKelasJuzSelect" class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-black text-sm"><option value="30">Juz 30</option><option value="29">Juz 29</option><option value="28">Juz 28</option><option value="27">Juz 27</option></select></div>
+            <button type="button" id="waKelasBuildBtn" class="px-5 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-sm"><i class="fa-regular fa-file-lines mr-1"></i> Tampilkan Laporan</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5"><div class="flex items-center justify-between gap-2 mb-3"><div><h4 class="font-black text-lg text-slate-900">Tampilan Laporan Perkelas</h4><p class="text-[11px] font-bold text-slate-400">Setiap santri ditampilkan sebagai kartu dengan progres Level 1–8.</p></div><span id="waKelasCount" class="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg">0 Santri</span></div><div id="waKelasPreview"></div></div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5"><div class="flex items-center justify-between mb-2"><div><h4 class="font-black text-lg text-slate-900">Teks WhatsApp</h4><p class="text-[11px] font-bold text-slate-400">Versi lengkap siap disalin.</p></div></div><textarea id="waKelasReportOutput" readonly class="w-full min-h-[560px] p-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-bold leading-6"></textarea><div class="grid grid-cols-2 gap-2 mt-3"><button type="button" id="waKelasCopyBtn" class="px-3 py-3 rounded-xl bg-slate-200 text-slate-800 font-black text-xs"><i class="fa-solid fa-copy mr-1"></i> Salin Laporan</button><button type="button" id="waKelasSendBtn" class="px-3 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs"><i class="fa-brands fa-whatsapp mr-1"></i> Buka WhatsApp</button></div></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm p-4 sm:p-5"><div class="flex items-center justify-between gap-3 mb-3"><div><h4 class="font-black text-lg text-slate-900">Laporan WA Singkat</h4><p class="text-[11px] font-bold text-slate-400">Ringkasan level hafalan per santri, siap dikirim ke wali santri.</p></div><span class="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-black">Ringkas</span></div><textarea id="waKelasShortOutput" readonly class="w-full min-h-[300px] p-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-bold leading-6"></textarea><div class="mt-3"><button type="button" id="waKelasShortCopyBtn" class="px-4 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs"><i class="fa-solid fa-copy mr-1"></i> Salin Laporan Singkat</button></div></div>
+      </div>`;
+      content.appendChild(p);
+      document.getElementById('waKelasClassSelect')?.addEventListener('change',renderPreview);
+      document.getElementById('waKelasJuzSelect')?.addEventListener('change',renderPreview);
+      document.getElementById('waKelasBuildBtn')?.addEventListener('click',renderPreview);
+      document.getElementById('waKelasCopyBtn')?.addEventListener('click',copy);
+      document.getElementById('waKelasSendBtn')?.addEventListener('click',send);
+      document.getElementById('waKelasShortCopyBtn')?.addEventListener('click',copyShort);
+    }
+    populate();
+    return true;
+  }
+
+  function openMenu(){
+    if(!build())return;
+    const original=window.__rqOriginalSwitchTrackerMenu;
+    if(typeof original==='function')original(MENU);
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{p.style.display=p.id===PANEL?'block':'none';p.dataset.panelHidden=p.id===PANEL?'0':'1'});
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(btn.id===BTN)btn.classList.add('bg-white','text-emerald-900','shadow');else btn.classList.add('text-emerald-50','hover:bg-emerald-700')});
+    populate(); renderPreview(); window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function install(){
+    if(!window.__rqOriginalSwitchTrackerMenu)window.__rqOriginalSwitchTrackerMenu=window.switchTrackerMenu;
+    const current=window.switchTrackerMenu;
+    if(typeof current==='function'&&!current.__waKelasWrapped){
+      const wrapped=function(menu){
+        if(menu===MENU){openMenu();return;}
+        return current.apply(this,arguments);
+      };
+      wrapped.__waKelasWrapped=true; window.switchTrackerMenu=wrapped;
+    }
+    build();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+  window.renderWaKelasReport=renderPreview;
+})();
+</script>
+
+
+<script id="rq-unified-hafalan-input-sync-v1">
+(function(){
+  'use strict';
+  const TRACK_KEY='rq_tracking_tahfidz_local_v1';
+  const INPUT_KEY='rq_history_hafalan';
+  const CHECK_KEY='rq_tracking_level_checklist_v1';
+  const ALIASES={
+    'Abasa':["'Abasa"],"'Abasa":['Abasa'],
+    'An-Naba':["An-Naba'"],"An-Naba'":["An-Naba"],
+    'An-Nazi\'at':["An-Nazi’at"],"An-Nazi’at":["An-Nazi\'at"],
+    'Al-Infitar':['Al-Infithar'],'Al-Infithar':['Al-Infitar'],
+    'Al-Mutaffifin':['Al-Muthaffifin'],'Al-Muthaffifin':['Al-Mutaffifin'],
+    'At-Tariq':['Ath-Thariq'],'Ath-Thariq':['At-Tariq'],
+    'Al-Ala':["Al-A'la"],"Al-A'la":['Al-Ala'],
+    'Al-Ghashiyah':['Al-Ghasyiyah'],'Al-Ghasyiyah':['Al-Ghashiyah'],
+    'Al-Alaq':["Al-'Alaq"],"Al-'Alaq":['Al-Alaq'],
+    'Al-Adiyat':["Al-'Adiyat"],"Al-'Adiyat":['Al-Adiyat'],
+    'Al-Qariah':["Al-Qari'ah"],"Al-Qari'ah":['Al-Qariah'],
+    'Al-Asr':["Al-'Ashr"],"Al-'Ashr":['Al-Asr'],
+    'Al-Maun':["Al-Ma'un"],"Al-Ma'un":['Al-Maun'],
+    'Al-Ikhlash':['Al-Ikhlas'],'Al-Ikhlas':['Al-Ikhlash'],
+    'Al-Muddaththir':['Al-Muddatstsir'],'Al-Muddatstsir':['Al-Muddaththir'],
+    'Al-Maarij':["Al-Ma'arij"],"Al-Ma'arij":['Al-Maarij'],
+    'Al-Waqiah':["Al-Waqi'ah"],"Al-Waqi'ah":['Al-Waqiah']
+  };
+  const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
+  const same=(a,b)=>norm(a)===norm(b) || (ALIASES[a]||[]).some(x=>norm(x)===norm(b)) || (ALIASES[b]||[]).some(x=>norm(x)===norm(a));
+  const read=(key,fb)=>{try{const v=JSON.parse(localStorage.getItem(key)||'null');return v==null?fb:v}catch(e){return fb}};
+  const juzData=()=>window.__RQ_TRACKING_JUZ_LEVELS||{};
+  const totalAyat=s=>{try{return Number(window.surahInfo?.(s)?.ayat||0)}catch(e){return 0}};
+
+  function rawSources(){
+    const tracking=Array.isArray(read(TRACK_KEY,[]))?read(TRACK_KEY,[]):[];
+    const input=Array.isArray(read(INPUT_KEY,[]))?read(INPUT_KEY,[]):[];
+    const out=[];
+    tracking.forEach(r=>{
+      if(!r?.santri||!r?.surat)return;
+      out.push({name:String(r.santri),surat:String(r.surat),end:Number(r.ayatSampai)||0,start:Number(r.ayatDari)||1,tanggal:String(r.tanggal||''),juz:String(r.juz||''),arah:String(r.arah||'depan'),source:'tracking'});
+    });
+    input.forEach(h=>{
+      if(!h?.name)return;
+      const slots=Array.isArray(h.slots)?h.slots:[];
+      if(slots.length){
+        slots.forEach(sl=>{
+          const surat=String(sl?.item||'').trim();
+          if(!surat || surat==='-')return;
+          const end=Number(sl?.end)||0;
+          if(!end)return;
+          out.push({name:String(h.name),surat,end,start:Number(sl?.start)||1,tanggal:String(h.tanggal||''),juz:'',arah:'',source:'input'});
+        });
+      }else{
+        // Dukungan untuk riwayat Input Setoran lama yang belum memiliki field slots.
+        String(h.detail||'').split(/,\s*/).forEach(part=>{
+          const m=part.match(/^(.*?)\s+(\d+)(?:-(\d+))?(?:\s+\(bertambah\s+\d+\s+ayat\))?$/i);
+          if(!m)return;
+          const surat=String(m[1]||'').trim();
+          const start=Number(m[2])||1, end=Number(m[3]||m[2])||0;
+          if(surat&&end)out.push({name:String(h.name),surat,end,start,tanggal:String(h.tanggal||''),juz:'',arah:'',source:'input'});
+        });
+      }
+    });
+    return out;
+  }
+
+  function inferJuz(surat, preferred){
+    if(preferred && juzData()[String(preferred)]){
+      const b=juzData()[String(preferred)];
+      for(const a of ['depan','belakang']) for(const l of Object.keys(b[a]||{})) if((b[a][l]||[]).some(x=>same(x,surat))) return String(preferred);
+    }
+    for(const j of ['30','29','28','27']){
+      const b=juzData()[j]||{};
+      for(const a of ['depan','belakang']) for(const l of Object.keys(b[a]||{})) if((b[a][l]||[]).some(x=>same(x,surat))) return j;
+    }
+    return '';
+  }
+
+  function sourcesFor(name,juz){
+    return rawSources().filter(r=>String(r.name)===String(name)).filter(r=>{
+      const inferred=inferJuz(r.surat,r.juz);
+      return !juz || String(inferred)===String(juz) || String(r.juz)===String(juz);
+    });
+  }
+
+  function maxEnd(rows,surat){
+    return rows.filter(r=>same(r.surat,surat)).reduce((m,r)=>Math.max(m,Number(r.end)||0),0);
+  }
+
+  function calcDirection(rows,juz,level,arah){
+    const book=juzData()[String(juz)]||{};
+    const list=Array.isArray(book?.[arah]?.[String(level)])?book[arah][String(level)]:[];
+    let done=0;
+    const detail=list.map(s=>{
+      const total=totalAyat(s), sampai=maxEnd(rows,s), selesai=total>0&&sampai>=total;
+      if(selesai)done++;
+      return {surat:s,total,sampai,selesai};
+    });
+    return {arah,rows:detail,total:list.length,done,pct:list.length?Math.round(done/list.length*100):0};
+  }
+
+  function checked(name,juz,level){
+    const all=read(CHECK_KEY,{});
+    return !!(all?.[name]?.[String(juz)]?.[String(level)]);
+  }
+
+  function unified(name,juz,level){
+    const rows=sourcesFor(name,juz);
+    if(Number(level)===7 || Number(level)===8){
+      return {arah:'depan',rows:[],total:0,done:0,pct:checked(name,juz,level)?100:0,checked:checked(name,juz,level)};
+    }
+    const depan=calcDirection(rows,juz,level,'depan');
+    const belakang=calcDirection(rows,juz,level,'belakang');
+    // Pilih arah dengan progres lebih tinggi; jika sama, pertahankan arah dari
+    // data tracking terbaru bila tersedia, jika tidak gunakan Depan.
+    let chosen=depan;
+    if(belakang.pct>depan.pct) chosen=belakang;
+    else if(belakang.pct===depan.pct){
+      const tr=rows.filter(r=>r.source==='tracking'&&r.arah).sort((a,b)=>String(b.tanggal).localeCompare(String(a.tanggal)));
+      if(tr[0]?.arah==='belakang') chosen=belakang;
+    }
+    return {...chosen,checked:checked(name,juz,level)};
+  }
+
+  window.rqUnifiedLevelReport=unified;
+  window.rqRefreshUnifiedHafalanReports=function(){
+    try{window.renderWaKelasReport?.();}catch(e){}
+    try{window.generateWaReport?.();}catch(e){}
+    try{window.renderTrackingLevelSuratList?.();}catch(e){}
+  };
+})();
+</script>
+</html>
