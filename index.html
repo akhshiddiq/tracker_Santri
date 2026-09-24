@@ -683,6 +683,14 @@
                 const log = JSON.parse(localStorage.getItem('rq_local_save_log') || '[]');
                 log.unshift({ timestamp: new Date().toISOString(), type: payload?.type || '', name: payload?.name || '', mode: 'local' });
                 localStorage.setItem('rq_local_save_log', JSON.stringify(log.slice(0, 200)));
+
+                // Persist perubahan terakhir pada master santri juga.
+                // Beberapa input memperbarui objek santriList sebelum memanggil
+                // saveLocalChange(); tanpa ini data last* dapat hilang setelah reload.
+                if (Array.isArray(window.santriList) && window.santriList.length) {
+                    localStorage.setItem('rq_santri_master', JSON.stringify(window.santriList));
+                }
+
                 window.setSyncIndicator('success');
                 window.loadLocalData(true);
                 return { ok: true, local: true };
@@ -2234,15 +2242,72 @@
         };
 
         window.downloadDataCSV = function() {
-            let csv = "Nama Santri,Kelas,Pengajar,Bacaan Terakhir,Hafalan Terakhir,Murojaah Terakhir,Tugas Terakhir\n";
-            window.santriList.forEach(s => {
-                csv += `"${s.name}","${s.class}","${s.teacher}","${s.lastBacaan}","${s.lastHafalan}","${s.lastMurojaah}","${s.lastTugas}"\n`;
+            const list = Array.isArray(window.santriList) ? window.santriList : [];
+            if (!list.length) {
+                window.showToast("Data santri belum tersedia.", "error");
+                return;
+            }
+
+            // Ambil data terbaru dari riwayat lokal sebagai sumber utama,
+            // lalu gunakan nilai master santri sebagai fallback.
+            const historyKeys = {
+                bacaan: 'rq_history_bacaan',
+                hafalan: 'rq_history_hafalan',
+                murojaah: 'rq_history_murojaah',
+                tugas: 'rq_history_tugas'
+            };
+            const latest = {};
+            Object.entries(historyKeys).forEach(([type, key]) => {
+                let rows = [];
+                try { rows = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { rows = []; }
+                if (!Array.isArray(rows)) rows = [];
+                rows.forEach(row => {
+                    const name = String(row?.name || '').trim();
+                    if (!name) return;
+                    const k = name.toLowerCase();
+                    const time = Number(row?.rawTime || new Date(row?.timestamp || 0).getTime() || 0);
+                    if (!latest[type]?.[k] || time > latest[type][k].time) {
+                        latest[type] = latest[type] || {};
+                        latest[type][k] = {
+                            time,
+                            detail: String(row?.detail || '-'),
+                            tanggal: String(row?.tanggal || '-')
+                        };
+                    }
+                });
             });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
+
+            const csvCell = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+            const getLatest = (type, student) => {
+                const key = String(student?.name || '').trim().toLowerCase();
+                const row = latest[type]?.[key];
+                return row?.detail || student?.[`last${type.charAt(0).toUpperCase() + type.slice(1)}`] || '-';
+            };
+
+            const headers = ['Nama Santri','Kelas','Pengajar','Bacaan Terakhir','Hafalan Terakhir','Murojaah Terakhir','Tugas Terakhir'];
+            const rows = [headers.map(csvCell).join(',')];
+            list.forEach(student => {
+                rows.push([
+                    student?.name || '-',
+                    student?.class || '-',
+                    student?.teacher || '-',
+                    getLatest('bacaan', student),
+                    getLatest('hafalan', student),
+                    getLatest('murojaah', student),
+                    getLatest('tugas', student)
+                ].map(csvCell).join(','));
+            });
+
+            // BOM membuat huruf Indonesia terbaca benar di Excel/Spreadsheet.
+            const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
             link.download = `Data_Santri_RQ_AlKhansa_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
             link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             window.showToast("File CSV berhasil diunduh!", "success");
         };
 
