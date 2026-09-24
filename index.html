@@ -5071,29 +5071,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     const bar=document.getElementById('hafalanTrackerBar');if(bar)bar.style.width=pct+'%';
   };
 
-  function ensureWaWaliPreviewStyle(){
-    if(document.getElementById('wa-wali-preview-style')) return;
-    const st=document.createElement('style');
-    st.id='wa-wali-preview-style';
-    st.textContent=`
-      #tracker-panel-wa-wali .wa-wali-light-preview,
-      #tracker-panel-wa-wali .wa-wali-light-preview *{color-scheme:light;}
-      #tracker-panel-wa-wali .wa-wali-light-preview{background:#f8fafc !important;color:#0f172a !important;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-paper{background:#ffffff !important;color:#0f172a !important;border-color:#e2e8f0 !important;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info{background:#f8fafc !important;color:#0f172a !important;border-color:#cbd5e1 !important;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.8fr) !important;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-card{background:#ffffff !important;color:#0f172a !important;border-color:#cbd5e1 !important;min-width:0;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-card .label{color:#64748b !important;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-card .value{color:#0f172a !important;overflow-wrap:anywhere;word-break:break-word;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-levels{background:#f0fdf4 !important;color:#0f172a !important;border-color:#a7f3d0 !important;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-level-card{color:#0f172a !important;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-level-card *{color:inherit;}
-      #tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-level-card .muted{color:#64748b !important;}
-      @media(max-width:640px){#tracker-panel-wa-wali .wa-wali-light-preview .wa-wali-info-grid{grid-template-columns:1fr !important;}}
-    `;
-    document.head.appendChild(st);
-  }
-
   function init(){
     loadSettings();renderHafalanJuzSettings();renderHafalanTracker();
     const sel=document.getElementById('trackingSantri');
@@ -5137,13 +5114,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     grid-template-columns:230px minmax(0,1fr)!important;
   }
 }
-
-      .wa-wali-kop{color:#0f172a;}
-      .dark .wa-wali-kop{background:#fff !important;color:#0f172a !important;border-color:#d1fae5 !important;}
-      .dark .wa-wali-kop *{color:inherit;}
-      .dark .wa-wali-kop .text-emerald-800{color:#065f46 !important;}
-      .dark .wa-wali-kop .text-slate-500{color:#64748b !important;}
-      .dark .wa-wali-kop .text-slate-400{color:#94a3b8 !important;}
 </style>
 <script>
 window.switchTrackerMenu=function(menu){
@@ -6240,18 +6210,18 @@ function renderOptions(){
       const title=level<=6?`Level ${level}`:(level===7?'Level 7':'Level 8');
       const desc=special?(level===7?'Evaluasi & Pertanyaan':'Ujian Tasmi\' Semua Surat Juz tersebut'):`${r.done} dari ${r.total} surat selesai`;
       const items=(!compact&&r.rows.length)?`<div class="mt-2 grid gap-1.5">${r.rows.map((x,i)=>{const arabic=arabicFor(x.surat);const nama=arabic?`${x.surat} ${arabic}`:x.surat;return `<div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[12px] leading-5 font-black ${x.selesai?'text-emerald-700':'text-slate-700'}">${i+1}. ${x.selesai?'☑':'☐'} ${esc(nama)}</div><div class="text-[11px] leading-4 text-slate-600 mt-0.5">${x.total?(x.selesai?'Sudah hafal, sampai ayat '+x.total+'/'+x.total:(x.sampai>0?'Sampai ayat '+Math.min(x.sampai,x.total)+'/'+x.total:'Belum hafal')):''}</div>${x.selesai?"<div class='text-[10px] font-bold text-amber-700 mt-1'>Jangan lupa dimuroja'ah</div>":''}</div><span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-md ${x.selesai?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-500'}">${x.selesai?'Selesai':'Proses'}</span></div></div>`}).join('')}</div>`:'';
-      cards.push(`<div class="wa-wali-level-card rounded-xl border ${r.pct===100?'border-emerald-200 bg-emerald-50/50':'border-slate-200 bg-slate-50'} p-3.5"><div class="flex items-center justify-between gap-2"><div class="font-black text-sm text-slate-800">${r.checked?'☑':'☐'} ${title} <span class="text-emerald-700">— ${r.pct}%</span></div><span class="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded-md">${r.pct}%</span></div><div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-2"><div class="h-full bg-emerald-500" style="width:${r.pct}%"></div></div><div class="mt-2 text-[10px] font-bold text-slate-500">${desc}</div>${items}</div>`);
+      cards.push(`<div class="rounded-xl border ${r.pct===100?'border-emerald-200 bg-emerald-50/50':'border-slate-200 bg-slate-50'} p-3.5"><div class="flex items-center justify-between gap-2"><div class="font-black text-sm text-slate-800">${r.checked?'☑':'☐'} ${title} <span class="text-emerald-700">— ${r.pct}%</span></div><span class="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded-md">${r.pct}%</span></div><div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-2"><div class="h-full bg-emerald-500" style="width:${r.pct}%"></div></div><div class="mt-2 text-[10px] font-bold text-slate-500">${desc}</div>${items}</div>`);
     }
     box.innerHTML=`<div class="space-y-3.5">
-      <div class="wa-wali-info rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
         <div class="text-[11px] font-black uppercase tracking-wide text-slate-400 mb-2">Informasi Santri</div>
-        <div class="wa-wali-info-grid grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <div class="wa-wali-info-card rounded-lg bg-white border border-slate-200 p-3"><div class="label text-[10px] font-bold text-slate-400">Nama</div><div class="value text-sm font-black text-slate-800 mt-0.5">${esc(name)}</div></div>
-          <div class="wa-wali-info-card rounded-lg bg-white border border-slate-200 p-3"><div class="label text-[10px] font-bold text-slate-400">Kelas</div><div class="value text-sm font-black text-slate-800 mt-0.5">${esc(kelas)}</div></div>
-          <div class="wa-wali-info-card rounded-lg bg-white border border-slate-200 p-3"><div class="label text-[10px] font-bold text-slate-400">Juz</div><div class="value text-sm font-black text-slate-800 mt-0.5">${esc(juz)}</div></div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="rounded-lg bg-white border border-slate-200 p-3"><div class="text-[10px] font-bold text-slate-400">Nama</div><div class="text-sm font-black text-slate-800 mt-0.5">${esc(name)}</div></div>
+          <div class="rounded-lg bg-white border border-slate-200 p-3"><div class="text-[10px] font-bold text-slate-400">Kelas</div><div class="text-sm font-black text-slate-800 mt-0.5">${esc(kelas)}</div></div>
+          <div class="rounded-lg bg-white border border-slate-200 p-3"><div class="text-[10px] font-bold text-slate-400">Juz</div><div class="text-sm font-black text-slate-800 mt-0.5">${esc(juz)}</div></div>
         </div>
       </div>
-      <div class="wa-wali-levels rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
         <div class="flex items-center justify-between gap-2"><div class="text-sm font-black text-slate-900">Level Hafalan dan Progres</div><span class="text-[10px] font-black text-emerald-700 bg-white border border-emerald-200 px-2 py-1 rounded-lg">${compact?'Ringkas':'Lengkap'}</span></div>
         <div class="mt-3 space-y-2.5">${cards.join('')}</div>
       </div>
@@ -6272,7 +6242,6 @@ function renderOptions(){
     window.open(url,'_blank');
   }
   function init(){
-    ensureWaWaliPreviewStyle();
     const nav=document.querySelector('#appHeader nav > div');
     const content=document.getElementById('trackerPageContent');
     if(!nav||!content)return;
@@ -6305,8 +6274,8 @@ function renderOptions(){
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4">
           <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 sm:p-5 min-w-0">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3"><div><h4 class="font-black text-lg text-slate-900 dark:text-white">Preview Laporan</h4><p class="text-[11px] font-bold text-slate-400">Pratinjau laporan dalam bentuk kotak yang rapi sebelum dikirim.</p></div><button type="button" id="waWaliCopyBtn" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-black hover:bg-emerald-100 transition"><i class="fa-regular fa-copy"></i><span>Salin Laporan</span></button></div>
-            <div class="wa-wali-light-preview rounded-2xl bg-slate-50 border border-slate-200 p-3 sm:p-5 min-h-[620px] overflow-auto">
-              <div class="wa-wali-paper max-w-[720px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="wa-wali-kop px-5 py-4 border-b-2 border-emerald-100 bg-white"><div class="flex items-center gap-3"><div class="shrink-0 w-12 h-12 rounded-full bg-white border-2 border-emerald-200 p-1 overflow-hidden shadow-sm"><img src="https://lh3.googleusercontent.com/d/1DXnWTl6rdZe6ax5kXfF9gnW4625rloJi" alt="Logo Rumah Quran Al-Khansa" class="w-full h-full object-contain" onerror="this.style.display='none'"></div><div class="min-w-0"><div class="font-black text-emerald-800 text-base leading-tight">Rumah Quran Al-Khansa</div><div class="text-[10px] font-bold text-slate-500 mt-0.5">Laporan Hafalan Santri</div><div class="text-[9px] font-semibold text-slate-400 mt-0.5">Monitoring hafalan dan progres level santri</div></div></div></div><div id="waWaliVisualPreview" class="p-4 sm:p-5"></div></div>
+            <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 p-3 sm:p-5 min-h-[620px] overflow-auto">
+              <div class="max-w-[720px] mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"><div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"><div class="font-black text-emerald-800 dark:text-emerald-300 text-base">Rumah Quran Al-Khansa</div><div class="text-[10px] font-bold text-slate-400">Laporan Hafalan Santri</div></div><div id="waWaliVisualPreview" class="p-4 sm:p-5"></div></div>
             </div>
             <textarea id="waWaliReportOutput" class="sr-only" readonly></textarea>
           </div>
