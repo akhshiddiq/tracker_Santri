@@ -3572,7 +3572,6 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Surat Persantri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-capaian" onclick="window.switchTrackerMenu('capaian')" type="button"><i class="fa-solid fa-user-check mr-1"></i> Materi Hafalan &amp; Capaian Level Santri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-dashboard" onclick="window.openDashboardPersantri()" type="button"><i class="fa-solid fa-chart-pie mr-1"></i> Dashboard Laporan Persantri</button>
-<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-panduan" onclick="window.switchTrackerMenu('panduan')" type="button"><i class="fa-solid fa-circle-info mr-1"></i> Cara Penggunaan</button>
 </div>
 </nav>
 <button class="p-2.5 bg-emerald-700 dark:bg-emerald-900 rounded-xl text-amber-300 hover:bg-emerald-600 transition shadow-xs shrink-0" onclick="window.toggleDarkMode()" title="Fitur Malam (Dark Mode)">
@@ -3856,46 +3855,6 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="bacaanSantriSummary"></div>
     <div id="bacaanSantriList" class="space-y-3"></div>
-  </div>
-</div>
-<div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-panduan" style="display:none;">
-  <div class="space-y-4">
-    <div class="bg-gradient-to-r from-emerald-700 via-teal-600 to-cyan-600 text-white rounded-2xl shadow-sm overflow-hidden">
-      <div class="p-4 sm:p-6">
-        <div class="flex items-start gap-3">
-          <span class="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 grid place-items-center shrink-0"><i class="fa-solid fa-circle-info text-lg"></i></span>
-          <div>
-            <h2 class="text-xl sm:text-2xl font-black">Cara Penggunaan Tracking Tahfidz Santri</h2>
-            <p class="text-xs sm:text-sm text-white/85 font-bold mt-1">Ikuti urutan pengisian agar data hafalan, tanggal setoran, progres Juz, Level, dan warning muroja'ah tersambung rapi ke semua menu.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5">
-      <div class="flex items-center justify-between gap-2 mb-3">
-        <div>
-          <h3 class="text-base sm:text-lg font-black text-emerald-800 dark:text-emerald-300">Urutan Pengisian yang Disarankan</h3>
-          <p class="text-[10px] sm:text-xs font-bold text-slate-500 mt-1">Gunakan tombol di bawah untuk langsung menuju kolomnya.</p>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('santri')"><b>1</b><span><strong>Pilih Santri</strong><small>Pilih nama santri terlebih dahulu.</small></span><i class="fa-solid fa-arrow-right"></i></button>
-        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('tanggal')"><b>2</b><span><strong>Tanggal Setoran</strong><small>Isi tanggal sesuai tanggal setoran.</small></span><i class="fa-solid fa-arrow-right"></i></button>
-        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('juzlevel')"><b>3</b><span><strong>Juz, Arah & Level</strong><small>Pilih Juz dan Level sesuai materi.</small></span><i class="fa-solid fa-arrow-right"></i></button>
-        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('surat')"><b>4</b><span><strong>Surat</strong><small>Pilih surat yang disetorkan.</small></span><i class="fa-solid fa-arrow-right"></i></button>
-        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('ayat')"><b>5</b><span><strong>Rentang Ayat</strong><small>Isi ayat awal sampai ayat akhir.</small></span><i class="fa-solid fa-arrow-right"></i></button>
-        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('penilaian')"><b>6</b><span><strong>Penilaian</strong><small>Isi penilaian bacaan dan hafalan.</small></span><i class="fa-solid fa-arrow-right"></i></button>
-        <button type="button" class="rq-guide-step" onclick="window.rqInputQuickJump('catatan')"><b>7</b><span><strong>Catatan & Muroja'ah</strong><small>Tambahkan catatan dan cek status.</small></span><i class="fa-solid fa-arrow-right"></i></button>
-        <button type="button" class="rq-guide-step rq-guide-save" onclick="window.rqInputQuickJump('simpan')"><b>8</b><span><strong>Simpan Setoran</strong><small>Simpan setelah semua kolom benar.</small></span><i class="fa-solid fa-floppy-disk"></i></button>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div class="rq-guide-info"><i class="fa-solid fa-calendar-check"></i><div><b>Tanggal per surat</b><span>Setiap surat memiliki tanggal setoran sendiri agar warning muroja'ah akurat.</span></div></div>
-      <div class="rq-guide-info"><i class="fa-solid fa-chart-pie"></i><div><b>Dashboard</b><span>Progres Juz dan Level mengikuti data hafalan yang disimpan.</span></div></div>
-      <div class="rq-guide-info"><i class="fa-solid fa-triangle-exclamation"></i><div><b>Warning Muroja'ah</b><span>Tanggal terakhir surat dipakai untuk menentukan surat yang perlu dimuroja'ah.</span></div></div>
-    </div>
   </div>
 </div>
 <div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-dashboard" style="display:none;">
@@ -5399,7 +5358,6 @@ window.switchTrackerMenu=function(menu){
 document.addEventListener('DOMContentLoaded',function(){
   window.switchTrackerMenu('input');
 });
-window.__rqCoreSwitchTrackerMenu=window.switchTrackerMenu;
 </script>
 <script id="tracker-expand-safe-v16-js">
 (function(){
@@ -6551,8 +6509,21 @@ function renderOptions(){
   window.renderWaWaliSantriReport=function(){init();renderPreview();};
   window.copyWaWaliSantriReport=copy;
   window.sendWaWaliSantriReport=send;
-  function hookSwitch(){ /* dispatcher is centralized at the end of the file */ }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init();});else{init();}
+  function hookSwitch(){
+    const original=window.switchTrackerMenu;if(typeof original!=='function'||original.__waWaliWrapped)return;
+    function wrapped(menu){
+      if(menu!=='wa-wali')return original(menu);
+      ['input','hafalan','history','wa-wali'].forEach(k=>{
+        const p=document.getElementById('tracker-panel-'+k),b=document.getElementById('trackerMenu-'+k);
+        if(p){p.dataset.panelHidden=k==='wa-wali'?'0':'1';p.style.display=k==='wa-wali'?'block':'none';}
+        if(b){b.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(k==='wa-wali')b.classList.add('bg-white','text-emerald-900','shadow');else b.classList.add('text-emerald-50','hover:bg-emerald-700');}
+      });
+      document.body.classList.remove('tracker-hafalan-active');
+      init();renderPreview();window.scrollTo({top:0,behavior:'smooth'});
+    }
+    wrapped.__waWaliWrapped=true;window.switchTrackerMenu=wrapped;
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init();hookSwitch();});else{init();hookSwitch();}
 })();
 </script>
 
@@ -6677,6 +6648,67 @@ function renderOptions(){
 
 \n
 
+
+<script id="tracker-menu-stability-v1">
+(function(){
+  'use strict';
+
+  const panelMap={
+    'input':'tracker-panel-input',
+    'hafalan':'tracker-panel-hafalan',
+    'capaian':'tracker-panel-capaian',
+    'bacaan':'tracker-panel-bacaan',
+    'history':'tracker-panel-history',
+    'wa-wali':'tracker-panel-wa-wali',
+    'wa-kondisi':'tracker-panel-wa-kondisi'
+  };
+
+  function normalize(menu){
+    const target=panelMap[menu]||null;
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{
+      const active=target && p.id===target;
+      p.dataset.panelHidden=active?'0':'1';
+      p.style.display=active?'block':'none';
+    });
+
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{
+      const active=btn.id===('trackerMenu-'+menu);
+      btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';
+      if(active){
+        btn.classList.add('bg-white','text-emerald-900','shadow');
+      }else{
+        btn.classList.add('text-emerald-50','hover:bg-emerald-700');
+      }
+    });
+  }
+
+  function install(){
+    const current=window.switchTrackerMenu;
+    if(typeof current!=='function')return;
+    if(current.__stableMenuWrapper)return;
+
+    function stable(menu){
+      const result=current(menu);
+      normalize(menu);
+      return result;
+    }
+    stable.__stableMenuWrapper=true;
+    window.switchTrackerMenu=stable;
+
+    // The original app starts at Input Setoran. Keep that behavior,
+    // but make sure only that menu is visibly active.
+    setTimeout(()=>normalize('input'),0);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',install);
+  }else{
+    install();
+  }
+
+  window.__normalizeTrackerMenu=normalize;
+})();
+</script>
 
 <!-- =========================================================
      LOCAL STORAGE ONLY
@@ -6814,6 +6846,29 @@ function renderOptions(){
 })();
 </script>
 
+<script id="wa-menu-final-direct-bind-v1">
+(function(){
+  'use strict';
+  function bind(){
+    // Restore the application's original menu dispatcher. The WA modules now
+    // open their own panels directly, avoiding a chain of nested wrappers.
+    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
+      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
+    }
+    const personal=document.getElementById('trackerMenu-wa-wali');
+    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
+      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
+    }
+    const kelas=document.getElementById('trackerMenu-wa-kelas');
+    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
+      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
+  else setTimeout(bind,150);
+  window.addEventListener('load',()=>setTimeout(bind,150));
+})();
+</script>
 </body>
 
 <script id="sync-information-menu-stability-v1">
@@ -7157,6 +7212,14 @@ function renderOptions(){
 
   function install(){
     if(!window.__rqOriginalSwitchTrackerMenu)window.__rqOriginalSwitchTrackerMenu=window.switchTrackerMenu;
+    const current=window.switchTrackerMenu;
+    if(typeof current==='function'&&!current.__waKelasWrapped){
+      const wrapped=function(menu){
+        if(menu===MENU){openMenu();return;}
+        return current.apply(this,arguments);
+      };
+      wrapped.__waKelasWrapped=true; window.switchTrackerMenu=wrapped;
+    }
     build();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
@@ -7356,10 +7419,23 @@ function renderOptions(){
 
   window.__openWaWaliPersonalPanel = showPanel;
 
-  function installSwitchGuard(){ /* dispatcher is centralized at the end of the file */ }
+  function installSwitchGuard(){
+    const current=window.switchTrackerMenu;
+    if(typeof current!=='function' || current.__waWaliFinalFix) return;
+    const wrapped=function(menu){
+      if(menu===MENU){
+        ensure();
+        return showPanel();
+      }
+      return current.apply(this,arguments);
+    };
+    wrapped.__waWaliFinalFix=true;
+    window.switchTrackerMenu=wrapped;
+  }
 
   function init(){
     ensure();
+    installSwitchGuard();
   }
 
   if(document.readyState==='loading'){
@@ -7371,6 +7447,29 @@ function renderOptions(){
 })();
 </script>
 
+<script id="wa-menu-final-direct-bind-v1b">
+(function(){
+  'use strict';
+  function bind(){
+    // Restore the application's original menu dispatcher. The WA modules now
+    // open their own panels directly, avoiding a chain of nested wrappers.
+    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
+      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
+    }
+    const personal=document.getElementById('trackerMenu-wa-wali');
+    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
+      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
+    }
+    const kelas=document.getElementById('trackerMenu-wa-kelas');
+    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
+      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
+  else setTimeout(bind,150);
+  window.addEventListener('load',()=>setTimeout(bind,150));
+})();
+</script>
 <script id="rq-input-universal-sync-v2">
 (function(){
   'use strict';
@@ -7649,6 +7748,29 @@ function renderOptions(){
   document.addEventListener('change',e=>{if(e.target?.id==='trackingSantri')setTimeout(window.renderTrackingDashboardPersantri,0);});
 })();
 </script>
+<script id="rq-dashboard-persantri-v1-dispatch">
+(function(){
+  'use strict';
+  function install(){
+    const old=window.switchTrackerMenu;
+    if(typeof old!=='function'||old.__rqDashboardWrapped)return;
+    function wrapped(menu){
+      if(menu==='dashboard'){
+        document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{p.style.display='none';p.dataset.panelHidden='1';});
+        const p=document.getElementById('tracker-panel-dashboard');if(p){p.style.display='block';p.dataset.panelHidden='0';}
+        document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{btn.classList.remove('bg-white','text-emerald-900','shadow');btn.classList.remove('text-emerald-50','hover:bg-emerald-700');if(btn.id==='trackerMenu-dashboard')btn.classList.add('bg-white','text-emerald-900','shadow');else btn.classList.add('text-emerald-50','hover:bg-emerald-700');});
+        window.renderTrackingDashboardPersantri();window.scrollTo({top:0,behavior:'smooth'});return;
+      }
+      return old(menu);
+    }
+    wrapped.__rqDashboardWrapped=true;wrapped.__rqDashboardOriginal=old;window.switchTrackerMenu=wrapped;
+  }
+  function ready(){setTimeout(install,20);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
+  window.addEventListener('load',()=>setTimeout(install,120));
+})();
+</script>
+
 <script id="rq-dashboard-layout-fix-v3">
 (function(){
   'use strict';
@@ -7813,72 +7935,75 @@ function renderOptions(){
 body.tracker-dashboard-active #trackerSearchSidebar{display:none!important;}
 body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1fr)!important;}
 </style>
-<script id="rq-final-menu-dispatcher-v2">
+<script id="rq-final-menu-dispatcher-v1">
 (function(){
   'use strict';
-  const PANEL_MAP={
-    input:'tracker-panel-input',
-    hafalan:'tracker-panel-hafalan',
-    capaian:'tracker-panel-capaian',
-    history:'tracker-panel-history',
-    bacaan:'tracker-panel-bacaan',
-    dashboard:'tracker-panel-dashboard',
-    panduan:'tracker-panel-panduan',
-    'wa-wali':'tracker-panel-wa-wali',
-    'wa-kelas':'tracker-panel-wa-kelas',
-    'wa-kondisi':'tracker-panel-wa-kondisi',
-    'level-perkelas':'tracker-panel-level-perkelas'
-  };
   function hideAll(){
     document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
-      p.style.display='none';p.dataset.panelHidden='1';
+      p.style.display='none';
+      p.dataset.panelHidden='1';
     });
   }
   function setButtons(menu){
     document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
-      btn.classList.remove('bg-white','text-emerald-900','shadow','text-emerald-50','hover:bg-emerald-700');
-      if(btn.id==='trackerMenu-'+menu) btn.classList.add('bg-white','text-emerald-900','shadow');
-      else btn.classList.add('text-emerald-50','hover:bg-emerald-700');
+      btn.classList.remove('bg-white','text-emerald-900','shadow');
+      btn.classList.remove('text-emerald-50','hover:bg-emerald-700');
+      if(btn.id==='trackerMenu-'+menu){
+        btn.classList.add('bg-white','text-emerald-900','shadow');
+      }else{
+        btn.classList.add('text-emerald-50','hover:bg-emerald-700');
+      }
     });
   }
-  function show(id){
-    const p=document.getElementById(id);
+  function showPanel(id){
+    var p=document.getElementById(id);
     if(!p)return false;
-    p.style.display='block';p.dataset.panelHidden='0';
+    p.style.display='block';
+    p.dataset.panelHidden='0';
     return true;
-  }
-  function prepare(menu){
-    if(typeof window.__rqSetPerSuratVisibility==='function') window.__rqSetPerSuratVisibility(menu);
-    document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
-    document.body.classList.toggle('tracker-dashboard-active',menu==='dashboard');
-    if(menu!=='dashboard') document.body.classList.remove('tracker-dashboard-active');
   }
   function dispatch(menu){
     try{
-      prepare(menu);
-      hideAll();
-      let ready=true;
-      if(menu==='dashboard'){
-        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
-        ready=show(PANEL_MAP.dashboard);
-      }else if(menu==='wa-wali'){
+      if(typeof window.__rqSetPerSuratVisibility==='function') window.__rqSetPerSuratVisibility(menu);
+      document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
+      if(menu==='wa-wali'){
         if(typeof window.__openWaWaliPersonalPanel==='function') window.__openWaWaliPersonalPanel();
         else if(typeof window.renderWaWaliSantriReport==='function') window.renderWaWaliSantriReport();
-        ready=show(PANEL_MAP['wa-wali']);
-      }else if(menu==='wa-kelas'){
+        hideAll();
+        showPanel('tracker-panel-wa-wali');
+        setButtons(menu);
+        return;
+      }
+      if(menu==='wa-kelas'){
         if(typeof window.__openWaKelasLevelPanel==='function') window.__openWaKelasLevelPanel();
         else if(typeof window.renderWaKelasReport==='function') window.renderWaKelasReport();
-        ready=show(PANEL_MAP['wa-kelas']);
-      }else if(menu==='wa-kondisi'){
-        if(typeof window.openWaKondisiPersuratMenu==='function') window.openWaKondisiPersuratMenu();
-        ready=show(PANEL_MAP['wa-kondisi']);
-      }else if(menu==='panduan'){
-        ready=show(PANEL_MAP.panduan);
-      }else if(menu==='level-perkelas'){
-        if(typeof window.renderWaKelasReport==='function') window.renderWaKelasReport();
-        ready=show(PANEL_MAP['level-perkelas']);
-      }else if(PANEL_MAP[menu]){
-        ready=show(PANEL_MAP[menu]);
+        hideAll();
+        showPanel('tracker-panel-wa-kelas');
+        setButtons(menu);
+        return;
+      }
+      if(menu==='dashboard'){
+        hideAll();
+        if(!showPanel('tracker-panel-dashboard')){
+          if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+          showPanel('tracker-panel-dashboard');
+        }
+        setButtons(menu);
+        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
+        window.scrollTo({top:0,behavior:'smooth'});
+        return;
+      }
+      var panelMap={
+        input:'tracker-panel-input',
+        hafalan:'tracker-panel-hafalan',
+        capaian:'tracker-panel-capaian',
+        history:'tracker-panel-history',
+        bacaan:'tracker-panel-bacaan'
+      };
+      if(panelMap[menu]){
+        hideAll();
+        showPanel(panelMap[menu]);
+        setButtons(menu);
         if(menu==='hafalan' && typeof window.renderHafalanTracker==='function') window.renderHafalanTracker();
         if(menu==='capaian' && typeof window.renderCapaianLevelSantri==='function') window.renderCapaianLevelSantri();
         if(menu==='history' && typeof window.renderTrackingHistory==='function') window.renderTrackingHistory();
@@ -7886,50 +8011,40 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
         if(menu==='input'){
           if(typeof window.renderTrackingPerSuratOptions==='function') window.renderTrackingPerSuratOptions();
           if(typeof window.renderTrackingPerSurat==='function') window.renderTrackingPerSurat();
-          if(typeof window.renderTrackingLevelSuratList==='function') window.renderTrackingLevelSuratList();
         }
-      }else if(menu==='sync-info'){
-        if(typeof window.openSyncInformation==='function') window.openSyncInformation();
-        ready=true;
-      }else{
-        const core=window.__rqCoreSwitchTrackerMenu;
-        if(typeof core==='function' && core!==dispatch) core(menu);
-        ready=show('tracker-panel-'+menu);
+        window.scrollTo({top:0,behavior:'smooth'});
+        return;
       }
+      /* Menu lain yang memang dikelola sistem lama tetap memakai dispatcher asli. */
+      var base=window.__rqOriginalSwitchTrackerMenu;
+      if(typeof base==='function') base(menu);
+      hideAll();
+      var p=document.getElementById('tracker-panel-'+menu);
+      if(p){p.style.display='block';p.dataset.panelHidden='0';}
       setButtons(menu);
-      if(menu==='dashboard') document.body.classList.add('tracker-dashboard-active');
-      else document.body.classList.remove('tracker-dashboard-active');
-      if(ready) window.scrollTo({top:0,behavior:'smooth'});
     }catch(err){
-      console.error('Tracker menu dispatcher error:',err);
+      console.error('Final menu dispatcher error:',err);
     }
   }
-  window.switchTrackerMenu=dispatch;
-  dispatch.__rqCentralDispatcher=true;
-  dispatch.__stableMenuWrapper=true;
-  dispatch.__waWaliWrapped=true;
-  dispatch.__waKelasWrapped=true;
-  dispatch.__rqDashboardWrapped=true;
-  dispatch.__rqCaraUsageWrapped=true;
-  window.__rqFinalMenuDispatcherInstalled=true;
-  function bindButtons(){
+  function install(){
+    window.switchTrackerMenu=dispatch;
+    window.__rqFinalMenuDispatcherInstalled=true;
+    /* Pastikan dua menu dinamis tetap bisa dibuka meskipun script lama mencoba membungkus switchTrackerMenu. */
     document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
-      const id=btn.id||'';
-      if(!id.startsWith('trackerMenu-')) return;
-      const menu=id.slice('trackerMenu-'.length);
-      if(['pengaturan'].includes(menu)) return;
-      if(menu==='sync-info'){btn.onclick=function(e){e.preventDefault();dispatch(menu);};return;}
-      if(PANEL_MAP[menu] || ['dashboard','panduan','wa-wali','wa-kelas','wa-kondisi','level-perkelas'].includes(menu)){
-        btn.onclick=function(e){e.preventDefault();dispatch(menu);};
+      if(btn.id==='trackerMenu-wa-wali' || btn.id==='trackerMenu-wa-kelas'){
+        btn.onclick=function(e){e.preventDefault();dispatch(btn.id==='trackerMenu-wa-wali'?'wa-wali':'wa-kelas');};
       }
     });
   }
-  bindButtons();
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindButtons,{once:true});
-  window.addEventListener('load',bindButtons,{once:true});
-  setTimeout(bindButtons,0);
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){setTimeout(install,0);});
+  }else{
+    setTimeout(install,0);
+  }
+  window.addEventListener('load',function(){setTimeout(install,0);});
 })();
 </script>
+
 <style id="rq-cara-penggunaan-mobile-v1">
 .rq-input-quick-btn{
   min-height:42px; display:flex; align-items:center; justify-content:center; gap:6px;
@@ -8013,7 +8128,7 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
   #tracker-panel-dashboard .rq-level-surat-list>div>div:nth-child(3){font-size:10px!important}
 }
 </style>
-<script id="rq-cara-penggunaan-v1">
+<script id="rq-input-quick-jump-v1">
 (function(){
   'use strict';
   const TARGETS={
@@ -8054,22 +8169,11 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
       if(focus && typeof focus.focus==='function' && focus.tabIndex!==-1){
         try{focus.focus({preventScroll:true})}catch(e){}
       }
-      el.animate?.([{boxShadow:'0 0 0 0 rgba(16,185,129,0)'},{boxShadow:'0 0 0 5px rgba(16,185,129,.22)'},{boxShadow:'0 0 0 0 rgba(16,185,129,0)'}],{duration:700});
+      if(typeof el.animate==='function'){
+        try{el.animate([{boxShadow:'0 0 0 0 rgba(16,185,129,0)'},{boxShadow:'0 0 0 5px rgba(16,185,129,.22)'},{boxShadow:'0 0 0 0 rgba(16,185,129,0)'}],{duration:700});}catch(e){}
+      }
     },180);
   }
   window.rqInputQuickJump=jump;
-
-  function bindGuide(){
-    const btn=document.getElementById('trackerMenu-panduan');
-    if(btn && !btn.dataset.bound){btn.dataset.bound='1';btn.onclick=function(e){e.preventDefault();window.switchTrackerMenu('panduan');};}
-  }
-
-  function installDispatcher(){ /* dispatcher is centralized at the end of the file */ }
-  function init(){
-    bindGuide();
-    installDispatcher();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.addEventListener('load',function(){bindGuide(); if(window.switchTrackerMenu && !window.switchTrackerMenu.__rqCaraUsageWrapped)installDispatcher();});
 })();
 </script>
