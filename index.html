@@ -7846,7 +7846,26 @@ function renderOptions(){
     const box=document.getElementById('rqDashboardStudentInfo');if(!box)return;
     if(!name){box.innerHTML='<div class="rounded-2xl border-2 border-dashed border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 p-6 text-center"><div class="text-sm font-black text-violet-800 dark:text-violet-300">Pilih santri untuk melihat laporan persantri</div><div class="text-[10px] font-bold text-slate-500 mt-1">Semua data dibaca dari penyimpanan lokal.</div></div>';return;}
     const m=studentMeta(name);const sj=summaryJuz();const sz=juzState(name,sj);const totalSurat=sz.list.length;const doneSurat=sz.doneSurat;
-    box.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-2"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Santri</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.name)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Kelas</div><div class="text-sm font-black text-violet-700 dark:text-violet-300 mt-1">${esc(m.kelas)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Pengajar</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.teacher)}</div></div><div class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-3"><div class="flex items-center justify-between gap-2"><div><div class="text-[9px] font-black text-violet-600 dark:text-violet-300">Surat Sudah Dihafal</div><div class="text-xl font-black text-violet-700 dark:text-violet-300 mt-1">${doneSurat} / ${totalSurat}</div></div><select id="rqDashboardSummaryJuzSelect" aria-label="Pilih Juz untuk jumlah surat hafalan" class="w-auto min-w-[74px] px-2 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 bg-white dark:bg-slate-900 text-[10px] font-black text-violet-700 dark:text-violet-300"><option value="30"${sj==='30'?' selected':''}>Juz 30</option><option value="29"${sj==='29'?' selected':''}>Juz 29</option><option value="28"${sj==='28'?' selected':''}>Juz 28</option><option value="27"${sj==='27'?' selected':''}>Juz 27</option></select></div><div class="col-span-2 lg:col-span-4 text-[9px] font-bold text-slate-500 -mt-1">${doneSurat} dari ${totalSurat} surat Juz ${sj} sudah selesai dihafalkan.</div></div>`;
+    const warnings=warningList(name);
+    box.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-2 rq-dashboard-sticky-grid">
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 rq-dashboard-sticky-santri">
+        <div class="text-[9px] font-black text-slate-500">Nama Santri</div>
+        <div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 rq-dashboard-student-name">${esc(m.name)}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 rq-dashboard-sticky-kelas">
+        <div class="text-[9px] font-black text-slate-500">Kelas</div>
+        <div class="text-sm font-black text-violet-700 dark:text-violet-300 mt-1">${esc(m.kelas)}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 rq-dashboard-sticky-murojaah">
+        <div class="text-[9px] font-black text-slate-500">Perlu Murojaah</div>
+        <div class="text-xl font-black text-amber-600 dark:text-amber-300 mt-1">${warnings.length} <span class="text-[10px] font-black">surat</span></div>
+      </div>
+      <div class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-3 rq-dashboard-sticky-surat">
+        <div class="flex items-center justify-between gap-2"><div><div class="text-[9px] font-black text-violet-600 dark:text-violet-300">Surat Sudah Dihafal</div><div class="text-xl font-black text-violet-700 dark:text-violet-300 mt-1">${doneSurat} / ${totalSurat}</div></div>
+        <select id="rqDashboardSummaryJuzSelect" aria-label="Pilih Juz untuk jumlah surat hafalan" class="w-auto min-w-[74px] px-2 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 bg-white dark:bg-slate-900 text-[10px] font-black text-violet-700 dark:text-violet-300"><option value="30"${sj==='30'?' selected':''}>Juz 30</option><option value="29"${sj==='29'?' selected':''}>Juz 29</option><option value="28"${sj==='28'?' selected':''}>Juz 28</option><option value="27"${sj==='27'?' selected':''}>Juz 27</option></select></div>
+        <div class="rq-dashboard-mini-info rq-dashboard-surat-detail"><span>${doneSurat} dari ${totalSurat} surat Juz ${sj} selesai</span></div>
+      </div>
+    </div>`;
     const sjSel=document.getElementById('rqDashboardSummaryJuzSelect');
     if(sjSel && !sjSel.dataset.bound){
       sjSel.dataset.bound='1';
@@ -8484,6 +8503,71 @@ body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo >
   }
 }
 </style>
+<style id="rq-dashboard-sticky-mobile-v2">
+body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo{
+  position:sticky!important;
+  top:72px!important;
+  z-index:80!important;
+  padding:4px 0!important;
+}
+body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-sticky-grid{
+  align-items:stretch!important;
+}
+.rq-dashboard-mini-info{
+  margin-top:4px;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex-wrap:wrap;
+  font-size:8px;
+  line-height:1.1;
+  font-weight:800;
+  color:#64748b;
+}
+@media(max-width:640px){
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo{
+    top:58px!important;
+    padding:3px 0!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-sticky-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:.35rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-sticky-santri{
+    grid-column:span 1!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-sticky-surat{
+    grid-column:span 1!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-sticky-kelas,
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-sticky-murojaah{
+    display:none!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rounded-2xl{
+    border-radius:.8rem!important;
+    padding:.52rem .62rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .text-sm{
+    font-size:.84rem!important;
+    line-height:1.1rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .text-xl{
+    font-size:1.05rem!important;
+    line-height:1.15rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-student-name{
+    overflow:visible!important;
+    text-overflow:clip!important;
+    white-space:normal!important;
+    line-height:1.15rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-mini-info{
+    font-size:8px!important;
+    line-height:1rem!important;
+  }
+}
+</style>
+
 <script id="rq-dashboard-sticky-student-info-v1-js">
 (function(){
   'use strict';
