@@ -7906,6 +7906,7 @@ function renderOptions(){
 (function(){
   window.openDashboardPersantri=function(){
     try{
+      document.body.setAttribute('data-tracker-active-menu','dashboard');
       document.body.classList.add('tracker-dashboard-active');
       var panels=document.querySelectorAll('#trackerPageContent > .tracker-menu-panel');
       panels.forEach(function(p){p.dataset.panelHidden='1';p.style.setProperty('display','none','important');});
@@ -7964,6 +7965,9 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
   }
   function dispatch(menu){
     try{
+      document.body.setAttribute('data-tracker-active-menu',String(menu||''));
+      document.body.classList.toggle('tracker-dashboard-active',menu==='dashboard');
+      if(menu!=='dashboard') document.body.classList.remove('tracker-dashboard-active');
       if(typeof window.__rqSetPerSuratVisibility==='function') window.__rqSetPerSuratVisibility(menu);
       document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
       if(menu==='wa-wali'){
@@ -8079,6 +8083,22 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
 #rqInputSectionSantri,#rqInputSectionTanggal,#rqInputSectionJuz,#rqInputSectionSurat,#rqInputSectionAyat,#rqInputSectionPenilaian,#rqInputSectionCatatan,#rqInputSectionMurojaah,#rqInputSectionSimpan{scroll-margin-top:95px}
 
 @media (max-width:767px){
+  /* ISOLASI PANEL MENU DI HP: hanya satu panel boleh terlihat pada satu waktu. */
+  #trackerPageContent > .tracker-menu-panel{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+  #trackerPageContent > .tracker-menu-panel[data-panel-hidden="0"]{display:block!important;visibility:visible!important;pointer-events:auto!important;}
+  body[data-tracker-active-menu="input"] #tracker-panel-input,
+  body[data-tracker-active-menu="hafalan"] #tracker-panel-hafalan,
+  body[data-tracker-active-menu="capaian"] #tracker-panel-capaian,
+  body[data-tracker-active-menu="history"] #tracker-panel-history,
+  body[data-tracker-active-menu="bacaan"] #tracker-panel-bacaan,
+  body[data-tracker-active-menu="dashboard"] #tracker-panel-dashboard,
+  body[data-tracker-active-menu="wa-wali"] #tracker-panel-wa-wali,
+  body[data-tracker-active-menu="wa-kelas"] #tracker-panel-wa-kelas,
+  body[data-tracker-active-menu="wa-kondisi"] #tracker-panel-wa-kondisi,
+  body[data-tracker-active-menu="level-perkelas"] #tracker-panel-level-perkelas{
+    display:block!important;visibility:visible!important;pointer-events:auto!important;
+  }
+
   /* Semua bagian input HP dibuat vertikal dan lebih lega. */
   #tracker-panel-input .p-4.sm\:p-5{padding:16px!important}
   #tracker-panel-input label{font-size:14px!important;line-height:1.35!important}
