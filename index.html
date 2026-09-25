@@ -7838,11 +7838,24 @@ function renderOptions(){
     sel.innerHTML='<option value="">-- Pilih Santri --</option>'+list.map(s=>`<option value="${esc(s.name)}">${esc(s.name)}${s.class?' — '+esc(s.class):''}</option>`).join('');
     if(current)sel.value=current;
   }
+  function summaryJuz(){
+    const saved=String(read('rq_dashboard_summary_juz_v1','30')||'30');
+    return JUZS.includes(saved)?saved:'30';
+  }
   function renderStudentInfo(name){
     const box=document.getElementById('rqDashboardStudentInfo');if(!box)return;
     if(!name){box.innerHTML='<div class="rounded-2xl border-2 border-dashed border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 p-6 text-center"><div class="text-sm font-black text-violet-800 dark:text-violet-300">Pilih santri untuk melihat laporan persantri</div><div class="text-[10px] font-bold text-slate-500 mt-1">Semua data dibaca dari penyimpanan lokal.</div></div>';return;}
-    const m=studentMeta(name);const all=JUZS.map(j=>juzState(name,j));const totalPct=Math.round(all.reduce((a,x)=>a+x.pct,0)/JUZS.length);
-    box.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-2"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Santri</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.name)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Kelas</div><div class="text-sm font-black text-violet-700 dark:text-violet-300 mt-1">${esc(m.kelas)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Pengajar</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.teacher)}</div></div><div class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-3"><div class="text-[9px] font-black text-violet-600 dark:text-violet-300">Rata-rata Progres 4 Juz</div><div class="text-xl font-black text-violet-700 dark:text-violet-300 mt-1">${totalPct}%</div></div></div>`;
+    const m=studentMeta(name);const sj=summaryJuz();const sz=juzState(name,sj);const totalSurat=sz.list.length;const doneSurat=sz.doneSurat;
+    box.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-2"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Santri</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.name)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Kelas</div><div class="text-sm font-black text-violet-700 dark:text-violet-300 mt-1">${esc(m.kelas)}</div></div><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3"><div class="text-[9px] font-black text-slate-500">Pengajar</div><div class="text-sm font-black text-slate-900 dark:text-slate-100 mt-1 truncate">${esc(m.teacher)}</div></div><div class="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-3"><div class="flex items-center justify-between gap-2"><div><div class="text-[9px] font-black text-violet-600 dark:text-violet-300">Surat Sudah Dihafal</div><div class="text-xl font-black text-violet-700 dark:text-violet-300 mt-1">${doneSurat} / ${totalSurat}</div></div><select id="rqDashboardSummaryJuzSelect" aria-label="Pilih Juz untuk jumlah surat hafalan" class="w-auto min-w-[74px] px-2 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 bg-white dark:bg-slate-900 text-[10px] font-black text-violet-700 dark:text-violet-300"><option value="30"${sj==='30'?' selected':''}>Juz 30</option><option value="29"${sj==='29'?' selected':''}>Juz 29</option><option value="28"${sj==='28'?' selected':''}>Juz 28</option><option value="27"${sj==='27'?' selected':''}>Juz 27</option></select></div><div class="col-span-2 lg:col-span-4 text-[9px] font-bold text-slate-500 -mt-1">${doneSurat} dari ${totalSurat} surat Juz ${sj} sudah selesai dihafalkan.</div></div>`;
+    const sjSel=document.getElementById('rqDashboardSummaryJuzSelect');
+    if(sjSel && !sjSel.dataset.bound){
+      sjSel.dataset.bound='1';
+      sjSel.addEventListener('change',function(){
+        const v=JUZS.includes(String(this.value))?String(this.value):'30';
+        try{localStorage.setItem('rq_dashboard_summary_juz_v1',v);}catch(e){}
+        renderStudentInfo(name);
+      });
+    }
   }
   function dashboardLevelSuratList(name,juz,level){
     if(level>=7){
@@ -8430,5 +8443,60 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
     },180);
   }
   window.rqInputQuickJump=jump;
+})();
+</script>
+<style id="rq-dashboard-sticky-student-info-v1">
+/* Ringkasan identitas Dashboard Persantri tetap terlihat saat menggulir, agar nama santri dan progres tetap terbaca saat screenshot. */
+body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo{
+  position:sticky!important;
+  top:72px!important;
+  z-index:70!important;
+  padding:4px 0!important;
+  background:rgba(248,250,252,.94)!important;
+  backdrop-filter:blur(10px)!important;
+  -webkit-backdrop-filter:blur(10px)!important;
+}
+body.dark.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo{
+  background:rgba(15,23,42,.94)!important;
+}
+body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo > div{
+  box-shadow:0 4px 14px rgba(15,23,42,.08)!important;
+}
+@media(max-width:640px){
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo{
+    top:58px!important;
+    padding:3px 0!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .grid{
+    gap:.35rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rounded-2xl{
+    border-radius:.75rem!important;
+    padding:.55rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .text-sm{
+    font-size:.78rem!important;
+    line-height:1.1rem!important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .text-xl{
+    font-size:1rem!important;
+    line-height:1.2rem!important;
+  }
+}
+</style>
+<script id="rq-dashboard-sticky-student-info-v1-js">
+(function(){
+  'use strict';
+  function refresh(){
+    const box=document.getElementById('rqDashboardStudentInfo');
+    const active=document.body.classList.contains('tracker-dashboard-active');
+    if(!box)return;
+    box.style.zIndex=active?'70':'';
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh);
+  else refresh();
+  document.addEventListener('click',function(e){
+    if(e.target.closest('#trackerMenu-dashboard'))setTimeout(refresh,0);
+  });
 })();
 </script>
