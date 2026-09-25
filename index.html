@@ -153,6 +153,71 @@
             }
         }
 
+        /* Sticky navigasi global: kembali ke atas + scroll otomatis ke bawah.
+           Berlaku di semua menu, termasuk tampilan HP. */
+        #floatingScrollNav {
+            position: fixed;
+            right: 16px;
+            bottom: 18px;
+            z-index: 2147483001;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: stretch;
+            pointer-events: none;
+        }
+        #floatingScrollNav button {
+            pointer-events: auto;
+            min-height: 42px;
+            padding: 0 14px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,.18);
+            box-shadow: 0 10px 28px rgba(2,44,34,.24);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            font-size: 10px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform .18s ease, opacity .18s ease, background .18s ease;
+        }
+        #floatingScrollNav #floatingScrollTopBtn {
+            position: static;
+            right: auto;
+            bottom: auto;
+            z-index: auto;
+            min-height: 42px;
+            padding: 0 14px;
+            background: rgba(6,95,70,.96);
+            box-shadow: 0 10px 28px rgba(2,44,34,.24);
+        }
+        #floatingScrollBottomBtn {
+            background: rgba(37,99,235,.96);
+        }
+        #floatingScrollNav button:hover {
+            transform: translateY(-2px);
+        }
+        #floatingScrollNav button:active {
+            transform: translateY(0) scale(.97);
+        }
+        @media (max-width: 640px) {
+            #floatingScrollNav {
+                right: 10px;
+                bottom: 10px;
+                gap: 6px;
+            }
+            #floatingScrollNav button,
+            #floatingScrollNav #floatingScrollTopBtn {
+                min-height: 40px;
+                padding: 0 12px;
+                font-size: 9px;
+            }
+        }
+
         @media (max-width: 1023px) {
             #inlineWaReportPanel { order: 2; width: 100%; }
             #santriGridContainer { order: 1; width: 100%; }
@@ -3348,19 +3413,90 @@
         });
 
         window.scrollToAppHeader = function() {
-            const header = document.getElementById('appHeader');
-            if (header) {
-                header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Jangan memakai header.scrollIntoView(): header bersifat sticky sehingga
+            // pada beberapa browser mobile halaman terlihat tidak bergerak.
+            const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const behavior = reduceMotion ? 'auto' : 'smooth';
+            const scrollTargets = [document.scrollingElement, document.documentElement, document.body];
+
+            // Pulangkan semua kemungkinan scroll container utama ke posisi paling atas.
+            scrollTargets.forEach((el) => {
+                if (!el) return;
+                try { el.scrollTo({ top: 0, left: 0, behavior }); } catch (e) { el.scrollTop = 0; el.scrollLeft = 0; }
+            });
+
+            // Beberapa layout mobile/browser dapat membuat main wrapper menjadi
+            // scroll container. Reset juga container yang memang memiliki scroll.
+            document.querySelectorAll('#trackerPageContent, #trackerAppLayout, main').forEach((el) => {
+                if (!el) return;
+                const canScroll = el.scrollHeight > el.clientHeight + 2;
+                const overflowY = getComputedStyle(el).overflowY;
+                if (canScroll && (overflowY === 'auto' || overflowY === 'scroll')) {
+                    try { el.scrollTo({ top: 0, left: 0, behavior }); } catch (e) { el.scrollTop = 0; el.scrollLeft = 0; }
+                }
+            });
+
+            // Jalankan sekali lagi pada frame berikutnya agar perubahan layout mobile
+            // yang baru selesai tidak mengembalikan posisi scroll lama.
+            requestAnimationFrame(() => {
+                try { window.scrollTo({ top: 0, left: 0, behavior }); } catch (e) { window.scroll(0, 0); }
+                if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            });
+        };
+
+        window.scrollToAppBottom = function() {
+            const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const behavior = reduceMotion ? 'auto' : 'smooth';
+            const root = document.scrollingElement || document.documentElement || document.body;
+            const target = Math.max(0, (root?.scrollHeight || document.documentElement.scrollHeight || document.body.scrollHeight) - window.innerHeight);
+            try {
+                window.scrollTo({ top: target, left: 0, behavior });
+            } catch (e) {
+                window.scrollTo(0, target);
             }
+            // Reset possible inner scroll containers used by mobile layouts only when they are real scrollers.
+            document.querySelectorAll('#trackerPageContent, #trackerAppLayout, main').forEach((el) => {
+                if (!el) return;
+                const canScroll = el.scrollHeight > el.clientHeight + 2;
+                const overflowY = getComputedStyle(el).overflowY;
+                if (canScroll && (overflowY === 'auto' || overflowY === 'scroll')) {
+                    const innerTarget = Math.max(0, el.scrollHeight - el.clientHeight);
+                    try { el.scrollTo({ top: innerTarget, left: 0, behavior }); }
+                    catch (e) { el.scrollTop = innerTarget; el.scrollLeft = 0; }
+                }
+            });
+            requestAnimationFrame(() => {
+                const r = document.scrollingElement || document.documentElement || document.body;
+                const finalTarget = Math.max(0, (r?.scrollHeight || document.documentElement.scrollHeight || document.body.scrollHeight) - window.innerHeight);
+                try { window.scrollTo({ top: finalTarget, left: 0, behavior }); } catch (e) { window.scrollTo(0, finalTarget); }
+            });
         };
 
         window.addEventListener('scroll', () => {
-            const btn = document.getElementById('floatingScrollTopBtn');
-            if (!btn) return;
-            if (window.scrollY > 350) btn.classList.remove('opacity-0', 'pointer-events-none');
-            else btn.classList.add('opacity-0', 'pointer-events-none');
+            const topBtn = document.getElementById('floatingScrollTopBtn');
+            const bottomBtn = document.getElementById('floatingScrollBottomBtn');
+            const root = document.scrollingElement || document.documentElement;
+            const y = window.scrollY || root?.scrollTop || 0;
+            const maxY = Math.max(0, (root?.scrollHeight || document.documentElement.scrollHeight || document.body.scrollHeight) - window.innerHeight);
+            if (topBtn) {
+                if (y > 120) topBtn.style.opacity = '1';
+                else topBtn.style.opacity = '.72';
+                topBtn.style.pointerEvents = 'auto';
+            }
+            if (bottomBtn) {
+                if (maxY - y > 120) bottomBtn.style.opacity = '1';
+                else bottomBtn.style.opacity = '.72';
+                bottomBtn.style.pointerEvents = 'auto';
+            }
+        }, { passive: true });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const topBtn = document.getElementById('floatingScrollTopBtn');
+            const bottomBtn = document.getElementById('floatingScrollBottomBtn');
+            if (topBtn) { topBtn.style.opacity = '.72'; topBtn.style.pointerEvents = 'auto'; }
+            if (bottomBtn) { bottomBtn.style.opacity = '.72'; bottomBtn.style.pointerEvents = 'auto'; }
         });
     
 
@@ -3552,9 +3688,14 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-full flex flex-col antialiased">
 <div class="fixed top-4 right-4 z-[20000] space-y-2 w-[min(92vw,420px)] pointer-events-none" id="toastContainer"></div>
-<button aria-label="Kembali ke atas" class="opacity-0 pointer-events-none" id="floatingScrollTopBtn" onclick="window.scrollToAppHeader()" title="Kembali ke atas" type="button">
+<div aria-label="Navigasi halaman" id="floatingScrollNav">
+<button aria-label="Kembali ke atas" id="floatingScrollTopBtn" onclick="window.scrollToAppHeader()" title="Kembali ke atas" type="button">
 <i class="fa-solid fa-arrow-up"></i><span>Kembali ke atas</span>
 </button>
+<button aria-label="Scroll ke bawah" id="floatingScrollBottomBtn" onclick="window.scrollToAppBottom()" title="Scroll otomatis ke bawah" type="button">
+<i class="fa-solid fa-arrow-down"></i><span>Ke bawah</span>
+</button>
+</div>
 <header class="bg-emerald-800 dark:bg-emerald-950 text-white shadow-md sticky top-0 z-40 border-b border-emerald-700/50" id="appHeader">
 <div class="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 py-2.5 flex items-center gap-3">
 <div class="flex items-center gap-2.5 min-w-0 shrink-0">
