@@ -5399,6 +5399,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     `;
     document.head.appendChild(st);
   }
+  // Expose the helper because the WA Wali module lives in a separate IIFE.
+  // Without this bridge, clicking the WA Wali menu throws ReferenceError and
+  // the panel is never created.
+  window.ensureWaWaliPreviewStyle=ensureWaWaliPreviewStyle;
 
   function init(){
     loadSettings();renderHafalanJuzSettings();renderHafalanTracker();
@@ -6474,7 +6478,7 @@ function renderOptions(){
         r.rows.forEach((x,index)=>{
           const nomor=index+1;
           const surat=String(x.surat||'').trim();
-          const arabic=arabicFor(surat);
+          const arabic=typeof window.rqArabicFor==='function'?window.rqArabicFor(surat):'';
           const namaSurat=arabic ? `${surat} ${arabic}` : surat;
 
           if(x.selesai){
@@ -6531,7 +6535,7 @@ function renderOptions(){
       const special=!r.rows.length;
       const title=level<=6?`Level ${level}`:(level===7?'Level 7':'Level 8');
       const desc=special?(level===7?'Evaluasi & Pertanyaan':'Ujian Tasmi\' Semua Surat Juz tersebut'):`${r.done} dari ${r.total} surat selesai`;
-      const items=(!compact&&r.rows.length)?`<div class="mt-2 grid gap-1.5">${r.rows.map((x,i)=>{const arabic=arabicFor(x.surat);const nama=arabic?`${x.surat} ${arabic}`:x.surat;return `<div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[12px] leading-5 font-black ${x.selesai?'text-emerald-700':'text-slate-700'}">${i+1}. ${x.selesai?'☑':'☐'} ${esc(nama)}</div><div class="text-[11px] leading-4 text-slate-600 mt-0.5">${x.total?(x.selesai?'Sudah hafal, sampai ayat '+x.total+'/'+x.total:(x.sampai>0?'Sampai ayat '+Math.min(x.sampai,x.total)+'/'+x.total:'Belum hafal')):''}</div>${x.selesai?"<div class='text-[10px] font-bold text-amber-700 mt-1'>Jangan lupa dimuroja'ah</div>":''}</div><span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-md ${x.selesai?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-500'}">${x.selesai?'Selesai':'Proses'}</span></div></div>`}).join('')}</div>`:'';
+      const items=(!compact&&r.rows.length)?`<div class="mt-2 grid gap-1.5">${r.rows.map((x,i)=>{const arabic=typeof window.rqArabicFor==='function'?window.rqArabicFor(x.surat):'';const nama=arabic?`${x.surat} ${arabic}`:x.surat;return `<div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[12px] leading-5 font-black ${x.selesai?'text-emerald-700':'text-slate-700'}">${i+1}. ${x.selesai?'☑':'☐'} ${esc(nama)}</div><div class="text-[11px] leading-4 text-slate-600 mt-0.5">${x.total?(x.selesai?'Sudah hafal, sampai ayat '+x.total+'/'+x.total:(x.sampai>0?'Sampai ayat '+Math.min(x.sampai,x.total)+'/'+x.total:'Belum hafal')):''}</div>${x.selesai?"<div class='text-[10px] font-bold text-amber-700 mt-1'>Jangan lupa dimuroja'ah</div>":''}</div><span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-md ${x.selesai?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-500'}">${x.selesai?'Selesai':'Proses'}</span></div></div>`}).join('')}</div>`:'';
       cards.push(`<div class="wa-wali-level-card rounded-xl border ${r.pct===100?'border-emerald-200 bg-emerald-50/50':'border-slate-200 bg-slate-50'} p-3.5"><div class="flex items-center justify-between gap-2"><div class="font-black text-sm text-slate-800">${r.checked?'☑':'☐'} ${title} <span class="text-emerald-700">— ${r.pct}%</span></div><span class="text-[10px] font-black text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded-md">${r.pct}%</span></div><div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mt-2"><div class="h-full bg-emerald-500" style="width:${r.pct}%"></div></div><div class="mt-2 text-[10px] font-bold text-slate-500">${desc}</div>${items}</div>`);
     }
     box.innerHTML=`<div class="space-y-3.5">
@@ -6564,7 +6568,7 @@ function renderOptions(){
     window.open(url,'_blank');
   }
   function init(){
-    ensureWaWaliPreviewStyle();
+    if(typeof window.ensureWaWaliPreviewStyle==='function') window.ensureWaWaliPreviewStyle();
     const nav=document.querySelector('#appHeader nav > div');
     const content=document.getElementById('trackerPageContent');
     if(!nav||!content)return;
@@ -6746,8 +6750,11 @@ function renderOptions(){
   function send(){const text=document.getElementById('waKondisiReportOutput')?.value||'';if(!text)return;const s=santri().find(x=>String(x.name)===(document.getElementById('waKondisiSantriSelect')?.value||''));const phone=String(s?.phone||s?.noHp||s?.nomorHp||s?.wa||'').replace(/\D/g,'');window.open(phone?`https://wa.me/${phone}?text=${encodeURIComponent(text)}`:`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');}
   function ensure(){
     const nav=document.querySelector('#appHeader nav > div'),content=document.getElementById('trackerPageContent');if(!nav||!content)return false;
-    let b=document.getElementById('trackerMenu-wa-kondisi');if(b)b.style.display='none';
-    b.onclick=openMenu;
+    let b=document.getElementById('trackerMenu-wa-kondisi');
+    if(b){
+      b.style.display='none';
+      b.onclick=openMenu;
+    }
     let panel=document.getElementById('tracker-panel-wa-kondisi');if(!panel){panel=document.createElement('div');panel.id='tracker-panel-wa-kondisi';panel.className='tracker-menu-panel';panel.style.display='none';panel.dataset.panelHidden='1';panel.innerHTML=`<div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
   <div>
     <h3 class="font-black text-base text-emerald-800 dark:text-emerald-300"><i class="fa-brands fa-whatsapp mr-1"></i> Laporan Wali Santri — Kondisi Persurat</h3>
@@ -8010,6 +8017,93 @@ function renderOptions(){
 })();
 </script>
 
+
+
+<script id="rq-wa-wali-click-final-v1">
+(function(){
+  'use strict';
+  const BTN_ID='trackerMenu-wa-wali';
+  const PANEL_ID='tracker-panel-wa-wali';
+
+  function hidePanels(){
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
+      p.style.setProperty('display','none','important');
+      p.style.setProperty('visibility','hidden','important');
+      p.style.setProperty('pointer-events','none','important');
+      p.dataset.panelHidden='1';
+    });
+  }
+
+  function activateButton(){
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(b){
+      b.classList.remove('bg-white','text-emerald-900','shadow');
+      b.classList.remove('text-emerald-50','hover:bg-emerald-700');
+      if(b.id===BTN_ID)b.classList.add('bg-white','text-emerald-900','shadow');
+      else b.classList.add('text-emerald-50','hover:bg-emerald-700');
+    });
+  }
+
+  function open(){
+    try{
+      let panel=document.getElementById(PANEL_ID);
+      if(!panel && typeof window.renderWaWaliSantriReport==='function'){
+        try{ window.renderWaWaliSantriReport(); }catch(err){ console.error('WA Wali render:',err); }
+        panel=document.getElementById(PANEL_ID);
+      }
+      if(!panel){
+        console.error('Panel Laporan WA Wali Santri tidak ditemukan.');
+        return false;
+      }
+      hidePanels();
+      panel.style.setProperty('display','block','important');
+      panel.style.setProperty('visibility','visible','important');
+      panel.style.setProperty('pointer-events','auto','important');
+      panel.dataset.panelHidden='0';
+      document.body.setAttribute('data-tracker-active-menu','wa-wali');
+      document.body.classList.remove('tracker-hafalan-active');
+      document.body.classList.remove('tracker-dashboard-active');
+      activateButton();
+      if(typeof window.renderWaWaliSantriReport==='function'){
+        try{window.renderWaWaliSantriReport();}catch(err){console.error('WA Wali report:',err);}
+      }
+      window.scrollTo({top:0,behavior:'smooth'});
+      return true;
+    }catch(err){
+      console.error('WA Wali click error:',err);
+      return false;
+    }
+  }
+
+  function bind(){
+    const nav=document.querySelector('#appHeader nav > div');
+    if(!nav)return;
+    const btn=document.getElementById(BTN_ID);
+    if(!btn)return;
+    btn.type='button';
+    btn.style.pointerEvents='auto';
+    btn.style.position='relative';
+    btn.style.zIndex='30';
+    btn.onclick=function(e){e.preventDefault();e.stopPropagation();open();};
+    if(btn.dataset.rqWaFinalBound!=='1'){
+      btn.addEventListener('click',function(e){
+        e.preventDefault();e.stopImmediatePropagation();open();
+      },true);
+      btn.dataset.rqWaFinalBound='1';
+    }
+    window.__openWaWaliPersonalPanel=open;
+  }
+
+  function init(){
+    bind();
+    setTimeout(bind,100);
+    setTimeout(bind,500);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
+  window.addEventListener('load',function(){setTimeout(bind,100);});
+  window.addEventListener('pageshow',function(){setTimeout(bind,100);});
+})();
+</script>
 </html>
 
 <style id="rq-final-menu-readability-v1">
