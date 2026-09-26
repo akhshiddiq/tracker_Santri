@@ -42,75 +42,152 @@
             isolation: isolate;
         }
 
-        /* Tampilan santri yang sedang aktif di Form Setoran */
+        /* Tampilan santri yang sedang aktif di Form Setoran — fokus tengah, merah terang/tua */
         #trackingSelectedSantri {
             position: relative;
             overflow: hidden;
-            background: linear-gradient(135deg, rgba(236,253,245,.98), rgba(240,253,250,.92));
-            border: 2px solid rgba(16,185,129,.55) !important;
-            box-shadow: 0 8px 20px rgba(16,185,129,.10);
+            min-height: 150px;
+            padding: 28px 24px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 52%, #fecdd3 100%) !important;
+            border: 2px solid #fb7185 !important;
+            border-left: 6px solid #dc2626 !important;
+            border-radius: 18px !important;
+            box-shadow: 0 10px 28px rgba(220,38,38,.14);
             transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
         }
         #trackingSelectedSantri::before {
             content: '';
             position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 5px;
-            background: linear-gradient(180deg, #10b981, #059669);
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.72), transparent 58%);
         }
         #trackingSelectedSantri .selected-santri-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            display: inline-flex;
+            display: none !important;
+        }
+        #trackingSelectedSantri > .min-w-0 {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            margin-left: 0 !important;
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex: 0 0 auto;
-            background: rgba(16,185,129,.13);
-            color: #047857;
-            border: 1px solid rgba(16,185,129,.22);
         }
         #trackingSelectedSantri .selected-santri-label {
-            font-size: 9px;
+            font-size: 11px;
             line-height: 1.2;
             font-weight: 900;
-            letter-spacing: .04em;
+            letter-spacing: .08em;
             text-transform: uppercase;
-            color: #64748b;
+            color: #b91c1c;
+            margin-bottom: 7px;
         }
         #trackingSelectedSantri .selected-santri-name {
-            margin-top: 2px;
-            font-size: 14px;
-            line-height: 1.35;
+            margin-top: 0;
+            font-size: clamp(20px, 2.2vw, 28px);
+            line-height: 1.2;
             font-weight: 900;
-            color: #065f46;
+            color: #991b1b;
             overflow-wrap: anywhere;
         }
         #trackingSelectedSantri .selected-santri-meta {
-            margin-top: 3px;
-            font-size: 9px;
-            line-height: 1.3;
+            margin-top: 8px;
+            font-size: 11px;
+            line-height: 1.4;
             font-weight: 800;
-            color: #64748b;
+            color: #be123c;
         }
         html.dark #trackingSelectedSantri {
-            background: linear-gradient(135deg, rgba(2,44,34,.72), rgba(6,78,59,.42));
-            border-color: rgba(16,185,129,.52) !important;
-            box-shadow: 0 8px 20px rgba(0,0,0,.18);
+            background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 55%, #991b1b 100%) !important;
+            border-color: #f87171 !important;
+            border-left-color: #ef4444 !important;
+            box-shadow: 0 10px 28px rgba(127,29,29,.35);
         }
-        html.dark #trackingSelectedSantri .selected-santri-icon {
-            background: rgba(16,185,129,.14);
-            color: #6ee7b7;
-            border-color: rgba(110,231,183,.22);
-        }
-        html.dark #trackingSelectedSantri .selected-santri-label,
-        html.dark #trackingSelectedSantri .selected-santri-meta {
-            color: #94a3b8;
+        html.dark #trackingSelectedSantri .selected-santri-label {
+            color: #fecaca;
         }
         html.dark #trackingSelectedSantri .selected-santri-name {
-            color: #6ee7b7;
+            color: #fff1f2;
+        }
+        html.dark #trackingSelectedSantri .selected-santri-meta {
+            color: #fecdd3;
+        }
+        @media (max-width: 640px) {
+            #trackingSelectedSantri {
+                min-height: 125px;
+                padding: 22px 16px !important;
+            }
+            #trackingSelectedSantri .selected-santri-name {
+                font-size: 21px;
+            }
+        }
+
+
+        /* Tombol buka/tutup Input Level — dibuat lebih lebar dan sedikit lebih besar */
+        #trackingLevelChecklistToggle {
+            min-height: 58px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #7e22ce, #9333ea);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,.22);
+            box-shadow: 0 8px 18px rgba(126,34,206,.18);
+            transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+        }
+        #trackingLevelChecklistToggle:hover {
+            filter: brightness(1.04);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(126,34,206,.24);
+        }
+        #trackingLevelChecklistToggle:active {
+            transform: translateY(0) scale(.99);
+        }
+        #trackingLevelChecklistToggle h4 {
+            color: #fff !important;
+            font-size: 14px;
+            line-height: 1.25;
+        }
+        #trackingLevelChecklistToggle > div:first-child {
+            gap: 10px;
+        }
+        #trackingLevelChecklistToggleIcon {
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            background: rgba(255,255,255,.16);
+            color: #fff !important;
+            font-size: 13px !important;
+            border: 1px solid rgba(255,255,255,.18);
+        }
+        #trackingLevelChecklistStatus {
+            padding: 6px 10px;
+            border-radius: 9999px;
+            background: rgba(255,255,255,.14);
+            color: #fff !important;
+            font-size: 10px;
+            border: 1px solid rgba(255,255,255,.18);
+        }
+        @media (max-width: 640px) {
+            #trackingLevelChecklistToggle {
+                min-height: 56px;
+                padding: 11px 13px;
+            }
+            #trackingLevelChecklistToggle h4 {
+                font-size: 13px;
+            }
+            #trackingLevelChecklistStatus {
+                font-size: 9px;
+                padding: 5px 8px;
+            }
         }
 
         /* Tombol kembali ke header: tetap di kanan bawah dan muncul saat halaman sudah turun. */
@@ -350,6 +427,149 @@
         /* Laporan Level Perkelas: nama santri berada di header terang, jadi tetap gelap saat mode gelap */
         html.dark #tracker-panel-wa-kelas .wa-kelas-santri-name { color: #0f172a !important; }
         html.dark #tracker-panel-wa-kelas .wa-kelas-santri-class { color: #475569 !important; }
+
+/* ============================================================
+   INPUT — KELOMPOK WARNA AGAR SETIAP BAGIAN MUDAH DIBACA
+   Hanya visual/UI, tidak mengubah fungsi atau data.
+   ============================================================ */
+#tracker-panel-input > div:first-child {
+  --input-radius: 18px;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri),
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal),
+#tracker-panel-input > div:first-child > div:has(#trackingArah),
+#tracker-panel-input > div:first-child > div:has(#trackingSurat),
+#tracker-panel-input > div:first-child > div:has(#trackingAyatDari),
+#tracker-panel-input > div:first-child > div:has(#trackingProgressContainer),
+#tracker-panel-input > div:first-child > div:has(#trackingCatatan),
+#tracker-panel-input > div:first-child > div:has(#trackingLastSubmitted) {
+  padding: 16px !important;
+  border-radius: var(--input-radius);
+  border-width: 2px;
+  border-style: solid;
+}
+
+/* Santri */
+#tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri) {
+  background: linear-gradient(135deg,#fff1f2,#ffe4e6) !important;
+  border-color: #fda4af !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri) > label {
+  color:#9f1239 !important;
+}
+
+/* Tanggal + Juz */
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal) {
+  background: linear-gradient(135deg,#eff6ff,#dbeafe) !important;
+  border-color:#93c5fd !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal) label {
+  color:#1e40af !important;
+}
+
+/* Arah + Level */
+#tracker-panel-input > div:first-child > div:has(#trackingArah) {
+  background: linear-gradient(135deg,#f5f3ff,#ede9fe) !important;
+  border-color:#c4b5fd !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingArah) label {
+  color:#5b21b6 !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingArah) > div:has(#trackingLevelSuratList) {
+  background:#ecfeff !important;
+  border-color:#67e8f9 !important;
+}
+
+/* Surat */
+#tracker-panel-input > div:first-child > div:has(#trackingSurat) {
+  background: linear-gradient(135deg,#fff7ed,#ffedd5) !important;
+  border-color:#fdba74 !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingSurat) label {
+  color:#9a3412 !important;
+}
+
+/* Ayat */
+#tracker-panel-input > div:first-child > div:has(#trackingAyatDari) {
+  background: linear-gradient(135deg,#ecfeff,#cffafe) !important;
+  border-color:#67e8f9 !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingAyatDari) label {
+  color:#155e75 !important;
+}
+
+/* Progress */
+#tracker-panel-input > div:first-child > div:has(#trackingProgressContainer) {
+  background: linear-gradient(135deg,#ecfdf5,#d1fae5) !important;
+  border-color:#86efac !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingProgressContainer) #trackingProgressContainer > div {
+  background:transparent !important;
+  border:0 !important;
+  padding:0 !important;
+}
+
+/* Penilaian */
+#tracker-panel-input > div:first-child > div:has(#rqInputSectionPenilaian) {
+  background: linear-gradient(135deg,#eff6ff,#e0f2fe) !important;
+  border-color:#7dd3fc !important;
+}
+#tracker-panel-input .tracking-assessment-option {
+  border-color:#bae6fd !important;
+  background:rgba(255,255,255,.9) !important;
+}
+#tracker-panel-input .tracking-assessment-option:hover {
+  border-color:#38bdf8 !important;
+  transform:translateY(-1px);
+}
+
+/* Catatan */
+#tracker-panel-input > div:first-child > div:has(#trackingCatatan) {
+  background: linear-gradient(135deg,#fffbeb,#fef3c7) !important;
+  border-color:#fcd34d !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingCatatan) label {
+  color:#92400e !important;
+}
+
+/* Murojaah */
+#tracker-panel-input > div:first-child > div:has(#trackingLastSubmitted) {
+  background: linear-gradient(135deg,#fff1f2,#ffe4e6) !important;
+  border-color:#fda4af !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingLastSubmitted) h4 {
+  color:#9f1239 !important;
+}
+#tracker-panel-input #trackingMurojaahStatus label {
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+#tracker-panel-input #trackingMurojaahStatus label:hover {
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(15,23,42,.08);
+}
+
+/* Semua field di dalam kelompok mengikuti warna dasar yang lebih jelas */
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal) input,
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal) select,
+#tracker-panel-input > div:first-child > div:has(#trackingArah) input,
+#tracker-panel-input > div:first-child > div:has(#trackingArah) select,
+#tracker-panel-input > div:first-child > div:has(#trackingSurat) input,
+#tracker-panel-input > div:first-child > div:has(#trackingAyatDari) input,
+#tracker-panel-input > div:first-child > div:has(#trackingCatatan) textarea {
+  background:rgba(255,255,255,.82) !important;
+}
+
+/* Tampilan gelap tetap berwarna, tetapi tidak menyilaukan */
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri){background:linear-gradient(135deg,#4c0519,#881337)!important;border-color:#be123c!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingTanggal){background:linear-gradient(135deg,#172554,#1e3a8a)!important;border-color:#3b82f6!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingArah){background:linear-gradient(135deg,#2e1065,#4c1d95)!important;border-color:#8b5cf6!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingSurat){background:linear-gradient(135deg,#431407,#7c2d12)!important;border-color:#f97316!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingAyatDari){background:linear-gradient(135deg,#083344,#164e63)!important;border-color:#06b6d4!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingProgressContainer){background:linear-gradient(135deg,#022c22,#065f46)!important;border-color:#10b981!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#rqInputSectionPenilaian){background:linear-gradient(135deg,#082f49,#075985)!important;border-color:#38bdf8!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingCatatan){background:linear-gradient(135deg,#451a03,#78350f)!important;border-color:#f59e0b!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingLastSubmitted){background:linear-gradient(135deg,#4c0519,#881337)!important;border-color:#f43f5e!important}
+
 </style>
 <script>
         window.santriList = [
@@ -3682,6 +3902,71 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
   #trackingStudentList, #trackingStudentCount{
     display:none!important;
   }
+}
+</style>
+
+
+<style id="visual-only-name-and-table-enhancement">
+/* VISUAL ONLY: memperbesar nama santri di menu Tracker dan mempertebal warna tabel.
+   Tidak mengubah HTML, data, event, fungsi, atau alur kerja. */
+.santri-name-sticky{
+  min-height:82px !important;
+  padding:16px 20px !important;
+  border:2px solid rgba(255,255,255,.42) !important;
+  box-shadow:0 7px 18px rgba(0,0,0,.18) !important;
+  background-image:linear-gradient(135deg,#047857 0%,#059669 48%,#10b981 100%) !important;
+}
+.santri-name-sticky h3{
+  font-size:clamp(20px,2.1vw,28px) !important;
+  line-height:1.15 !important;
+  font-weight:900 !important;
+  letter-spacing:-.02em !important;
+  text-shadow:0 2px 5px rgba(0,0,0,.25);
+}
+.santri-name-sticky .text-white{font-weight:900 !important}
+@media (max-width:640px){
+  .santri-name-sticky{
+    min-height:72px !important;
+    padding:13px 14px !important;
+  }
+  .santri-name-sticky h3{
+    font-size:21px !important;
+  }
+}
+
+/* Checklist Level: warna tiap kelompok Juz dibuat lebih tebal */
+#trackingLevelChecklist > div{
+  border-width:3px !important;
+  box-shadow:0 4px 10px rgba(15,23,42,.07);
+}
+#trackingLevelChecklist > div:nth-child(1){
+  background:linear-gradient(135deg,#dcfce7,#bbf7d0) !important;
+  border-color:#16a34a !important;
+}
+#trackingLevelChecklist > div:nth-child(2){
+  background:linear-gradient(135deg,#dbeafe,#bfdbfe) !important;
+  border-color:#2563eb !important;
+}
+#trackingLevelChecklist > div:nth-child(3){
+  background:linear-gradient(135deg,#ffedd5,#fed7aa) !important;
+  border-color:#f97316 !important;
+}
+#trackingLevelChecklist > div:nth-child(4){
+  background:linear-gradient(135deg,#fce7f3,#fbcfe8) !important;
+  border-color:#db2777 !important;
+}
+#trackingLevelChecklist > div > div:last-child > label{
+  border-width:2px !important;
+  background:rgba(255,255,255,.82) !important;
+  box-shadow:0 2px 5px rgba(15,23,42,.05);
+}
+#trackingLevelChecklist > div:nth-child(1) > div:last-child > label{border-color:#22c55e !important}
+#trackingLevelChecklist > div:nth-child(2) > div:last-child > label{border-color:#60a5fa !important}
+#trackingLevelChecklist > div:nth-child(3) > div:last-child > label{border-color:#fb923c !important}
+#trackingLevelChecklist > div:nth-child(4) > div:last-child > label{border-color:#f472b6 !important}
+#trackingLevelChecklist > div > div:first-child{
+  font-size:13px !important;
+  font-weight:900 !important;
 }
 </style>
 
@@ -7728,6 +8013,22 @@ function renderOptions(){
   window.rqSyncAllInputData=syncAll;
 })();
 </script>
+
+<style id="rq-dashboard-sticky-mobile-fix-v3">
+/* MOBILE ONLY: beri jarak aman dari header agar kartu nama santri tidak tertutup saat scroll. */
+@media (max-width: 640px){
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo{
+    top: 76px !important;
+    z-index: 100 !important;
+    margin-top: 0 !important;
+    scroll-margin-top: 76px !important;
+  }
+  body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .rq-dashboard-sticky-grid{
+    position: relative !important;
+    z-index: 101 !important;
+  }
+}
+</style>
 </body>
 
 <style id="rq-dashboard-persantri-v1-style">
@@ -8300,6 +8601,25 @@ body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1
   function install(){
     window.switchTrackerMenu=dispatch;
     window.__rqFinalMenuDispatcherInstalled=true;
+    /* Pastikan menu Input tidak hilang saat pertama kali halaman dibuka.
+       Beberapa script lama menjalankan switchTrackerMenu sebelum dispatcher final terpasang. */
+    const initialMenu=document.body.getAttribute('data-tracker-active-menu')||'input';
+    dispatch(initialMenu);
+    /* Jaga panel aktif tetap tampil jika script lama mengubah style display. */
+    if(!window.__rqMenuVisibilityGuardInstalled){
+      window.__rqMenuVisibilityGuardInstalled=true;
+      setInterval(function(){
+        const menu=document.body.getAttribute('data-tracker-active-menu')||'input';
+        const id=({input:'tracker-panel-input',hafalan:'tracker-panel-hafalan',capaian:'tracker-panel-capaian',history:'tracker-panel-history',bacaan:'tracker-panel-bacaan',dashboard:'tracker-panel-dashboard',data:'rqDataPanel'})[menu];
+        if(!id)return;
+        const panel=document.getElementById(id);
+        if(panel && (panel.dataset.panelHidden!=='0' || getComputedStyle(panel).display==='none')){
+          panel.dataset.panelHidden='0';
+          panel.style.setProperty('display','block','important');
+          if(menu==='data'){panel.style.setProperty('visibility','visible','important');panel.style.setProperty('pointer-events','auto','important');}
+        }
+      },500);
+    }
     /* Pastikan dua menu dinamis tetap bisa dibuka meskipun script lama mencoba membungkus switchTrackerMenu. */
     document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
       if(btn.id==='trackerMenu-wa-wali' || btn.id==='trackerMenu-wa-kelas'){
@@ -8566,6 +8886,47 @@ body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .
     line-height:1rem!important;
   }
 }
+
+/* ============================================================
+   INPUT — WARNA KELOMPOK DIPERTEGAS
+   ============================================================ */
+#tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri),
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal),
+#tracker-panel-input > div:first-child > div:has(#trackingArah),
+#tracker-panel-input > div:first-child > div:has(#trackingSurat),
+#tracker-panel-input > div:first-child > div:has(#trackingAyatDari),
+#tracker-panel-input > div:first-child > div:has(#trackingProgressContainer),
+#tracker-panel-input > div:first-child > div:has(#rqInputSectionPenilaian),
+#tracker-panel-input > div:first-child > div:has(#trackingCatatan),
+#tracker-panel-input > div:first-child > div:has(#trackingLastSubmitted) {
+  border-width: 3px !important;
+  box-shadow: 0 5px 16px rgba(15,23,42,.08) !important;
+}
+#tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri) { background:linear-gradient(135deg,#fecdd3,#fda4af)!important;border-color:#e11d48!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal) { background:linear-gradient(135deg,#bfdbfe,#93c5fd)!important;border-color:#2563eb!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingArah) { background:linear-gradient(135deg,#ddd6fe,#c4b5fd)!important;border-color:#7c3aed!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingArah) > div:has(#trackingLevelSuratList) { background:#a5f3fc!important;border-color:#0891b2!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingSurat) { background:linear-gradient(135deg,#fed7aa,#fdba74)!important;border-color:#ea580c!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingAyatDari) { background:linear-gradient(135deg,#a5f3fc,#67e8f9)!important;border-color:#0891b2!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingProgressContainer) { background:linear-gradient(135deg,#bbf7d0,#86efac)!important;border-color:#16a34a!important; }
+#tracker-panel-input > div:first-child > div:has(#rqInputSectionPenilaian) { background:linear-gradient(135deg,#bae6fd,#7dd3fc)!important;border-color:#0284c7!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingCatatan) { background:linear-gradient(135deg,#fde68a,#fcd34d)!important;border-color:#d97706!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingLastSubmitted) { background:linear-gradient(135deg,#fecdd3,#fda4af)!important;border-color:#e11d48!important; }
+#tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri) > label,
+#tracker-panel-input > div:first-child > div:has(#trackingTanggal) label,
+#tracker-panel-input > div:first-child > div:has(#trackingArah) label,
+#tracker-panel-input > div:first-child > div:has(#trackingSurat) label,
+#tracker-panel-input > div:first-child > div:has(#trackingAyatDari) label,
+#tracker-panel-input > div:first-child > div:has(#trackingCatatan) label { font-weight:900!important; }
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingSelectedSantri){background:linear-gradient(135deg,#881337,#be123c)!important;border-color:#fb7185!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingTanggal){background:linear-gradient(135deg,#1e3a8a,#2563eb)!important;border-color:#60a5fa!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingArah){background:linear-gradient(135deg,#4c1d95,#7c3aed)!important;border-color:#a78bfa!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingSurat){background:linear-gradient(135deg,#7c2d12,#ea580c)!important;border-color:#fb923c!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingAyatDari){background:linear-gradient(135deg,#164e63,#0891b2)!important;border-color:#22d3ee!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingProgressContainer){background:linear-gradient(135deg,#065f46,#16a34a)!important;border-color:#4ade80!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#rqInputSectionPenilaian){background:linear-gradient(135deg,#075985,#0284c7)!important;border-color:#38bdf8!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingCatatan){background:linear-gradient(135deg,#78350f,#d97706)!important;border-color:#fbbf24!important}
+html.dark #tracker-panel-input > div:first-child > div:has(#trackingLastSubmitted){background:linear-gradient(135deg,#881337,#be123c)!important;border-color:#fb7185!important}
 </style>
 
 <script id="rq-dashboard-sticky-student-info-v1-js">
@@ -8582,5 +8943,189 @@ body.tracker-dashboard-active #tracker-panel-dashboard #rqDashboardStudentInfo .
   document.addEventListener('click',function(e){
     if(e.target.closest('#trackerMenu-dashboard'))setTimeout(refresh,0);
   });
+})();
+</script>
+<style id="rq-data-backup-v1-style">
+#rqDataPanel{display:none}
+#rqDataPanel.rq-data-open{display:block}
+.rq-data-card{border:2px solid #cbd5e1;border-radius:18px;background:#fff;padding:16px;box-shadow:0 6px 18px rgba(15,23,42,.06)}
+.rq-data-title{font-size:15px;font-weight:900;color:#0f172a}.rq-data-sub{font-size:11px;font-weight:700;color:#64748b;margin-top:3px}
+.rq-data-status{padding:12px;border-radius:14px;background:#f8fafc;border:2px solid #e2e8f0;font-size:11px;font-weight:800}
+.rq-data-status.on{background:#ecfdf5;border-color:#34d399;color:#047857}.rq-data-status.off{background:#fff1f2;border-color:#fb7185;color:#be123c}
+.rq-data-btn{min-height:46px;border-radius:12px;padding:10px 14px;font-size:11px;font-weight:900;border:2px solid transparent;cursor:pointer}
+.rq-data-btn-primary{background:#047857;color:#fff}.rq-data-btn-primary:hover{background:#065f46}.rq-data-btn-blue{background:#2563eb;color:#fff}.rq-data-btn-blue:hover{background:#1d4ed8}
+.rq-data-btn-amber{background:#d97706;color:#fff}.rq-data-btn-amber:hover{background:#b45309}.rq-data-btn-rose{background:#dc2626;color:#fff}.rq-data-btn-rose:hover{background:#b91c1c}
+.rq-data-btn-muted{background:#f1f5f9;color:#334155;border-color:#cbd5e1}.rq-data-btn-muted:hover{background:#e2e8f0}
+.rq-data-switch{display:flex;gap:8px;flex-wrap:wrap}.rq-data-switch button{flex:1;min-width:100px}
+.rq-data-file{display:none}.rq-data-preview{margin-top:12px;max-height:260px;overflow:auto;border:2px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:10px;font-size:10px}
+.rq-data-preview table{width:100%;border-collapse:collapse}.rq-data-preview th,.rq-data-preview td{border:1px solid #cbd5e1;padding:6px;text-align:left;white-space:nowrap}.rq-data-preview th{background:#e2e8f0;font-weight:900}
+.dark .rq-data-card{background:#0f172a;border-color:#334155}.dark .rq-data-title{color:#f8fafc}.dark .rq-data-sub{color:#94a3b8}.dark .rq-data-status{background:#111827;border-color:#334155}.dark .rq-data-btn-muted{background:#1e293b;color:#e2e8f0;border-color:#475569}.dark .rq-data-preview{background:#111827;border-color:#334155}.dark .rq-data-preview th,.dark .rq-data-preview td{border-color:#475569}.dark .rq-data-preview th{background:#1e293b}
+@media(max-width:767px){#rqDataPanel{margin-top:10px}.rq-data-card{padding:13px}.rq-data-btn{width:100%}.rq-data-switch{flex-direction:column}}
+</style>
+<script id="rq-data-backup-v1">
+(function(){
+'use strict';
+const DB_NAME='rq_data_backup_db_v1', STORE='handles', HANDLE_KEY='backup-folder';
+const SETTINGS_KEY='rq_data_backup_settings_v1';
+const UI_KEYS=new Set(['rq_tracker_dark','rq_live_report_font_size','rq_inline_live_report_open','rq_inline_live_report_type',SETTINGS_KEY]);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function appDataKeys(){const out=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||UI_KEYS.has(k))continue;out.push(k)}return out.sort();}
+function safeParse(raw,fallback){try{return JSON.parse(raw)}catch(e){return fallback}}
+function dataSnapshot(){const data={};appDataKeys().forEach(k=>{const raw=localStorage.getItem(k);data[k]=safeParse(raw,raw)});return {format:'RQ_ALKHANSA_BACKUP',version:1,createdAt:new Date().toISOString(),keys:Object.keys(data).length,data};}
+function countData(v){if(Array.isArray(v))return v.length; if(v&&typeof v==='object')return Object.values(v).reduce((n,x)=>n+countData(x),0); return v==null||v===''?0:1;}
+function totalCount(snapshot){return Object.values(snapshot.data||{}).reduce((n,v)=>n+(Array.isArray(v)?v.length:(v&&typeof v==='object'?Object.keys(v).length:1)),0)}
+function db(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function getHandle(){try{const d=await db();return await new Promise((res,rej)=>{const q=d.transaction(STORE,'readonly').objectStore(STORE).get(HANDLE_KEY);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)})}catch(e){return null}}
+async function setHandle(h){const d=await db();return new Promise((res,rej)=>{const q=d.transaction(STORE,'readwrite').objectStore(STORE).put(h,HANDLE_KEY);q.onsuccess=()=>res(true);q.onerror=()=>rej(q.error)})}
+async function clearHandle(){try{const d=await db();await new Promise((res,rej)=>{const q=d.transaction(STORE,'readwrite').objectStore(STORE).delete(HANDLE_KEY);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)});return true}catch(e){return false}}
+function getSettings(){return safeParse(localStorage.getItem(SETTINGS_KEY)||'{}',{})||{}}
+function saveSettings(s){localStorage.setItem(SETTINGS_KEY,JSON.stringify(s))}
+function backupOn(){return getSettings().enabled===true}
+function setBackupState(on){const s=getSettings();s.enabled=!!on;saveSettings(s);renderStatus()}
+async function verifyPermission(h,write){if(!h)return false;try{if(h.queryPermission){let p=await h.queryPermission({mode:'readwrite'});if(p==='granted')return true;if(write&&h.requestPermission){p=await h.requestPermission({mode:'readwrite'});return p==='granted'}return p==='granted'}return true}catch(e){return false}}
+async function pickFolder(){if(!window.showDirectoryPicker){toast('Browser ini belum mendukung pemilihan folder langsung. Gunakan Chrome/Edge versi terbaru.','error');return}try{const h=await window.showDirectoryPicker({mode:'readwrite'});if(!(await verifyPermission(h,true))){toast('Izin folder tidak diberikan.','error');return}await setHandle(h);const s=getSettings();s.folderName=h.name||'Folder terpilih';s.selectedAt=new Date().toISOString();saveSettings(s);renderStatus();toast('Folder backup berhasil dipilih.','success')}catch(e){if(e?.name!=='AbortError')toast('Gagal memilih folder backup.','error')}}
+async function resetFolder(){await clearHandle();const s=getSettings();delete s.folderName;delete s.selectedAt;saveSettings(s);renderStatus();toast('Folder backup direset.','success')}
+function toast(msg,type){if(typeof window.showToast==='function')window.showToast(msg,type||'success');else alert(msg)}
+async function requireBackup(reason){if(!backupOn())return true;const h=await getHandle();if(!h){toast('Backup Pengaman ON. Pilih folder simpan terlebih dahulu sebelum '+reason+'.','error');openData();return false}if(!(await verifyPermission(h,true))){toast('Izin folder backup belum tersedia. Pilih/izinkan folder terlebih dahulu.','error');openData();return false}return true}
+async function writeBackup(reason){const h=await getHandle();if(!h)return false;if(!(await verifyPermission(h,true)))return false;const snap=dataSnapshot();const stamp=new Date().toISOString().replace(/[:.]/g,'-');const name='Backup_RQ_AlKhansa_'+stamp+'.json';try{const f=await h.getFileHandle(name,{create:true});const w=await f.createWritable();await w.write(JSON.stringify(snap,null,2));await w.close();const s=getSettings();s.lastBackup=name;s.lastBackupAt=new Date().toISOString();saveSettings(s);renderStatus();return true}catch(e){console.error('Backup Pengaman:',e);toast('Backup gagal. Data asli tidak diubah.','error');return false}}
+window.rqEnsureBackup=async function(reason){return await requireBackup(reason||'operasi berisiko')};
+window.rqCreateBackup=async function(reason){if(!backupOn())return true;const ok=await requireBackup(reason||'operasi berisiko');if(!ok)return false;return await writeBackup(reason||'operasi berisiko')};
+function openData(){const p=document.getElementById('rqDataPanel');if(!p)return;document.body.setAttribute('data-tracker-active-menu','data');document.body.classList.remove('tracker-hafalan-active','tracker-dashboard-active');document.querySelectorAll('.tracker-menu-panel').forEach(x=>{if(x!==p){x.dataset.panelHidden='1';x.style.display='none'}});p.classList.add('rq-data-open');p.dataset.panelHidden='0';p.style.setProperty('display','block','important');p.style.setProperty('visibility','visible','important');p.style.setProperty('pointer-events','auto','important');document.querySelectorAll('.tracker-menu-btn').forEach(b=>b.classList.remove('bg-white','text-emerald-900','shadow'));const b=document.getElementById('trackerMenu-data');if(b)b.classList.add('bg-white','text-emerald-900','shadow');window.scrollTo({top:0,behavior:'smooth'});renderStatus()}
+function closeData(){const p=document.getElementById('rqDataPanel');if(p){p.classList.remove('rq-data-open');p.dataset.panelHidden='1';p.style.display='none';p.style.removeProperty('visibility');p.style.removeProperty('pointer-events')}}
+window.openTrackerDataMenu=openData;
+// Saat menu Tracker lain dibuka, panel Data ikut ditutup agar tidak menumpuk.
+document.addEventListener('click',function(e){
+  const b=e.target.closest?.('.tracker-menu-btn');
+  if(b && b.id!=='trackerMenu-data') closeData();
+},true);
+function renderStatus(){const s=getSettings(),on=!!s.enabled,h=window.__rqBackupHandleName;const state=document.getElementById('rqBackupState'),folder=document.getElementById('rqBackupFolder'),last=document.getElementById('rqBackupLast');if(state){state.className='rq-data-status '+(on?'on':'off');state.innerHTML=on?'<b>BACKUP PENGAMAN: ON</b><br>Operasi berisiko wajib berhasil backup sebelum data diubah.':'<b>BACKUP PENGAMAN: OFF</b><br>Operasi berjalan tanpa backup pengaman.'}if(folder)folder.innerHTML=h?`<b>Folder:</b> ${esc(h)}<br><span style="font-size:10px">Lokasi lengkap tidak dapat dibaca browser. File ditulis langsung ke folder yang Anda pilih.</span>`:'<b>Folder:</b> Belum dipilih';if(last)last.textContent=s.lastBackup?`Backup terakhir: ${s.lastBackup}`:'Belum ada backup pengaman.'}
+async function refreshHandleInfo(){const h=await getHandle();window.__rqBackupHandleName=h?.name||'';renderStatus()}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+function downloadAllCsvNamed(){const name=prompt('Nama file CSV:',`Data_Santri_RQ_AlKhansa_${new Date().toISOString().split('T')[0]}`);if(name===null)return;const old=window.downloadDataCSV;if(typeof old!=='function'){toast('Fungsi Download Semua Data CSV tidak tersedia.','error');return}const a=document.createElement('a');let captured=null;const orig=URL.createObjectURL;try{window.downloadDataCSV=old;old();toast('CSV dibuat dengan struktur dan isi yang sama seperti fitur lama.','success')}finally{window.downloadDataCSV=old}}
+function parseCsv(text){const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim()!=='');if(!lines.length)return {headers:[],rows:[]};const parseLine=line=>{const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++}else q=!q}else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);return out};const headers=parseLine(lines[0]);const rows=lines.slice(1).map(parseLine).filter(r=>r.some(v=>String(v).trim()!==''));return {headers,rows}}
+function csvToMaster(parsed){const idx={};parsed.headers.forEach((h,i)=>idx[String(h).trim().toLowerCase()]=i);return parsed.rows.map(r=>({name:r[idx['nama santri']]||'',class:r[idx['kelas']]||'',teacher:r[idx['pengajar']]||'',lastBacaan:r[idx['bacaan terakhir']]||'-',lastHafalan:r[idx['hafalan terakhir']]||'-',lastMurojaah:r[idx['murojaah terakhir']]||'-',lastTugas:r[idx['tugas terakhir']]||'-'})).filter(x=>x.name)}
+function stableIdentity(x){
+  if(!x||typeof x!=='object')return null;
+  if(x.id!=null)return 'id:'+String(x.id);
+  if(x.groupId!=null)return 'group:'+String(x.groupId);
+  if(x.timestamp&&x.name&&x.detail)return 'row:'+String(x.name)+'|'+String(x.timestamp)+'|'+String(x.detail);
+  /* Target Hafalan multi-surat: identitas target tidak boleh bergantung pada progress. */
+  const name=x.santri??x.name??x.studentName;
+  const juz=x.juz??x.juzNumber;
+  const arah=x.arah??x.direction;
+  const level=x.level??x.levelNumber;
+  const surat=x.surat??x.surah;
+  const dari=x.ayatDari??x.ayatAwal??x.startAyat;
+  const sampai=x.ayatSampai??x.ayatAkhir??x.endAyat;
+  const periode=x.periode??x.period??x.periodId;
+  if(name!=null&&(juz!=null||surat!=null)&&(surat!=null||level!=null||periode!=null)){
+    return 'target:'+JSON.stringify([String(name),juz!=null?String(juz):'',arah!=null?String(arah):'',level!=null?String(level):'',surat!=null?String(surat):'',dari!=null?String(dari):'',sampai!=null?String(sampai):'',periode!=null?String(periode):'']);
+  }
+  /* Item target multi-surat dapat tidak membawa nama santri.
+     Gunakan identitas surat + rentang ayat + konteks target, bukan progress. */
+  if(surat!=null && (dari!=null || sampai!=null)){
+    return 'target-item:'+JSON.stringify([juz!=null?String(juz):'',arah!=null?String(arah):'',level!=null?String(level):'',String(surat),dari!=null?String(dari):'',sampai!=null?String(sampai):'',periode!=null?String(periode):'']);
+  }
+  return null;
+}
+function dataSignature(x){const ident=stableIdentity(x);if(ident)return ident;if(x&&typeof x==='object'){try{return 'json:'+JSON.stringify(x,Object.keys(x).sort())}catch(e){}}return typeof x+':'+String(x)}
+function mergeValue(a,b){
+  if(Array.isArray(a)&&Array.isArray(b)){
+    const out=a.slice();
+    const index=new Map();
+    out.forEach((x,i)=>index.set(dataSignature(x),i));
+    b.forEach(x=>{
+      const sig=dataSignature(x);
+      if(index.has(sig)){
+        const i=index.get(sig);
+        out[i]=mergeValue(out[i],x);
+      }else{
+        index.set(sig,out.length);
+        out.push(x);
+      }
+    });
+    return out;
+  }
+  if(a&&typeof a==='object'&&b&&typeof b==='object'&&!Array.isArray(a)&&!Array.isArray(b)){
+    const out={...a};
+    Object.keys(b).forEach(k=>{out[k]=k in out?mergeValue(out[k],b[k]):b[k]});
+    return out;
+  }
+  return b;
+}
+function parseBackupObject(obj){return obj&&obj.format==='RQ_ALKHANSA_BACKUP'&&obj.data&&typeof obj.data==='object'?obj:null}
+let pendingImport=null;
+function showPreview(file,obj){const box=document.getElementById('rqImportPreview');if(!box)return;let html=`<b>File:</b> ${esc(file.name)} · ${(file.size/1024).toFixed(1)} KB<br>`;if(obj.kind==='backup'){const keys=Object.keys(obj.snapshot.data||{});html+=`<b>Format:</b> Backup Pengaman JSON · <b>Jumlah key data:</b> ${keys.length} · <b>Jumlah data:</b> ${totalCount(obj.snapshot)}<br><b>Preview key:</b> ${esc(keys.slice(0,12).join(', '))}${keys.length>12?' …':''}`}else{html+=`<b>Format:</b> CSV · <b>Jumlah data:</b> ${obj.parsed.rows.length}<div style="margin-top:8px;overflow:auto"><table><thead><tr>${obj.parsed.headers.slice(0,10).map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${obj.parsed.rows.slice(0,5).map(r=>`<tr>${r.slice(0,10).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}box.innerHTML=html;box.style.display='block'}
+async function selectImport(file){if(!file)return;try{const text=await file.text();const b=safeParse(text,null);if(parseBackupObject(b)){pendingImport={kind:'backup',snapshot:b,file};showPreview(file,pendingImport);return}const parsed=parseCsv(text);if(!parsed.headers.length){throw new Error('File tidak berisi data.')}pendingImport={kind:'csv',parsed,file};showPreview(file,pendingImport)}catch(e){pendingImport=null;const box=document.getElementById('rqImportPreview');if(box){box.innerHTML='<b>File tidak valid.</b> Pastikan file berasal dari Backup Pengaman JSON atau Download Semua Data CSV.';box.style.display='block'}toast('File import tidak valid.','error')}}
+function captureAppStorage(){const snap={};appDataKeys().forEach(k=>snap[k]=localStorage.getItem(k));return snap}
+function restoreAppStorage(snap){appDataKeys().forEach(k=>localStorage.removeItem(k));Object.entries(snap||{}).forEach(([k,v])=>localStorage.setItem(k,v))}
+function prepareImportData(mode,p){
+  const current=captureAppStorage();
+  if(p.kind==='csv'){
+    const list=csvToMaster(p.parsed);
+    if(mode==='replace'){current.rq_santri_master=JSON.stringify(list)}
+    else{const cur=safeParse(current.rq_santri_master||'[]',[]);current.rq_santri_master=JSON.stringify(mergeValue(Array.isArray(cur)?cur:[],list))}
+    return current;
+  }
+  const incoming=p.snapshot.data||{};
+  if(mode==='replace'){
+    const next={};
+    Object.entries(incoming).forEach(([k,v])=>{next[k]=typeof v==='string'?v:JSON.stringify(v)});
+    return next;
+  }
+  Object.entries(incoming).forEach(([k,v])=>{
+    const curRaw=current[k];
+    if(curRaw==null){current[k]=typeof v==='string'?v:JSON.stringify(v);return}
+    const cur=safeParse(curRaw,null);
+    const merged=mergeValue(cur,v);
+    current[k]=JSON.stringify(merged);
+  });
+  return current;
+}
+function commitAppStorage(next){
+  const before=captureAppStorage();
+  try{
+    appDataKeys().forEach(k=>localStorage.removeItem(k));
+    Object.entries(next||{}).forEach(([k,v])=>localStorage.setItem(k,v));
+    return true;
+  }catch(e){
+    try{restoreAppStorage(before)}catch(rollbackError){console.error('Rollback import gagal:',rollbackError)}
+    throw e;
+  }
+}
+async function importData(mode){
+  if(!pendingImport){toast('Pilih file dan lihat preview terlebih dahulu.','error');return}
+  if(!(await requireBackup(mode==='replace'?'Ganti Data':'Gabungkan Data')))return;
+  if(backupOn()){const ok=await writeBackup(mode==='replace'?'Ganti Data':'Gabungkan Data');if(!ok){toast('Backup gagal. Data asli tidak diubah.','error');return}}
+  const p=pendingImport;
+  try{
+    const next=prepareImportData(mode,p);
+    /* Semua nilai baru sudah disiapkan sebagai nilai Local Storage; data lama non-JSON tetap dipertahankan apa adanya. */
+    commitAppStorage(next);
+    pendingImport=null;
+    const f=document.getElementById('rqImportFile');if(f)f.value='';
+    const box=document.getElementById('rqImportPreview');if(box){box.style.display='none';box.innerHTML=''}
+    await window.loadLocalData?.(true);
+    window.renderSantriCardsAndTable?.();window.renderTrackingDashboard?.();window.renderTrackingHistory?.();window.renderHafalanTracker?.();window.renderCapaianLevelSantri?.();
+    toast(mode==='replace'?'Import & Ganti berhasil.':'Import & Gabungkan berhasil.','success');
+  }catch(e){
+    console.error('Import gagal:',e);
+    toast('Import gagal. Data asli dipulihkan dan tidak diubah.','error');
+  }
+}
+function dataPanelHtml(){return `<div class="space-y-4"><div class="rq-data-card"><div class="rq-data-title"><i class="fa-solid fa-database mr-1"></i> Data</div><div class="rq-data-sub">Backup, download, dan import data tanpa mengubah struktur data aplikasi.</div></div><div class="rq-data-card"><div class="rq-data-title">Backup Pengaman</div><div class="rq-data-sub">Backup otomatis dilakukan sebelum operasi berisiko.</div><div id="rqBackupState" class="rq-data-status off mt-3"></div><div class="rq-data-switch mt-3"><button class="rq-data-btn rq-data-btn-primary" type="button" onclick="window.rqSetBackup(true)">Backup Pengaman ON</button><button class="rq-data-btn rq-data-btn-muted" type="button" onclick="window.rqSetBackup(false)">Backup Pengaman OFF</button></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><button class="rq-data-btn rq-data-btn-blue" type="button" onclick="window.rqPickBackupFolder()">Pilih Folder Simpan</button><button class="rq-data-btn rq-data-btn-muted" type="button" onclick="window.rqResetBackupFolder()">Reset Folder</button></div><div id="rqBackupFolder" class="rq-data-status mt-3"></div><div id="rqBackupLast" class="text-[10px] font-bold text-slate-500 mt-2"></div></div><div class="rq-data-card"><div class="rq-data-title">Download Data</div><div class="rq-data-sub">Download Semua Data CSV tetap memakai struktur dan isi CSV yang sudah ada.</div><button class="rq-data-btn rq-data-btn-blue mt-3" type="button" onclick="window.rqDownloadAllCsv()"><i class="fa-solid fa-file-csv mr-1"></i> Download Semua Data CSV</button></div><div class="rq-data-card"><div class="rq-data-title">Import Data</div><div class="rq-data-sub">Gunakan Backup Pengaman JSON untuk seluruh data. CSV tetap didukung untuk data santri sesuai format lama.</div><input id="rqImportFile" class="rq-data-file" type="file" accept=".json,.csv,application/json,text/csv" onchange="window.rqImportFileChanged(this.files[0])"><button class="rq-data-btn rq-data-btn-blue mt-3" type="button" onclick="document.getElementById('rqImportFile').click()">Pilih File Import</button><div id="rqImportPreview" class="rq-data-preview" style="display:none"></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><button class="rq-data-btn rq-data-btn-rose" type="button" onclick="window.rqImport('replace')">Import &amp; Ganti</button><button class="rq-data-btn rq-data-btn-amber" type="button" onclick="window.rqImport('merge')">Import &amp; Gabungkan</button></div></div><div class="rq-data-card"><div class="rq-data-title">Rekapan</div><div class="rq-data-sub">Download Rekapan CSV tetap terpisah dan tidak dimasukkan ke Download Semua Data.</div><button class="rq-data-btn rq-data-btn-muted mt-3" type="button" onclick="window.rqDownloadRekapan()"><i class="fa-solid fa-file-csv mr-1"></i> Download Rekapan CSV</button></div></div>`}
+window.rqSetBackup=async on=>{if(on){const h=await getHandle();if(!h){toast('Pilih Folder Simpan terlebih dahulu untuk mengaktifkan Backup Pengaman.','error');await pickFolder();const h2=await getHandle();if(!h2)return} }setBackupState(on)};
+window.rqPickBackupFolder=pickFolder;window.rqResetBackupFolder=resetFolder;window.rqImportFileChanged=selectImport;window.rqImport=async mode=>{if(!confirm(mode==='replace'?'Yakin Import & Ganti? Data aplikasi akan diganti dengan data dari file.':'Yakin Import & Gabungkan? Data yang sama tidak akan dibuat ulang.'))return;await importData(mode)};
+window.rqDownloadAllCsv=()=>{const name=prompt('Nama file CSV (tanpa .csv):',`Data_Santri_RQ_AlKhansa_${new Date().toISOString().split('T')[0]}`);if(name===null)return;const list=Array.isArray(window.santriList)?window.santriList:[];if(!list.length){toast('Data santri belum tersedia.','error');return}const historyKeys={bacaan:'rq_history_bacaan',hafalan:'rq_history_hafalan',murojaah:'rq_history_murojaah',tugas:'rq_history_tugas'},latest={};Object.entries(historyKeys).forEach(([type,key])=>{const rows=safeParse(localStorage.getItem(key)||'[]',[]);(Array.isArray(rows)?rows:[]).forEach(row=>{const n=String(row?.name||'').trim().toLowerCase();if(!n)return;const t=Number(row?.rawTime||new Date(row?.timestamp||0).getTime()||0);if(!latest[type]?.[n]||t>latest[type][n].time){latest[type]=latest[type]||{};latest[type][n]={time:t,detail:String(row?.detail||'-'),tanggal:String(row?.tanggal||'-')}}})});const headers=['Nama Santri','Kelas','Pengajar','Bacaan Terakhir','Hafalan Terakhir','Murojaah Terakhir','Tugas Terakhir'];const rows=[headers.map(csvCell).join(',')];const get=(type,s)=>{const r=latest[type]?.[String(s?.name||'').trim().toLowerCase()];return r?.detail||s?.[`last${type.charAt(0).toUpperCase()+type.slice(1)}`]||'-'};list.forEach(s=>rows.push([s?.name||'-',s?.class||'-',s?.teacher||'-',get('bacaan',s),get('hafalan',s),get('murojaah',s),get('tugas',s)].map(csvCell).join(',')));const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=(name.trim().replace(/\.csv$/i,'')||'Data_Santri')+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('Download Semua Data CSV berhasil.','success')};
+window.rqDownloadRekapan=()=>{const list=safeParse(localStorage.getItem('rq_history_rekapan')||'[]',[]);if(!Array.isArray(list)||!list.length){toast('Belum ada data Rekapan.','error');return}const name=prompt('Nama file Rekapan CSV:',`Rekapan_RQ_AlKhansa_${new Date().toISOString().split('T')[0]}`);if(name===null)return;const headers=['Timestamp','Tanggal','ID','Nama Santri','Kategori','Catatan'];const rows=[headers.map(csvCell).join(',')];list.forEach(r=>rows.push([r.timestamp||'',r.tanggal||'',r.id||'',r.name||'',r.category||'',r.catatan||''].map(csvCell).join(',')));const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=(name.trim().replace(/\.csv$/i,'')||'Rekapan_RQ_AlKhansa')+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('Download Rekapan CSV berhasil.','success')};
+function installPanel(){if(document.getElementById('rqDataPanel'))return;const nav=document.querySelector('#appHeader nav > div');const content=document.getElementById('trackerPageContent');if(!nav||!content){setTimeout(installPanel,250);return}const b=document.createElement('button');b.type='button';b.id='trackerMenu-data';b.className='tracker-menu-btn px-3 py-2 rounded-xl bg-emerald-700/80 dark:bg-emerald-900 text-emerald-50 text-[10px] sm:text-xs font-black transition whitespace-nowrap shrink-0 border border-emerald-600/60';b.innerHTML='<i class="fa-solid fa-database mr-1"></i> Data';b.onclick=openData;nav.appendChild(b);const p=document.createElement('div');p.id='rqDataPanel';p.className='tracker-menu-panel';p.dataset.panelHidden='1';p.innerHTML=dataPanelHtml();content.appendChild(p);refreshHandleInfo();renderStatus()}
+function patchRisky(){
+ if(window.__rqDataRiskPatched)return;window.__rqDataRiskPatched=true;
+ const wrap=(name,reason)=>{const orig=window[name];if(typeof orig!=='function'||orig.__rqBackupWrapped)return;const fn=async function(...args){if(!(await requireBackup(reason)))return; if(backupOn()&&!(await writeBackup(reason)))return; return orig.apply(this,args)};fn.__rqBackupWrapped=true;window[name]=fn};
+ wrap('resetDailyLogsOnly','Reset Data');wrap('clearTrackingHistory','penghapusan data Tracking');wrap('deleteMateri','penghapusan data Materi');wrap('deleteCardHistoryItem','penghapusan riwayat');wrap('deleteMassalHistory','penghapusan riwayat bersama');
+}
+function init(){installPanel();patchRisky();refreshHandleInfo();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();window.addEventListener('load',()=>{installPanel();patchRisky();refreshHandleInfo()});
 })();
 </script>
