@@ -3968,6 +3968,91 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
   font-size:13px !important;
   font-weight:900 !important;
 }
+
+
+/* ============================================================
+   PERBAIKAN KONTRAS MODE MALAM — MENU INPUT SETORAN
+   Visual saja. Tidak mengubah fungsi, data, event, atau alur input.
+   ============================================================ */
+html.dark #tracker-panel-input,
+html.dark #tracker-panel-input * {
+  --input-dark-text: #f8fafc;
+}
+
+/* Judul, label, keterangan, dan teks umum pada Input Setoran */
+html.dark #tracker-panel-input h1,
+html.dark #tracker-panel-input h2,
+html.dark #tracker-panel-input h3,
+html.dark #tracker-panel-input h4,
+html.dark #tracker-panel-input h5,
+html.dark #tracker-panel-input h6,
+html.dark #tracker-panel-input p,
+html.dark #tracker-panel-input label,
+html.dark #tracker-panel-input span,
+html.dark #tracker-panel-input .font-black,
+html.dark #tracker-panel-input .font-extrabold,
+html.dark #tracker-panel-input .font-bold {
+  color: #f1f5f9;
+}
+
+/* Jangan menimpa warna teks yang memang sengaja memakai warna aksen */
+html.dark #tracker-panel-input .text-emerald-300,
+html.dark #tracker-panel-input .text-emerald-400,
+html.dark #tracker-panel-input .text-cyan-300,
+html.dark #tracker-panel-input .text-violet-300,
+html.dark #tracker-panel-input .text-violet-600,
+html.dark #tracker-panel-input .text-rose-300,
+html.dark #tracker-panel-input .text-amber-300 {
+  color: inherit;
+}
+
+/* Field input/select/textarea: teks dan placeholder harus terbaca */
+html.dark #tracker-panel-input input,
+html.dark #tracker-panel-input select,
+html.dark #tracker-panel-input textarea {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #6ee7b7 !important;
+}
+html.dark #tracker-panel-input input::placeholder,
+html.dark #tracker-panel-input textarea::placeholder {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+html.dark #tracker-panel-input select option {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+/* Teks checklist level yang berada di kartu warna terang */
+html.dark #tracker-panel-input #trackingLevelChecklist,
+html.dark #tracker-panel-input #trackingLevelChecklist * {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+html.dark #tracker-panel-input #trackingLevelChecklist input[type="checkbox"] {
+  -webkit-text-fill-color: initial !important;
+}
+
+/* Header/menu Input Setoran: nama menu selalu memiliki kontras tinggi */
+html.dark #trackerMenu-input {
+  color: #064e3b !important;
+  -webkit-text-fill-color: #064e3b !important;
+  background-color: #ffffff !important;
+}
+html.dark #trackerMenu-hafalan,
+html.dark #trackerMenu-capaian,
+html.dark #trackerMenu-dashboard,
+html.dark #trackerMenu-pengaturan {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+/* Judul utama panel Input Setoran */
+html.dark #tracker-panel-input .text-white {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
 </style>
 
 </head>
@@ -8029,6 +8114,204 @@ function renderOptions(){
   }
 }
 </style>
+
+<script id="rq-data-master-santri-v1">
+(function(){
+  'use strict';
+  const MASTER_KEY='rq_santri_master';
+
+  function esc(v){
+    return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function list(){ return Array.isArray(window.santriList) ? window.santriList : []; }
+  function nextId(){
+    let max=0;
+    list().forEach(s=>{
+      const m=String(s?.id||'').match(/^IDSRQ(\d+)$/i);
+      if(m) max=Math.max(max,Number(m[1])||0);
+    });
+    return 'IDSRQ'+String(max+1).padStart(3,'0');
+  }
+  function classes(){
+    return [...new Set(list().map(s=>String(s?.class||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+  }
+  function teachers(){
+    return [...new Set(list().map(s=>String(s?.teacher||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+  }
+  function refreshMasterId(){
+    const el=document.getElementById('rqNewSantriId');
+    if(el) el.value=nextId();
+  }
+  function fillDatalist(id,items){
+    const el=document.getElementById(id); if(!el)return;
+    el.innerHTML=items.map(x=>`<option value="${esc(x)}"></option>`).join('');
+  }
+  function refreshMasterOptions(){
+    fillDatalist('rqNewSantriClassList',classes());
+    fillDatalist('rqNewSantriTeacherList',teachers());
+    refreshMasterId();
+  }
+  function renderMasterTable(){
+    const box=document.getElementById('rqMasterSantriTable');
+    const count=document.getElementById('rqMasterSantriCount');
+    if(!box)return;
+    const q=String(document.getElementById('rqMasterSantriSearch')?.value||'').trim().toLowerCase();
+    const rows=list().filter(s=>!q || [s.id,s.name,s.class,s.teacher,s.phone,s.gender].some(v=>String(v||'').toLowerCase().includes(q)));
+    if(count)count.textContent=`${rows.length} dari ${list().length} santri`;
+    box.innerHTML=rows.length ? rows.map((s,i)=>`<tr class="border-b border-slate-100 dark:border-slate-700">
+      <td class="p-2.5 text-[10px] font-black text-slate-400">${i+1}</td>
+      <td class="p-2.5"><div class="text-xs font-black text-slate-800 dark:text-slate-100">${esc(s.name||'-')}</div><div class="text-[9px] font-bold text-slate-400">${esc(s.id||'-')}</div></td>
+      <td class="p-2.5 text-[10px] font-black text-slate-700 dark:text-slate-200">${esc(s.class||'-')}</td>
+      <td class="p-2.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">${esc(s.teacher||'-')}</td>
+      <td class="p-2.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">${esc(s.phone||'-')}</td>
+      <td class="p-2.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">${esc(s.gender||'-')}</td>
+    </tr>`).join('') : '<tr><td colspan="6" class="p-6 text-center text-xs font-bold text-slate-400">Data santri tidak ditemukan.</td></tr>';
+  }
+  function refreshAllNameSources(){
+    refreshMasterOptions();
+    renderMasterTable();
+    try{ window.renderTrackingClassSearch?.(window.trackingSelectedClass||''); }catch(e){}
+    try{ window.renderTrackingStudentList?.(); }catch(e){}
+    try{ window.renderTrackingSantriOptions?.(); }catch(e){}
+    try{ window.renderKartuCardGrid?.(window.kartuClassFilter||''); }catch(e){}
+    try{ window.renderWaWaliSantriReport?.(); }catch(e){}
+    try{ window.renderWaWaliSantriPersonal?.(); }catch(e){}
+    try{ window.renderWaKondisiPersuratReport?.(); }catch(e){}
+    try{ window.renderCapaianLevelSantri?.(); }catch(e){}
+    try{ window.renderHafalanTracker?.(); }catch(e){}
+    try{ window.renderBacaanSantriMenu?.(); }catch(e){}
+    try{ window.renderRiwayatInputMenu?.(); }catch(e){}
+    try{ window.renderSantriCardsAndTable?.(); }catch(e){}
+    try{ window.renderTrackingDashboardPersantri?.(); }catch(e){}
+    try{ document.dispatchEvent(new CustomEvent('rq:master-santri-updated',{detail:{count:list().length}})); }catch(e){}
+  }
+  function clearForm(){
+    ['rqNewSantriName','rqNewSantriClass','rqNewSantriTeacher','rqNewSantriPhone'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    const g=document.getElementById('rqNewSantriGender');if(g)g.value='';
+    refreshMasterId();
+    document.getElementById('rqNewSantriName')?.focus();
+  }
+  async function save(){
+    const name=String(document.getElementById('rqNewSantriName')?.value||'').trim();
+    const cls=String(document.getElementById('rqNewSantriClass')?.value||'').trim();
+    const teacher=String(document.getElementById('rqNewSantriTeacher')?.value||'').trim();
+    const phone=String(document.getElementById('rqNewSantriPhone')?.value||'').trim();
+    const gender=String(document.getElementById('rqNewSantriGender')?.value||'').trim();
+    if(!name || !cls || !teacher){ window.showToast?.('Nama, kelas, dan pengajar wajib diisi.','error'); return; }
+    const duplicate=list().find(s=>String(s?.name||'').trim().toLowerCase()===name.toLowerCase());
+    if(duplicate){ window.showToast?.(`Nama santri sudah ada: ${duplicate.name}`,'error'); return; }
+    const id=nextId();
+    const student={id,name,class:cls,teacher,phone,gender};
+    // Tambahkan ke master utama tanpa mengubah data santri yang sudah ada.
+    window.santriList.push(student);
+    localStorage.setItem(MASTER_KEY,JSON.stringify(window.santriList));
+    try{
+      if(typeof window.saveLocalChange==='function') await window.saveLocalChange({type:'master_santri_add',name,id});
+    }catch(e){
+      // Jika wrapper penyimpanan gagal, kembalikan data master ke keadaan sebelum penambahan.
+      window.santriList=window.santriList.filter(s=>s!==student);
+      localStorage.setItem(MASTER_KEY,JSON.stringify(window.santriList));
+      window.showToast?.('Santri gagal disimpan. Data lama dipertahankan.','error');
+      return;
+    }
+    refreshAllNameSources();
+    clearForm();
+    window.showToast?.(`${name} berhasil ditambahkan ke Data Santri.`,'success');
+  }
+  window.rqAddSantriBaru=save;
+  window.rqRefreshMasterSantri=refreshAllNameSources;
+
+  function buildCard(){
+    const panel=document.getElementById('rqDataPanel');
+    if(!panel || document.getElementById('rqMasterSantriCard'))return;
+    const card=document.createElement('div');
+    card.id='rqMasterSantriCard';
+    card.className='rq-data-card';
+    card.innerHTML=`
+      <div class="rq-data-title"><i class="fa-solid fa-user-plus mr-1"></i> Input Santri Baru</div>
+      <div class="rq-data-sub">Data yang disimpan di sini langsung menjadi bagian dari MASTER SANTRI dan otomatis muncul pada pencarian, pilihan nama, kartu, laporan, dan menu terkait.</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+        <div class="sm:col-span-2 lg:col-span-1">
+          <label class="block text-[10px] font-black text-slate-600 dark:text-slate-300 mb-1">ID Santri</label>
+          <input id="rqNewSantriId" readonly class="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-500" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-[10px] font-black text-slate-600 dark:text-slate-300 mb-1">Nama Santri <span class="text-rose-500">*</span></label>
+          <input id="rqNewSantriName" autocomplete="off" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black focus:border-emerald-500 outline-none" placeholder="Nama lengkap santri" />
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-600 dark:text-slate-300 mb-1">Kelas <span class="text-rose-500">*</span></label>
+          <input id="rqNewSantriClass" list="rqNewSantriClassList" autocomplete="off" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black focus:border-emerald-500 outline-none" placeholder="Pilih / ketik kelas" />
+          <datalist id="rqNewSantriClassList"></datalist>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-600 dark:text-slate-300 mb-1">Pengajar <span class="text-rose-500">*</span></label>
+          <input id="rqNewSantriTeacher" list="rqNewSantriTeacherList" autocomplete="off" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black focus:border-emerald-500 outline-none" placeholder="Pilih / ketik pengajar" />
+          <datalist id="rqNewSantriTeacherList"></datalist>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-600 dark:text-slate-300 mb-1">No. HP Wali</label>
+          <input id="rqNewSantriPhone" inputmode="tel" autocomplete="tel" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black focus:border-emerald-500 outline-none" placeholder="08xxxxxxxxxx" />
+        </div>
+        <div>
+          <label class="block text-[10px] font-black text-slate-600 dark:text-slate-300 mb-1">Jenis Kelamin</label>
+          <select id="rqNewSantriGender" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black focus:border-emerald-500 outline-none">
+            <option value="">-- Pilih --</option><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-2 mt-4">
+        <button type="button" onclick="window.rqAddSantriBaru()" class="rq-data-btn rq-data-btn-primary"><i class="fa-solid fa-user-plus mr-1"></i> Simpan Santri Baru</button>
+        <button type="button" onclick="window.rqRefreshMasterSantri()" class="rq-data-btn rq-data-btn-muted"><i class="fa-solid fa-rotate mr-1"></i> Refresh Data</button>
+      </div>
+      <div class="mt-5 border-t border-slate-200 dark:border-slate-700 pt-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div><div class="rq-data-title text-base">MASTER SANTRI</div><div class="rq-data-sub">Semua nama yang aktif dan akan digunakan oleh pencarian/menu aplikasi.</div></div>
+          <span id="rqMasterSantriCount" class="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg">0 santri</span>
+        </div>
+        <input id="rqMasterSantriSearch" oninput="window.rqRefreshMasterSantri()" class="w-full p-3 mb-3 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-xs font-black focus:border-emerald-500 outline-none" placeholder="Cari nama, ID, kelas, atau pengajar..." />
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <table class="w-full min-w-[720px] text-left"><thead class="bg-slate-50 dark:bg-slate-900"><tr>
+            <th class="p-2.5 text-[9px] font-black text-slate-500">No</th><th class="p-2.5 text-[9px] font-black text-slate-500">Nama / ID</th><th class="p-2.5 text-[9px] font-black text-slate-500">Kelas</th><th class="p-2.5 text-[9px] font-black text-slate-500">Pengajar</th><th class="p-2.5 text-[9px] font-black text-slate-500">HP Wali</th><th class="p-2.5 text-[9px] font-black text-slate-500">JK</th>
+          </tr></thead><tbody id="rqMasterSantriTable"></tbody></table>
+        </div>
+      </div>`;
+    // Input santri ditempatkan paling atas, sementara backup/import lama tetap utuh di bawahnya.
+    panel.insertBefore(card,panel.firstElementChild);
+    refreshAllNameSources();
+  }
+
+  function init(){
+    /*
+      Panel Data dibuat oleh script backup/data yang berada setelah script ini.
+      Karena itu jangan menganggap #rqDataPanel sudah tersedia saat init pertama.
+      Tunggu sampai panel benar-benar dibuat, lalu pasang card satu kali.
+      Tidak mengubah alur/fungsi data yang sudah ada.
+    */
+    if(!document.getElementById('rqDataPanel')){
+      if(window.__rqMasterSantriObserver)return;
+      const observer=new MutationObserver(()=>{
+        if(document.getElementById('rqDataPanel')){
+          observer.disconnect();
+          window.__rqMasterSantriObserver=null;
+          init();
+        }
+      });
+      window.__rqMasterSantriObserver=observer;
+      observer.observe(document.body,{childList:true,subtree:true});
+      return;
+    }
+    buildCard();
+    if(document.getElementById('rqMasterSantriCard')){
+      refreshMasterOptions();
+      renderMasterTable();
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,80),{once:true});
+  else setTimeout(init,80);
+  window.addEventListener('load',()=>setTimeout(init,120));
+})();
+</script>
 </body>
 
 <style id="rq-dashboard-persantri-v1-style">
@@ -8967,12 +9250,72 @@ html.dark #tracker-panel-input > div:first-child > div:has(#trackingLastSubmitte
 'use strict';
 const DB_NAME='rq_data_backup_db_v1', STORE='handles', HANDLE_KEY='backup-folder';
 const SETTINGS_KEY='rq_data_backup_settings_v1';
+const FORM_STATE_KEY='rq_form_input_state_v1';
+const VISUAL_SUMMARY_KEY='rq_backup_visual_summary_v1';
 const UI_KEYS=new Set(['rq_tracker_dark','rq_live_report_font_size','rq_inline_live_report_open','rq_inline_live_report_type',SETTINGS_KEY]);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function appDataKeys(){const out=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||UI_KEYS.has(k))continue;out.push(k)}return out.sort();}
 function safeParse(raw,fallback){try{return JSON.parse(raw)}catch(e){return fallback}}
-function dataSnapshot(){const data={};appDataKeys().forEach(k=>{const raw=localStorage.getItem(k);data[k]=safeParse(raw,raw)});return {format:'RQ_ALKHANSA_BACKUP',version:1,createdAt:new Date().toISOString(),keys:Object.keys(data).length,data};}
+function captureLiveFormState(){
+  const controls=[];
+  const root=document.getElementById('trackerPageContent')||document.body;
+  root.querySelectorAll('input,select,textarea').forEach(el=>{
+    const type=String(el.type||'').toLowerCase();
+    if(type==='file'||type==='password'||!el.id)return;
+    controls.push({id:el.id,name:el.name||'',type,value:el.value??'',checked:!!el.checked,selectedIndex:typeof el.selectedIndex==='number'?el.selectedIndex:null});
+  });
+  const cache=(window.localFormCache&&typeof window.localFormCache==='object')?JSON.parse(JSON.stringify(window.localFormCache)):{};
+  return {version:1,capturedAt:new Date().toISOString(),cache,controls};
+}
+function persistLiveFormState(){
+  try{const state=captureLiveFormState();localStorage.setItem(FORM_STATE_KEY,JSON.stringify(state));return state}catch(e){console.warn('Persist form state:',e);return null}
+}
+function restoreLiveFormState(){
+  try{
+    const state=safeParse(localStorage.getItem(FORM_STATE_KEY)||'null',null);
+    if(!state)return false;
+    window.localFormCache=(state.cache&&typeof state.cache==='object')?state.cache:{};
+    (state.controls||[]).forEach(item=>{
+      const el=document.getElementById(item.id);
+      if(!el)return;
+      const type=String(item.type||el.type||'').toLowerCase();
+      if(type==='checkbox'||type==='radio')el.checked=!!item.checked;
+      else if(type!=='file')el.value=item.value??'';
+    });
+    return true;
+  }catch(e){console.warn('Restore form state:',e);return false}
+}
+function scheduleRestoreLiveFormState(){
+  let tries=0;
+  const run=()=>{tries++;restoreLiveFormState();if(tries<8)setTimeout(run,350)};
+  setTimeout(run,120);
+}
+function buildVisualSummary(){
+  const list=Array.isArray(window.santriList)?window.santriList:[];
+  const summary={version:1,capturedAt:new Date().toISOString(),totalSantri:list.length,perKelas:{},santri:[]};
+  list.forEach(s=>{const kelas=String(s?.class||'-');summary.perKelas[kelas]=(summary.perKelas[kelas]||0)+1;});
+  list.forEach(s=>{
+    const name=String(s?.name||'');
+    const rows=[];
+    if(typeof window.rqUnifiedLevelReport==='function'){
+      [30,29,28,27,26,25].forEach(j=>{
+        [1,2,3,4,5,6,7,8].forEach(level=>{
+          try{const r=window.rqUnifiedLevelReport(name,j,level);if(r&&Number.isFinite(Number(r.pct)))rows.push({juz:j,level,pct:Number(r.pct||0),done:Number(r.done||0),total:Number(r.total||0)});}catch(e){}
+        });
+      });
+    }
+    summary.santri.push({id:s?.id||'',name,kelas:s?.class||'',pengajar:s?.teacher||'',levels:rows});
+  });
+  return summary;
+}
+function dataSnapshot(){
+  persistLiveFormState();
+  const visual=buildVisualSummary();
+  try{localStorage.setItem(VISUAL_SUMMARY_KEY,JSON.stringify(visual))}catch(e){}
+  const data={};appDataKeys().forEach(k=>{const raw=localStorage.getItem(k);data[k]=safeParse(raw,raw)});
+  return {format:'RQ_ALKHANSA_BACKUP',version:2,createdAt:new Date().toISOString(),keys:Object.keys(data).length,data,visualSummary:visual,description:'Backup lengkap data aplikasi, riwayat, target, form yang sedang terisi, dan ringkasan persentase capaian.'};
+}
 function countData(v){if(Array.isArray(v))return v.length; if(v&&typeof v==='object')return Object.values(v).reduce((n,x)=>n+countData(x),0); return v==null||v===''?0:1;}
 function totalCount(snapshot){return Object.values(snapshot.data||{}).reduce((n,v)=>n+(Array.isArray(v)?v.length:(v&&typeof v==='object'?Object.keys(v).length:1)),0)}
 function db(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
@@ -9075,6 +9418,12 @@ function prepareImportData(mode,p){
     return next;
   }
   Object.entries(incoming).forEach(([k,v])=>{
+    /* State form adalah snapshot tampilan/form saat backup dibuat.
+       Saat Gabungkan, jangan menumpuk array kontrol lama + baru; gunakan snapshot terbaru dari file. */
+    if(k===FORM_STATE_KEY||k===VISUAL_SUMMARY_KEY){
+      current[k]=typeof v==='string'?v:JSON.stringify(v);
+      return;
+    }
     const curRaw=current[k];
     if(curRaw==null){current[k]=typeof v==='string'?v:JSON.stringify(v);return}
     const cur=safeParse(curRaw,null);
@@ -9108,15 +9457,52 @@ async function importData(mode){
     const box=document.getElementById('rqImportPreview');if(box){box.style.display='none';box.innerHTML=''}
     await window.loadLocalData?.(true);
     window.renderSantriCardsAndTable?.();window.renderTrackingDashboard?.();window.renderTrackingHistory?.();window.renderHafalanTracker?.();window.renderCapaianLevelSantri?.();
-    toast(mode==='replace'?'Import & Ganti berhasil.':'Import & Gabungkan berhasil.','success');
+    scheduleRestoreLiveFormState();
+    toast(mode==='replace'?'Import & Ganti berhasil. Form, riwayat, target, dan data capaian ikut dipulihkan.':'Import & Gabungkan berhasil. Data dan form yang tersimpan ikut digabungkan.','success');
   }catch(e){
     console.error('Import gagal:',e);
     toast('Import gagal. Data asli dipulihkan dan tidak diubah.','error');
   }
 }
-function dataPanelHtml(){return `<div class="space-y-4"><div class="rq-data-card"><div class="rq-data-title"><i class="fa-solid fa-database mr-1"></i> Data</div><div class="rq-data-sub">Backup, download, dan import data tanpa mengubah struktur data aplikasi.</div></div><div class="rq-data-card"><div class="rq-data-title">Backup Pengaman</div><div class="rq-data-sub">Backup otomatis dilakukan sebelum operasi berisiko.</div><div id="rqBackupState" class="rq-data-status off mt-3"></div><div class="rq-data-switch mt-3"><button class="rq-data-btn rq-data-btn-primary" type="button" onclick="window.rqSetBackup(true)">Backup Pengaman ON</button><button class="rq-data-btn rq-data-btn-muted" type="button" onclick="window.rqSetBackup(false)">Backup Pengaman OFF</button></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><button class="rq-data-btn rq-data-btn-blue" type="button" onclick="window.rqPickBackupFolder()">Pilih Folder Simpan</button><button class="rq-data-btn rq-data-btn-muted" type="button" onclick="window.rqResetBackupFolder()">Reset Folder</button></div><div id="rqBackupFolder" class="rq-data-status mt-3"></div><div id="rqBackupLast" class="text-[10px] font-bold text-slate-500 mt-2"></div></div><div class="rq-data-card"><div class="rq-data-title">Download Data</div><div class="rq-data-sub">Download Semua Data CSV tetap memakai struktur dan isi CSV yang sudah ada.</div><button class="rq-data-btn rq-data-btn-blue mt-3" type="button" onclick="window.rqDownloadAllCsv()"><i class="fa-solid fa-file-csv mr-1"></i> Download Semua Data CSV</button></div><div class="rq-data-card"><div class="rq-data-title">Import Data</div><div class="rq-data-sub">Gunakan Backup Pengaman JSON untuk seluruh data. CSV tetap didukung untuk data santri sesuai format lama.</div><input id="rqImportFile" class="rq-data-file" type="file" accept=".json,.csv,application/json,text/csv" onchange="window.rqImportFileChanged(this.files[0])"><button class="rq-data-btn rq-data-btn-blue mt-3" type="button" onclick="document.getElementById('rqImportFile').click()">Pilih File Import</button><div id="rqImportPreview" class="rq-data-preview" style="display:none"></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><button class="rq-data-btn rq-data-btn-rose" type="button" onclick="window.rqImport('replace')">Import &amp; Ganti</button><button class="rq-data-btn rq-data-btn-amber" type="button" onclick="window.rqImport('merge')">Import &amp; Gabungkan</button></div></div><div class="rq-data-card"><div class="rq-data-title">Rekapan</div><div class="rq-data-sub">Download Rekapan CSV tetap terpisah dan tidak dimasukkan ke Download Semua Data.</div><button class="rq-data-btn rq-data-btn-muted mt-3" type="button" onclick="window.rqDownloadRekapan()"><i class="fa-solid fa-file-csv mr-1"></i> Download Rekapan CSV</button></div></div>`}
+function dataPanelHtml(){return `<div class="space-y-4"><div class="rq-data-card"><div class="rq-data-title"><i class="fa-solid fa-database mr-1"></i> Data</div><div class="rq-data-sub">Backup, download, dan import data tanpa mengubah struktur data aplikasi.</div></div><div class="rq-data-card"><div class="rq-data-title">Backup Pengaman</div><div class="rq-data-sub">Backup otomatis dilakukan sebelum operasi berisiko.</div><div id="rqBackupState" class="rq-data-status off mt-3"></div><div class="rq-data-switch mt-3"><button class="rq-data-btn rq-data-btn-primary" type="button" onclick="window.rqSetBackup(true)">Backup Pengaman ON</button><button class="rq-data-btn rq-data-btn-muted" type="button" onclick="window.rqSetBackup(false)">Backup Pengaman OFF</button></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><button class="rq-data-btn rq-data-btn-blue" type="button" onclick="window.rqPickBackupFolder()">Pilih Folder Simpan</button><button class="rq-data-btn rq-data-btn-muted" type="button" onclick="window.rqResetBackupFolder()">Reset Folder</button></div><div id="rqBackupFolder" class="rq-data-status mt-3"></div><div id="rqBackupLast" class="text-[10px] font-bold text-slate-500 mt-2"></div></div><div class="rq-data-card"><div class="rq-data-title">Download Data</div><div class="rq-data-sub">Backup Lengkap menyimpan Master Santri, pengajar, kelas, seluruh riwayat, hafalan/setoran, target, rekapan, isi form yang sedang terisi, dan ringkasan persentase capaian. File ini dapat dipindahkan lalu diimport kembali.</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><button class="rq-data-btn rq-data-btn-blue" type="button" onclick="window.rqDownloadFullBackup()"><i class="fa-solid fa-box-archive mr-1"></i> Download Backup Lengkap</button><button class="rq-data-btn rq-data-btn-muted" type="button" onclick="window.rqDownloadAllCsv()"><i class="fa-solid fa-file-csv mr-1"></i> Download Semua Data CSV</button></div><div id="rqFullBackupInfo" class="rq-data-status mt-3"></div></div><div class="rq-data-card"><div class="rq-data-title">Import Data</div><div class="rq-data-sub">Gunakan Backup Pengaman JSON untuk seluruh data. CSV tetap didukung untuk data santri sesuai format lama.</div><input id="rqImportFile" class="rq-data-file" type="file" accept=".json,.csv,application/json,text/csv" onchange="window.rqImportFileChanged(this.files[0])"><button class="rq-data-btn rq-data-btn-blue mt-3" type="button" onclick="document.getElementById('rqImportFile').click()">Pilih File Import</button><div id="rqImportPreview" class="rq-data-preview" style="display:none"></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><button class="rq-data-btn rq-data-btn-rose" type="button" onclick="window.rqImport('replace')">Import &amp; Ganti</button><button class="rq-data-btn rq-data-btn-amber" type="button" onclick="window.rqImport('merge')">Import &amp; Gabungkan</button></div></div><div class="rq-data-card"><div class="rq-data-title">Rekapan</div><div class="rq-data-sub">Download Rekapan CSV tetap terpisah dan tidak dimasukkan ke Download Semua Data.</div><button class="rq-data-btn rq-data-btn-muted mt-3" type="button" onclick="window.rqDownloadRekapan()"><i class="fa-solid fa-file-csv mr-1"></i> Download Rekapan CSV</button></div></div>`}
 window.rqSetBackup=async on=>{if(on){const h=await getHandle();if(!h){toast('Pilih Folder Simpan terlebih dahulu untuk mengaktifkan Backup Pengaman.','error');await pickFolder();const h2=await getHandle();if(!h2)return} }setBackupState(on)};
 window.rqPickBackupFolder=pickFolder;window.rqResetBackupFolder=resetFolder;window.rqImportFileChanged=selectImport;window.rqImport=async mode=>{if(!confirm(mode==='replace'?'Yakin Import & Ganti? Data aplikasi akan diganti dengan data dari file.':'Yakin Import & Gabungkan? Data yang sama tidak akan dibuat ulang.'))return;await importData(mode)};
+window.rqDownloadFullBackup=async()=>{
+  try{
+    const info=document.getElementById('rqFullBackupInfo');
+    if(info)info.innerHTML='<b>Menyiapkan Backup Lengkap...</b><br>Data sedang dikumpulkan. Jangan tutup halaman.';
+    const snap=dataSnapshot();
+    const json=JSON.stringify(snap,null,2);
+    const stamp=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    const filename=`Backup_Lengkap_RQ_AlKhansa_${stamp.getFullYear()}-${pad(stamp.getMonth()+1)}-${pad(stamp.getDate())}_${pad(stamp.getHours())}-${pad(stamp.getMinutes())}-${pad(stamp.getSeconds())}.json`;
+    const blob=new Blob([json],{type:'application/json'});
+    let downloaded=false;
+    if(typeof URL!=='undefined'&&typeof URL.createObjectURL==='function'){
+      const u=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=u;a.download=filename;a.rel='noopener';a.style.display='none';
+      document.body.appendChild(a);
+      try{a.click();downloaded=true}catch(e){console.warn('Klik download otomatis gagal:',e)}
+      setTimeout(()=>{try{a.remove()}catch(e){};try{URL.revokeObjectURL(u)}catch(e){}},1500);
+    }
+    if(!downloaded){
+      const reader=new FileReader();
+      reader.onload=()=>{const a=document.createElement('a');a.href=reader.result;a.download=filename;a.rel='noopener';document.body.appendChild(a);a.click();a.remove();};
+      reader.readAsDataURL(blob);
+    }
+    const rawMaster=snap.data?.rq_santri_master;
+    const master=typeof rawMaster==='string'?safeParse(rawMaster,[]):rawMaster;
+    const santriCount=Array.isArray(master)?master.length:0;
+    if(info)info.innerHTML='<b>Backup Lengkap siap diunduh.</b><br>'+esc(snap.keys)+' key data · '+esc(santriCount)+' santri · form aktif ikut disimpan · ringkasan persentase ikut disimpan.<br><span style="font-size:9px">File: '+esc(filename)+'</span>';
+    toast('Backup Lengkap siap diunduh.','success');
+  }catch(e){
+    console.error('Backup Lengkap:',e);
+    const info=document.getElementById('rqFullBackupInfo');
+    if(info)info.innerHTML='<b>Backup gagal dibuat.</b><br>'+esc(e?.message||e);
+    toast('Backup Lengkap gagal dibuat. Coba lagi.','error');
+  }
+};
 window.rqDownloadAllCsv=()=>{const name=prompt('Nama file CSV (tanpa .csv):',`Data_Santri_RQ_AlKhansa_${new Date().toISOString().split('T')[0]}`);if(name===null)return;const list=Array.isArray(window.santriList)?window.santriList:[];if(!list.length){toast('Data santri belum tersedia.','error');return}const historyKeys={bacaan:'rq_history_bacaan',hafalan:'rq_history_hafalan',murojaah:'rq_history_murojaah',tugas:'rq_history_tugas'},latest={};Object.entries(historyKeys).forEach(([type,key])=>{const rows=safeParse(localStorage.getItem(key)||'[]',[]);(Array.isArray(rows)?rows:[]).forEach(row=>{const n=String(row?.name||'').trim().toLowerCase();if(!n)return;const t=Number(row?.rawTime||new Date(row?.timestamp||0).getTime()||0);if(!latest[type]?.[n]||t>latest[type][n].time){latest[type]=latest[type]||{};latest[type][n]={time:t,detail:String(row?.detail||'-'),tanggal:String(row?.tanggal||'-')}}})});const headers=['Nama Santri','Kelas','Pengajar','Bacaan Terakhir','Hafalan Terakhir','Murojaah Terakhir','Tugas Terakhir'];const rows=[headers.map(csvCell).join(',')];const get=(type,s)=>{const r=latest[type]?.[String(s?.name||'').trim().toLowerCase()];return r?.detail||s?.[`last${type.charAt(0).toUpperCase()+type.slice(1)}`]||'-'};list.forEach(s=>rows.push([s?.name||'-',s?.class||'-',s?.teacher||'-',get('bacaan',s),get('hafalan',s),get('murojaah',s),get('tugas',s)].map(csvCell).join(',')));const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=(name.trim().replace(/\.csv$/i,'')||'Data_Santri')+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('Download Semua Data CSV berhasil.','success')};
 window.rqDownloadRekapan=()=>{const list=safeParse(localStorage.getItem('rq_history_rekapan')||'[]',[]);if(!Array.isArray(list)||!list.length){toast('Belum ada data Rekapan.','error');return}const name=prompt('Nama file Rekapan CSV:',`Rekapan_RQ_AlKhansa_${new Date().toISOString().split('T')[0]}`);if(name===null)return;const headers=['Timestamp','Tanggal','ID','Nama Santri','Kategori','Catatan'];const rows=[headers.map(csvCell).join(',')];list.forEach(r=>rows.push([r.timestamp||'',r.tanggal||'',r.id||'',r.name||'',r.category||'',r.catatan||''].map(csvCell).join(',')));const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=(name.trim().replace(/\.csv$/i,'')||'Rekapan_RQ_AlKhansa')+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('Download Rekapan CSV berhasil.','success')};
 function installPanel(){if(document.getElementById('rqDataPanel'))return;const nav=document.querySelector('#appHeader nav > div');const content=document.getElementById('trackerPageContent');if(!nav||!content){setTimeout(installPanel,250);return}const b=document.createElement('button');b.type='button';b.id='trackerMenu-data';b.className='tracker-menu-btn px-3 py-2 rounded-xl bg-emerald-700/80 dark:bg-emerald-900 text-emerald-50 text-[10px] sm:text-xs font-black transition whitespace-nowrap shrink-0 border border-emerald-600/60';b.innerHTML='<i class="fa-solid fa-database mr-1"></i> Data';b.onclick=openData;nav.appendChild(b);const p=document.createElement('div');p.id='rqDataPanel';p.className='tracker-menu-panel';p.dataset.panelHidden='1';p.innerHTML=dataPanelHtml();content.appendChild(p);refreshHandleInfo();renderStatus()}
@@ -9125,7 +9511,293 @@ function patchRisky(){
  const wrap=(name,reason)=>{const orig=window[name];if(typeof orig!=='function'||orig.__rqBackupWrapped)return;const fn=async function(...args){if(!(await requireBackup(reason)))return; if(backupOn()&&!(await writeBackup(reason)))return; return orig.apply(this,args)};fn.__rqBackupWrapped=true;window[name]=fn};
  wrap('resetDailyLogsOnly','Reset Data');wrap('clearTrackingHistory','penghapusan data Tracking');wrap('deleteMateri','penghapusan data Materi');wrap('deleteCardHistoryItem','penghapusan riwayat');wrap('deleteMassalHistory','penghapusan riwayat bersama');
 }
-function init(){installPanel();patchRisky();refreshHandleInfo();}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();window.addEventListener('load',()=>{installPanel();patchRisky();refreshHandleInfo()});
+function init(){installPanel();patchRisky();refreshHandleInfo();scheduleRestoreLiveFormState();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();window.addEventListener('load',()=>{installPanel();patchRisky();refreshHandleInfo();scheduleRestoreLiveFormState()});
+})();
+</script>
+
+
+<!-- ============================================================
+     PERBAIKAN KONTRAS MODE MALAM — SELURUH MENU
+     VISUAL/UI SAJA. Tidak mengubah data, fungsi, event, alur,
+     Local Storage, struktur fitur, atau perilaku aplikasi.
+     ============================================================ -->
+<style id="rq-dark-contrast-all-menus-v1">
+html.dark {
+  color-scheme: dark;
+}
+
+/* Warna teks Tailwind yang terlalu gelap ketika berada di permukaan gelap. */
+html.dark .text-slate-900 { color:#f8fafc !important; }
+html.dark .text-slate-800 { color:#f1f5f9 !important; }
+html.dark .text-slate-700 { color:#e2e8f0 !important; }
+html.dark .text-slate-600 { color:#cbd5e1 !important; }
+html.dark .text-slate-500 { color:#94a3b8 !important; }
+html.dark .text-slate-400 { color:#cbd5e1 !important; }
+
+/* Aksen warna: gunakan versi terang agar tetap terbaca di latar malam. */
+html.dark .text-purple-600, html.dark .text-purple-700, html.dark .text-purple-800, html.dark .text-purple-900 { color:#e9d5ff !important; }
+html.dark .text-violet-500, html.dark .text-violet-600, html.dark .text-violet-700, html.dark .text-violet-800, html.dark .text-violet-900 { color:#ddd6fe !important; }
+html.dark .text-indigo-800 { color:#c7d2fe !important; }
+html.dark .text-blue-500, html.dark .text-blue-700, html.dark .text-blue-800 { color:#bfdbfe !important; }
+html.dark .text-sky-700, html.dark .text-sky-900 { color:#bae6fd !important; }
+html.dark .text-cyan-600, html.dark .text-cyan-800 { color:#a5f3fc !important; }
+html.dark .text-emerald-600, html.dark .text-emerald-700, html.dark .text-emerald-800, html.dark .text-emerald-900 { color:#a7f3d0 !important; }
+html.dark .text-amber-600, html.dark .text-amber-700, html.dark .text-amber-800, html.dark .text-amber-900 { color:#fde68a !important; }
+html.dark .text-rose-500, html.dark .text-rose-600, html.dark .text-rose-700, html.dark .text-rose-800, html.dark .text-rose-900 { color:#fecdd3 !important; }
+html.dark .text-pink-700, html.dark .text-pink-800, html.dark .text-pink-900 { color:#fbcfe8 !important; }
+html.dark .text-orange-700, html.dark .text-orange-800, html.dark .text-orange-900 { color:#fed7aa !important; }
+html.dark .text-gray-900 { color:#f8fafc !important; }
+html.dark .text-gray-800 { color:#f1f5f9 !important; }
+html.dark .text-gray-700 { color:#e2e8f0 !important; }
+html.dark .text-gray-600 { color:#cbd5e1 !important; }
+html.dark .text-gray-500 { color:#94a3b8 !important; }
+
+/* Semua label/teks kecil pada panel Input Setoran harus jelas. */
+html.dark #tracker-panel-input label,
+html.dark #tracker-panel-input p,
+html.dark #tracker-panel-input h1,
+html.dark #tracker-panel-input h2,
+html.dark #tracker-panel-input h3,
+html.dark #tracker-panel-input h4,
+html.dark #tracker-panel-input h5,
+html.dark #tracker-panel-input h6,
+html.dark #tracker-panel-input span:not(.fa-solid),
+html.dark #tracker-panel-input small {
+  text-shadow:0 0 1px rgba(0,0,0,.15);
+}
+html.dark #tracker-panel-input .text-purple-600,
+html.dark #tracker-panel-input .text-purple-700,
+html.dark #tracker-panel-input .text-purple-800,
+html.dark #tracker-panel-input .text-purple-900,
+html.dark #tracker-panel-input .text-violet-600,
+html.dark #tracker-panel-input .text-violet-700,
+html.dark #tracker-panel-input .text-violet-800,
+html.dark #tracker-panel-input .text-violet-900,
+html.dark #tracker-panel-input .text-blue-700,
+html.dark #tracker-panel-input .text-blue-800,
+html.dark #tracker-panel-input .text-cyan-600,
+html.dark #tracker-panel-input .text-cyan-800,
+html.dark #tracker-panel-input .text-emerald-600,
+html.dark #tracker-panel-input .text-emerald-700,
+html.dark #tracker-panel-input .text-emerald-800,
+html.dark #tracker-panel-input .text-amber-700,
+html.dark #tracker-panel-input .text-amber-800,
+html.dark #tracker-panel-input .text-rose-600,
+html.dark #tracker-panel-input .text-rose-700,
+html.dark #tracker-panel-input .text-rose-800 {
+  color:inherit;
+}
+
+/* Kartu level/daftar surat pada Input: teks utama terang, angka/aksen tetap jelas. */
+html.dark #tracker-panel-input #trackingLevelSuratList,
+html.dark #tracker-panel-input #trackingLevelSuratList * {
+  text-shadow:none;
+}
+html.dark #tracker-panel-input #trackingLevelSuratList .text-slate-900,
+html.dark #tracker-panel-input #trackingLevelSuratList .text-slate-800,
+html.dark #tracker-panel-input #trackingLevelSuratList .text-slate-700,
+html.dark #tracker-panel-input #trackingLevelSuratList .text-slate-600,
+html.dark #tracker-panel-input #trackingLevelSuratList .text-slate-500,
+html.dark #tracker-panel-input #trackingLevelSuratList .text-slate-400 {
+  color:#0f172a !important;
+}
+
+/* Dashboard: bagian Level 1–8 adalah kartu gelap pada mode malam.
+   Teks persen/uraian/ tombol surat dibuat terang walaupun warna inline lama masih ada. */
+html.dark #tracker-panel-dashboard .rq-level-row,
+html.dark #tracker-panel-dashboard .rq-level-row * {
+  --rq-dark-level-text:#f8fafc;
+}
+html.dark #tracker-panel-dashboard .rq-level-row .text-slate-800,
+html.dark #tracker-panel-dashboard .rq-level-row .text-slate-700,
+html.dark #tracker-panel-dashboard .rq-level-row .text-slate-600,
+html.dark #tracker-panel-dashboard .rq-level-row .text-slate-500,
+html.dark #tracker-panel-dashboard .rq-level-row .text-slate-400 {
+  color:#e2e8f0 !important;
+}
+html.dark #tracker-panel-dashboard .rq-level-row .text-right strong,
+html.dark #tracker-panel-dashboard .rq-level-row .rq-level-surat-toggle,
+html.dark #tracker-panel-dashboard .rq-level-row [data-rq-level-toggle="1"] {
+  color:#f8fafc !important;
+  -webkit-text-fill-color:#f8fafc !important;
+}
+html.dark #tracker-panel-dashboard .rq-level-row .rq-level-surat-toggle,
+html.dark #tracker-panel-dashboard .rq-level-row [data-rq-level-toggle="1"] {
+  border-color:#94a3b8 !important;
+  background:rgba(51,65,85,.72) !important;
+}
+html.dark #tracker-panel-dashboard .rq-level-row > div > div:first-child > div:first-child {
+  color:#f8fafc !important;
+  -webkit-text-fill-color:#f8fafc !important;
+}
+html.dark #tracker-panel-dashboard .rq-level-row .rq-level-surat-list-wrap,
+html.dark #tracker-panel-dashboard .rq-level-row .rq-level-surat-list-wrap * {
+  color:#e2e8f0;
+}
+
+/* Judul dan isi kartu Dashboard yang masih memakai warna inline gelap. */
+html.dark #tracker-panel-dashboard .rq-juz-dashboard-card .text-slate-900,
+html.dark #tracker-panel-dashboard .rq-juz-dashboard-card .text-slate-800,
+html.dark #tracker-panel-dashboard .rq-juz-dashboard-card .text-slate-700,
+html.dark #tracker-panel-dashboard .rq-juz-dashboard-card .text-slate-600,
+html.dark #tracker-panel-dashboard .rq-juz-dashboard-card .text-slate-500,
+html.dark #tracker-panel-dashboard .rq-juz-dashboard-card .text-slate-400 {
+  color:#e2e8f0 !important;
+}
+html.dark #tracker-panel-dashboard .rq-juz-dashboard-card .rq-ring .text-slate-500 {
+  color:#cbd5e1 !important;
+}
+
+/* Capaian Level Santri: semua teks yang berada pada kartu malam dibuat jelas. */
+html.dark #tracker-panel-capaian .text-slate-900,
+html.dark #tracker-panel-capaian .text-slate-800,
+html.dark #tracker-panel-capaian .text-slate-700,
+html.dark #tracker-panel-capaian .text-slate-600,
+html.dark #tracker-panel-capaian .text-slate-500,
+html.dark #tracker-panel-capaian .text-slate-400,
+html.dark #tracker-panel-capaian .text-gray-900,
+html.dark #tracker-panel-capaian .text-gray-800,
+html.dark #tracker-panel-capaian .text-gray-700,
+html.dark #tracker-panel-capaian .text-gray-600,
+html.dark #tracker-panel-capaian .text-gray-500 {
+  color:#e2e8f0 !important;
+}
+
+/* Riwayat/Bacaan/Hafalan/WA/Laporan: teks abu-abu gelap jangan hilang di malam hari. */
+html.dark #tracker-panel-history .text-slate-900,
+html.dark #tracker-panel-history .text-slate-800,
+html.dark #tracker-panel-history .text-slate-700,
+html.dark #tracker-panel-history .text-slate-600,
+html.dark #tracker-panel-history .text-slate-500,
+html.dark #tracker-panel-history .text-slate-400,
+html.dark #tracker-panel-bacaan .text-slate-900,
+html.dark #tracker-panel-bacaan .text-slate-800,
+html.dark #tracker-panel-bacaan .text-slate-700,
+html.dark #tracker-panel-bacaan .text-slate-600,
+html.dark #tracker-panel-bacaan .text-slate-500,
+html.dark #tracker-panel-bacaan .text-slate-400,
+html.dark #tracker-panel-hafalan .text-slate-900,
+html.dark #tracker-panel-hafalan .text-slate-800,
+html.dark #tracker-panel-hafalan .text-slate-700,
+html.dark #tracker-panel-hafalan .text-slate-600,
+html.dark #tracker-panel-hafalan .text-slate-500,
+html.dark #tracker-panel-hafalan .text-slate-400,
+html.dark #tracker-panel-wa-wali .text-slate-900,
+html.dark #tracker-panel-wa-wali .text-slate-800,
+html.dark #tracker-panel-wa-wali .text-slate-700,
+html.dark #tracker-panel-wa-wali .text-slate-600,
+html.dark #tracker-panel-wa-wali .text-slate-500,
+html.dark #tracker-panel-wa-wali .text-slate-400,
+html.dark #tracker-panel-wa-kelas .text-slate-900,
+html.dark #tracker-panel-wa-kelas .text-slate-800,
+html.dark #tracker-panel-wa-kelas .text-slate-700,
+html.dark #tracker-panel-wa-kelas .text-slate-600,
+html.dark #tracker-panel-wa-kelas .text-slate-500,
+html.dark #tracker-panel-wa-kelas .text-slate-400 {
+  color:#e2e8f0 !important;
+}
+
+/* Menu navigasi: teks setiap menu tetap terlihat pada header hijau gelap. */
+html.dark #appHeader .tracker-menu-btn:not(#trackerMenu-input) {
+  color:#f8fafc !important;
+  -webkit-text-fill-color:#f8fafc !important;
+}
+html.dark #appHeader nav button,
+html.dark #appHeader nav a {
+  text-shadow:0 0 1px rgba(0,0,0,.25);
+}
+
+</style>
+
+
+<!-- PATCH: Import Data drag-drop + preview data baru + history operator/device/time. Hanya memperluas UI/alur import yang sudah ada. -->
+<style id="rq-import-history-v2-style">
+#rqImportOperatorWrap{margin-top:12px;padding:12px;border:2px solid #334155;border-radius:14px;background:#111827}
+#rqImportOperatorWrap label{display:block;font-size:11px;font-weight:900;color:#f8fafc;margin-bottom:6px}
+#rqImportOperator{width:100%;min-height:42px;border:2px solid #475569;border-radius:10px;background:#0f172a;color:#f8fafc;padding:9px 11px;font-size:12px;font-weight:800;outline:none}
+#rqImportOperator::placeholder{color:#94a3b8}
+#rqImportDropZone{margin-top:12px;border:2px dashed #60a5fa;border-radius:16px;background:#172554;color:#dbeafe;padding:20px 14px;text-align:center;cursor:pointer;transition:.18s ease}
+#rqImportDropZone:hover,#rqImportDropZone.is-dragover{background:#1e3a8a;border-color:#93c5fd;transform:translateY(-1px)}
+#rqImportDropZone .rq-drop-title{font-size:13px;font-weight:900;color:#fff}
+#rqImportDropZone .rq-drop-sub{font-size:10px;font-weight:700;color:#bfdbfe;margin-top:4px}
+#rqImportInfo{margin-top:12px;padding:12px;border:2px solid #0ea5e9;border-radius:14px;background:#082f49;color:#e0f2fe;font-size:11px;font-weight:800;line-height:1.55}
+#rqImportInfo .rq-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+#rqImportInfo .rq-info-item{border:1px solid #155e75;border-radius:10px;padding:8px;background:#0c4a6e}
+#rqImportInfo .rq-info-label{font-size:9px;color:#bae6fd;font-weight:900}
+#rqImportInfo .rq-info-value{font-size:13px;color:#fff;font-weight:1000;margin-top:2px}
+#rqImportHistory{margin-top:12px}
+#rqImportHistory .rq-history-title{font-size:13px;font-weight:900;color:#f8fafc;margin-bottom:8px}
+.rq-import-history-item{border:1px solid #334155;border-radius:12px;background:#0f172a;padding:10px;margin-top:7px;color:#e2e8f0;font-size:10px;font-weight:700;line-height:1.5}
+.rq-import-history-item strong{color:#fff}
+.rq-import-history-empty{border:1px dashed #475569;border-radius:12px;padding:12px;color:#94a3b8;font-size:10px;font-weight:800}
+html:not(.dark) #rqImportOperatorWrap{background:#f8fafc;border-color:#cbd5e1}
+html:not(.dark) #rqImportOperatorWrap label{color:#0f172a}
+html:not(.dark) #rqImportOperator{background:#fff;color:#0f172a;border-color:#cbd5e1}
+html:not(.dark) #rqImportDropZone{background:#eff6ff;color:#1e3a8a;border-color:#60a5fa}
+html:not(.dark) #rqImportDropZone:hover,html:not(.dark) #rqImportDropZone.is-dragover{background:#dbeafe}
+html:not(.dark) #rqImportDropZone .rq-drop-title{color:#1e3a8a}
+html:not(.dark) #rqImportDropZone .rq-drop-sub{color:#1d4ed8}
+html:not(.dark) #rqImportInfo{background:#f0f9ff;color:#0c4a6e;border-color:#38bdf8}
+html:not(.dark) #rqImportInfo .rq-info-item{background:#e0f2fe;border-color:#7dd3fc}
+html:not(.dark) #rqImportInfo .rq-info-label{color:#0369a1}
+html:not(.dark) #rqImportInfo .rq-info-value{color:#0f172a}
+html:not(.dark) #rqImportHistory .rq-history-title{color:#0f172a}
+html:not(.dark) .rq-import-history-item{background:#f8fafc;border-color:#cbd5e1;color:#334155}
+html:not(.dark) .rq-import-history-item strong{color:#0f172a}
+html:not(.dark) .rq-import-history-empty{border-color:#cbd5e1;color:#64748b}
+@media(max-width:767px){#rqImportInfo .rq-info-grid{grid-template-columns:1fr}#rqImportDropZone{padding:16px 10px}}
+</style>
+<script id="rq-import-history-v2">
+(function(){
+'use strict';
+if(window.__rqImportHistoryV2Installed)return;
+window.__rqImportHistoryV2Installed=true;
+const OP_KEY='rq_import_operator_v1', HISTORY_KEY='rq_import_history_v1';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safe=v=>{try{return JSON.parse(v)}catch(e){return v}};
+function operator(){return String(localStorage.getItem(OP_KEY)||'').trim()}
+function setOperator(v){localStorage.setItem(OP_KEY,String(v||'').trim())}
+function nowInfo(){const d=new Date();const f=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});return {iso:d.toISOString(),label:f.format(d).replace(' pukul ', ' · ')} }
+function deviceInfo(){const ua=navigator.userAgent||'';let os='Perangkat tidak diketahui';if(/Windows/i.test(ua))os='Windows';else if(/Android/i.test(ua))os='Android';else if(/iPhone|iPad|iPod/i.test(ua))os='iOS/iPadOS';else if(/Mac OS X/i.test(ua))os='macOS';else if(/Linux/i.test(ua))os='Linux/ChromeOS';let browser='Browser tidak diketahui';if(/Edg\//i.test(ua))browser='Microsoft Edge';else if(/OPR\//i.test(ua))browser='Opera';else if(/Chrome\//i.test(ua))browser='Google Chrome';else if(/Firefox\//i.test(ua))browser='Mozilla Firefox';else if(/Safari\//i.test(ua)&&!/Chrome\//i.test(ua))browser='Safari';return browser+' · '+os}
+function history(){try{const x=safe(localStorage.getItem(HISTORY_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return []}}
+function saveHistory(arr){localStorage.setItem(HISTORY_KEY,JSON.stringify(arr.slice(0,100)))}
+function canonical(v){if(v===null)return 'null';if(v===undefined)return 'undefined';if(typeof v!=='object')return JSON.stringify(v);if(Array.isArray(v))return '['+v.map(canonical).join(',')+']';return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}'}
+function arrayCount(v){return Array.isArray(v)?v.length:0}
+function flatCount(v){if(Array.isArray(v))return v.length;if(v&&typeof v==='object')return Object.keys(v).length;return v==null||v===''?0:1}
+function currentData(){const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||k===OP_KEY||k===HISTORY_KEY||k==='rq_tracker_dark'||k==='rq_data_backup_settings_v1')continue;o[k]=safe(localStorage.getItem(k))}return o}
+function parseCsvSafe(text){const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++;continue}if(c==='"'){quoted=false;continue}cell+=c}else{if(c==='"'){quoted=true;continue}if(c===','){row.push(cell);cell='';continue}if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';continue}if(c==='\r')continue;cell+=c}}row.push(cell);if(row.some(x=>x!==''))rows.push(row);if(!rows.length)return {headers:[],rows:[]};const headers=rows[0].map(x=>String(x||'').replace(/^\uFEFF/,''));return {headers,rows:rows.slice(1).filter(r=>r.some(x=>String(x||'').trim()!=='') )}}
+function rowObjects(parsed){return parsed.rows.map(r=>{const o={};parsed.headers.forEach((h,i)=>o[String(h||'').trim()]=r[i]??'');return o})}
+function rowIdentity(o){const id=String(o['ID Santri']??o['ID']??o['id']??o['Id']??'').trim();const name=String(o['Nama Santri']??o['Nama']??o['name']??'').trim().toLowerCase();if(id)return 'id:'+id.toLowerCase();if(name)return 'name:'+name;return 'row:'+canonical(o)}
+function currentMaster(){const raw=localStorage.getItem('rq_santri_master');const x=safe(raw||'[]');return Array.isArray(x)?x:[]}
+function masterIdentity(o){const id=String(o?.id??o?.ID??o?.idSantri??o?.['ID Santri']??'').trim();const name=String(o?.name??o?.nama??o?.['Nama Santri']??'').trim().toLowerCase();return id?'id:'+id.toLowerCase():(name?'name:'+name:null)}
+function analyzeCsv(parsed){const incoming=rowObjects(parsed), cur=currentMaster(), set=new Set(cur.map(masterIdentity).filter(Boolean));const fresh=incoming.filter(o=>{const id=rowIdentity(o);return !set.has(id)});return {kind:'CSV',keysNew:0,dataNew:fresh.length,rows:incoming.length,changed:0,details:fresh.slice(0,8).map(o=>String(o['Nama Santri']??o['Nama']??o['name']??'(tanpa nama)')).filter(Boolean),modeNote:'Data baru dihitung berdasarkan ID Santri atau Nama Santri yang belum ada di Master Santri.'}}
+function analyzeBackup(obj){const incoming=obj?.data||{},cur=currentData();let keysNew=0,changed=0,itemsNew=0,details=[];Object.entries(incoming).forEach(([k,v])=>{if(!(k in cur)){keysNew++;itemsNew+=flatCount(v);details.push(k);return}const a=cur[k], b=typeof v==='string'?safe(v):v;if(Array.isArray(a)&&Array.isArray(b)){const set=new Set(a.map(canonical));itemsNew+=b.filter(x=>!set.has(canonical(x))).length}else if(canonical(a)!==canonical(b))changed++});return {kind:'Backup JSON',keysNew,dataNew:itemsNew,rows:0,changed,details:details.slice(0,8),modeNote:'Data baru dihitung berdasarkan key Local Storage dan item array yang belum ada sebelumnya.'}}
+function setInfo(info){const box=document.getElementById('rqImportInfo');if(!box)return;const d=info||{kind:'-',keysNew:0,dataNew:0,rows:0,changed:0,details:[]};box.innerHTML='<b>Informasi sebelum import</b><div class="rq-info-grid">'+
+'<div class="rq-info-item"><div class="rq-info-label">FORMAT</div><div class="rq-info-value">'+esc(d.kind)+'</div></div>'+ 
+'<div class="rq-info-item"><div class="rq-info-label">DATA BARU</div><div class="rq-info-value">'+esc(d.dataNew)+'</div></div>'+ 
+'<div class="rq-info-item"><div class="rq-info-label">KEY BARU</div><div class="rq-info-value">'+esc(d.keysNew)+'</div></div>'+ 
+'<div class="rq-info-item"><div class="rq-info-label">DATA BERUBAH</div><div class="rq-info-value">'+esc(d.changed)+'</div></div></div>'+ 
+(d.rows?'<div style="margin-top:8px">Baris yang dibaca: <b>'+esc(d.rows)+'</b></div>':'')+
+(d.details?.length?'<div style="margin-top:8px">Contoh data baru: <b>'+esc(d.details.join(', '))+'</b></div>':'<div style="margin-top:8px">Tidak ada data baru yang terdeteksi dari perbandingan saat ini.</div>');box.style.display='block'}
+function ensureUi(){const panel=document.getElementById('rqDataPanel');if(!panel)return false;const file=document.getElementById('rqImportFile');const card=file?.closest('.rq-data-card');if(!card)return false;if(document.getElementById('rqImportDropZone'))return true;
+const op=document.createElement('div');op.id='rqImportOperatorWrap';op.innerHTML='<label for="rqImportOperator">Nama yang memasukkan data</label><input id="rqImportOperator" type="text" placeholder="Ketik nama pengajar/petugas yang melakukan import..." autocomplete="off"><div style="font-size:9px;font-weight:700;color:#94a3b8;margin-top:5px">Nama ini disimpan sebagai catatan riwayat import pada perangkat ini.</div>';
+file.insertAdjacentElement('beforebegin',op);
+const input=document.getElementById('rqImportOperator');input.value=operator();input.addEventListener('input',()=>setOperator(input.value));
+const dz=document.createElement('div');dz.id='rqImportDropZone';dz.setAttribute('role','button');dz.tabIndex=0;dz.innerHTML='<div class="rq-drop-title"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Seret & Lepaskan File Import di Sini</div><div class="rq-drop-sub">Atau klik area ini untuk memilih file JSON / CSV</div>';
+file.insertAdjacentElement('beforebegin',dz);dz.addEventListener('click',()=>file.click());dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click()}});['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();dz.classList.add('is-dragover')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();dz.classList.remove('is-dragover')}));dz.addEventListener('drop',e=>{const f=e.dataTransfer?.files?.[0];if(f)window.rqImportFileChanged(f)});
+const preview=document.getElementById('rqImportPreview');const info=document.createElement('div');info.id='rqImportInfo';info.style.display='none';if(preview)preview.insertAdjacentElement('afterend',info);
+const hist=document.createElement('div');hist.id='rqImportHistory';hist.innerHTML='<div class="rq-history-title"><i class="fa-solid fa-clock-rotate-left mr-1"></i> History Data Masuk</div><div id="rqImportHistoryList"></div>';card.appendChild(hist);renderHistory();return true}
+function renderHistory(){const box=document.getElementById('rqImportHistoryList');if(!box)return;const h=history();if(!h.length){box.innerHTML='<div class="rq-import-history-empty">Belum ada history import pada perangkat ini.</div>';return}box.innerHTML=h.slice(0,20).map((x,i)=>'<div class="rq-import-history-item"><strong>'+esc(x.dayDateTime||x.iso)+'</strong><br>Petugas: <strong>'+esc(x.operator||'-')+'</strong><br>Perangkat: '+esc(x.device||'-')+'<br>File: '+esc(x.file||'-')+'<br>Mode: <strong>'+esc(x.mode||'-')+'</strong> · Data baru: <strong>'+esc(x.dataNew??0)+'</strong> · Key baru: <strong>'+esc(x.keysNew??0)+'</strong> · Data berubah: <strong>'+esc(x.changed??0)+'</strong></div>').join('')}
+function captureBefore(){return currentData()}
+function compareAfter(before){const after=currentData();let changedKeys=0;Object.keys({...before,...after}).forEach(k=>{if(canonical(before[k])!==canonical(after[k]))changedKeys++});return {changedKeys}}
+async function analyzeFile(file){if(!file)return;try{const text=await file.text();let info=null;let obj=null;try{obj=JSON.parse(text)}catch(e){}if(obj&&obj.format==='RQ_ALKHANSA_BACKUP'&&obj.data){info=analyzeBackup(obj)}else{const parsed=parseCsvSafe(text);if(!parsed.headers.length)throw new Error('File tidak berisi data');info=analyzeCsv(parsed)}window.__rqPendingImportAnalysis=info;setInfo(info)}catch(e){window.__rqPendingImportAnalysis=null;setInfo({kind:'File tidak valid',dataNew:0,keysNew:0,changed:0,details:[]})}}
+function patchFilePicker(){const orig=window.rqImportFileChanged;if(typeof orig!=='function'||orig.__rqImportHistoryWrapped)return;const fn=function(file){window.__rqLastImportFileName=file?.name||'-';analyzeFile(file);return orig(file)};fn.__rqImportHistoryWrapped=true;window.rqImportFileChanged=fn}
+function patchImport(){const orig=window.rqImport;if(typeof orig!=='function'||orig.__rqImportHistoryWrapped)return;const fn=async function(mode){const before=captureBefore();const pending=window.__rqPendingImportAnalysis||{};const op=operator();if(!op){toastLocal('Isi Nama yang memasukkan data terlebih dahulu.','error');document.getElementById('rqImportOperator')?.focus();return}const result=await orig(mode);const after=compareAfter(before);const input=document.getElementById('rqImportFile');const completed=!!input && input.value==='';if(completed&&pending&&pending.kind){const n=nowInfo(),entry={iso:n.iso,dayDateTime:n.label,operator:op,device:deviceInfo(),file:window.__rqLastImportFileName||'-',mode:mode==='replace'?'Import & Ganti':'Import & Gabungkan',dataNew:Number(pending.dataNew||0),keysNew:Number(pending.keysNew||0),changed:Number(pending.changed||0),changedKeys:after.changedKeys};const h=history();h.unshift(entry);saveHistory(h);renderHistory();}return result};fn.__rqImportHistoryWrapped=true;window.rqImport=fn}
+function toastLocal(msg,type){if(typeof window.showToast==='function')window.showToast(msg,type||'error');else alert(msg)}
+function watchFileName(){const f=document.getElementById('rqImportFile');if(!f||f.__rqHistoryWatch)return;f.__rqHistoryWatch=true;f.addEventListener('change',()=>{window.__rqLastImportFileName=f.files?.[0]?.name||'-';analyzeFile(f.files?.[0])});}
+function init(){if(!ensureUi())return;patchFilePicker();patchImport();watchFileName()}
+const obs=new MutationObserver(()=>{if(document.getElementById('rqDataPanel')){init()}});obs.observe(document.documentElement,{childList:true,subtree:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,120),{once:true});else setTimeout(init,120);window.addEventListener('load',()=>setTimeout(init,180));
 })();
 </script>
