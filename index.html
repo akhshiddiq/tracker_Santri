@@ -3761,6 +3761,7 @@ body.tracker-hafalan-active #trackingPerSuratWarning{display:none!important;}
 #trackingClassSearchClear.hidden, #trackingCatatanX.hidden { display:flex !important; }
 </style>
 <meta content="V32 conflict-cleanup: removed obsolete progress patches only; preserved stable core and sticky save" name="rq-build"/>
+<meta content="V26 hot-path optimization: indexed tahfidz records for per-surat rendering; no feature/data behavior changes" name="rq-build-v26"/>
 <style id="mobile-top-menu-clean-v2">
 /* HP: menu tetap di atas seperti semula, tetapi dibuat rapi dan tidak menumpuk. */
 @media (max-width: 767px){
@@ -4083,6 +4084,7 @@ html.dark #tracker-panel-input .text-white {
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-hafalan" onclick="window.switchTrackerMenu('hafalan')" type="button"><i class="fa-solid fa-book-quran mr-1"></i> Tracker Surat Persantri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-capaian" onclick="window.switchTrackerMenu('capaian')" type="button"><i class="fa-solid fa-user-check mr-1"></i> Materi Hafalan &amp; Capaian Level Santri</button>
 <button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-dashboard" onclick="window.openDashboardPersantri()" type="button"><i class="fa-solid fa-chart-pie mr-1"></i> Dashboard Laporan Persantri</button>
+<button class="tracker-menu-btn px-3 py-2 rounded-xl text-emerald-50 hover:bg-emerald-700 text-[10px] sm:text-xs font-black transition whitespace-nowrap" id="trackerMenu-history" onclick="window.switchTrackerMenu('history')" type="button"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat Input</button>
 </div>
 </nav>
 <button class="p-2.5 bg-emerald-700 dark:bg-emerald-900 rounded-xl text-amber-300 hover:bg-emerald-600 transition shadow-xs shrink-0" onclick="window.toggleDarkMode()" title="Fitur Malam (Dark Mode)">
@@ -4481,19 +4483,20 @@ html.dark #tracker-panel-input .text-white {
     </div>
   </div>
 </div>
-<div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-history" style="display:none;"><div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-<div class="flex items-center justify-between gap-2 mb-3">
-<h3 class="font-black text-sm text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat Tracking</h3>
-<button class="text-[10px] font-black text-rose-600 hover:underline" onclick="window.clearTrackingHistory()" type="button">Hapus Data Tracking</button>
-</div>
-<div class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar" id="trackingHistory"></div>
-</div>
-<div class="mt-3 bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-900/50 rounded-2xl p-4">
-<div class="flex items-center justify-between gap-2 mb-3">
-<div><h3 class="font-black text-sm text-violet-900 dark:text-violet-300"><i class="fa-solid fa-list-check mr-1"></i> Riwayat Level Santri</h3><p class="text-[9px] font-bold text-slate-500 mt-0.5">Level yang pernah ditandai sudah disetorkan, beserta tanggalnya.</p></div>
-<span class="text-[9px] font-black text-violet-600" id="trackingLevelHistoryCount">0 level</span>
-</div>
-<div class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar" id="trackingLevelHistory"><div class="text-xs font-bold text-slate-400 text-center p-4">Pilih santri untuk melihat riwayat level.</div></div>
+<div class="tracker-menu-panel" data-panel-hidden="1" id="tracker-panel-history" style="display:none;">
+  <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <div>
+        <h3 class="font-black text-sm sm:text-base text-emerald-800 dark:text-emerald-300"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Riwayat Input Hafalan</h3>
+        <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-1">Nama santri, surat yang pernah di-input, dan levelnya. Riwayat ini tidak ikut terhapus saat Reset Level atau Reset Semua Hafalan.</p>
+      </div>
+      <span id="trackingInputHistoryCount" class="shrink-0 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-black">0 input</span>
+    </div>
+    <div class="mb-3">
+      <input id="trackingInputHistorySearch" type="search" autocomplete="off" placeholder="Cari nama santri..." class="w-full p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-black" oninput="window.renderTrackingInputHistoryArchive()">
+    </div>
+    <div class="space-y-2 max-h-[70vh] overflow-y-auto custom-scrollbar" id="trackingInputHistoryArchiveList"></div>
+  </div>
 </div>
 </div>
 </section>
@@ -4726,6 +4729,52 @@ if(initialDarkIcon){
 
   function load(){ try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch(e){ return []; } }
   function save(){ localStorage.setItem(KEY, JSON.stringify(records)); }
+
+  // Arsip riwayat input dipisahkan dari data hafalan aktif. Reset tidak menyentuh arsip.
+  const INPUT_HISTORY_KEY='rq_tracking_input_history_v1';
+  function loadInputHistory(){ try { const v=JSON.parse(localStorage.getItem(INPUT_HISTORY_KEY)||'[]'); return Array.isArray(v)?v:[]; } catch(e){ return []; } }
+  function saveInputHistory(rows){ try { localStorage.setItem(INPUT_HISTORY_KEY,JSON.stringify(rows)); return true; } catch(e){ return false; } }
+  function historyFingerprint(r){
+    if(!r) return '';
+    return [r.id||'',r.timestamp||'',r.santri||'',r.juz||'',r.arah||'',r.level||'',r.surat||'',r.ayatDari||'',r.ayatSampai||''].join('||');
+  }
+  function archiveTrackingRecord(r){
+    if(!r||!r.santri||!r.surat) return;
+    const hist=loadInputHistory(), fp=historyFingerprint(r);
+    if(hist.some(x=>x&&x.fp===fp)) return;
+    hist.push({fp,santri:String(r.santri||''),surat:String(r.surat||''),level:Number(r.level||0),juz:String(r.juz||''),timestamp:r.timestamp||new Date().toISOString()});
+    saveInputHistory(hist);
+  }
+  function archiveTrackingRecords(rows){
+    if(!Array.isArray(rows)||!rows.length)return;
+    const hist=loadInputHistory(), seen=new Set(hist.map(x=>x&&x.fp).filter(Boolean));
+    let changed=false;
+    rows.forEach(r=>{
+      if(!r||!r.santri||!r.surat)return;
+      const fp=historyFingerprint(r);
+      if(seen.has(fp))return;
+      seen.add(fp);
+      hist.push({fp,santri:String(r.santri||''),surat:String(r.surat||''),level:Number(r.level||0),juz:String(r.juz||''),timestamp:r.timestamp||new Date().toISOString()});
+      changed=true;
+    });
+    if(changed)saveInputHistory(hist);
+  }
+  archiveTrackingRecords(records);
+  window.renderTrackingInputHistoryArchive=function(){
+    const box=document.getElementById('trackingInputHistoryArchiveList'), count=document.getElementById('trackingInputHistoryCount');
+    const search=String(document.getElementById('trackingInputHistorySearch')?.value||'').trim().toLowerCase();
+    if(!box)return;
+    const hist=loadInputHistory().slice().sort((a,b)=>String(b.timestamp||'').localeCompare(String(a.timestamp||'')));
+    const filtered=search?hist.filter(x=>String(x.santri||'').toLowerCase().includes(search)):hist;
+    if(count)count.textContent=`${filtered.length} input`;
+    if(!filtered.length){box.innerHTML='<div class="p-6 text-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-400">Belum ada riwayat input hafalan.</div>';return;}
+    const grouped={}; filtered.forEach(x=>{const k=String(x.santri||'-');(grouped[k]||(grouped[k]=[])).push(x);});
+    box.innerHTML=Object.keys(grouped).sort((a,b)=>a.localeCompare(b,'id')).map(name=>{
+      const rows=grouped[name];
+      return `<div class="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-800"><div class="px-4 py-3 bg-emerald-50 dark:bg-emerald-950/30 border-b border-emerald-100 dark:border-emerald-900/50 font-black text-sm text-emerald-900 dark:text-emerald-200">${safe(name)}</div><div class="divide-y divide-slate-100 dark:divide-slate-700">${rows.map(r=>`<div class="px-4 py-3 flex items-center justify-between gap-3"><div class="min-w-0"><div class="font-black text-sm text-slate-800 dark:text-slate-100">${safe(r.surat||'-')}</div><div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Level ${safe(r.level||'-')}</div></div></div>`).join('')}</div></div>`;
+    }).join('');
+  };
+  window.rqGetTrackingInputHistory=loadInputHistory;
   function santriList(){ return Array.isArray(window.santriList) ? window.santriList : []; }
   // Kompatibilitas untuk modul laporan lama: semua pemanggilan santri() diarahkan ke sumber data santri utama.
   if(typeof window.santri!=='function'){ window.santri=function(){ return Array.isArray(window.santriList) ? window.santriList : []; }; }
@@ -5356,9 +5405,15 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
   // Peringatan otomatis jika > batas idle (default 7 hari).
   // ============================================================
   function lastRecordForSurat(name, juz, arah, surat){
-    return records
-      .filter(r=>r.santri===name && String(r.juz)===String(juz) && r.arah===arah && r.surat===surat)
-      .sort((a,b)=>b.tanggal.localeCompare(a.tanggal)||b.id-a.id)[0] || null;
+    // Tetap mempertahankan API lama, tetapi berhenti melakukan sort seluruh riwayat
+    // untuk setiap surat. Satu lintasan cukup untuk menemukan record terakhir.
+    let best=null;
+    for(const r of records){
+      if(r.santri!==name || String(r.juz)!==String(juz) || r.arah!==arah || r.surat!==surat)continue;
+      if(!best || String(r.tanggal||'').localeCompare(String(best.tanggal||''))>0 ||
+         (String(r.tanggal||'')===String(best.tanggal||'') && Number(r.id||0)>Number(best.id||0))) best=r;
+    }
+    return best;
   }
 
   window.renderTrackingPerSuratOptions=function(){
@@ -5410,11 +5465,13 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
 
     let done=0, warningCount=0, never=0, totalProgress=0;
     const warningRows=[];
+    const recordIndex=buildRecordIndex(name,juz,arah);
 
     body.innerHTML=list.map((surat,i)=>{
       const total=surahInfo(surat).ayat||0;
-      const last=lastRecordForSurat(name,juz,arah,surat);
-      const max=last ? records.filter(r=>r.santri===name && String(r.juz)===String(juz) && r.arah===arah && r.surat===surat).reduce((m,r)=>Math.max(m,Number(r.ayatSampai)||0),0) : 0;
+      const rec=recordIndex.get(norm(surat));
+      const last=rec?.last||null;
+      const max=Number(rec?.max||0);
       const pct=total?Math.min(100,Math.round(max/total*100)):0;
       const idle=last?daysIdle(last.tanggal):Infinity;
       const old=last && idle>limit;
@@ -5482,8 +5539,7 @@ window.trackingSelectedClass = window.trackingSelectedClass || '';
   };
 
   window.clearTrackingHistory=function(){
-    if(!records.length) return;
-    if(confirm('Hapus seluruh data Tracking Tahfidz lokal di perangkat ini?')){records=[];save();window.renderTrackingDashboard();window.renderTrackingHistory();document.getElementById('trackingWaOutput').value='';}
+    window.rqResetAllTrackingHafalan?.();
   };
   window.openTrackingTahfidz=function(){
     window.renderTrackingSantriOptions(); window.refreshTrackingJuzLevelContext(); window.renderTrackingDashboard(); window.renderTrackingHistory(); window.renderTrackingPerSuratOptions(); window.renderTrackingPerSurat();
@@ -5521,6 +5577,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     window.refreshTrackingJuzLevelContext();
     window.renderTrackingDashboard();
     window.renderTrackingHistory();
+    window.renderTrackingInputHistoryArchive?.();
     window.renderHafalanTracker();
     window.renderTrackingPerSuratOptions();
     window.renderTrackingPerSurat();
@@ -5787,7 +5844,25 @@ document.addEventListener('DOMContentLoaded',()=>{
   function moveTrackerPanels(){
     const content=document.getElementById('trackerPageContent');
     if(!content) return;
-    ['tracker-panel-hafalan','tracker-panel-history','tracker-panel-capaian'].forEach(id=>{
+    /*
+      Semua panel menu utama harus menjadi saudara langsung di #trackerPageContent.
+      Sebelumnya hanya hafalan/history/capaian yang dipindahkan; panel bacaan dan
+      dashboard masih berada di dalam #section-tracking. Akibatnya selector
+      #trackerPageContent > .tracker-menu-panel dan dispatcher hideAll() tidak
+      selalu menyembunyikan panel yang bukan saudara langsung, sehingga isi Menu
+      Input dapat terlihat/bocor saat membuka Tracker Surat Persantri.
+
+      Patch ini hanya merapikan struktur DOM panel menu; isi, fungsi, dan data
+      masing-masing panel tidak diubah.
+    */
+    [
+      'tracker-panel-input',
+      'tracker-panel-hafalan',
+      'tracker-panel-capaian',
+      'tracker-panel-history',
+      'tracker-panel-bacaan',
+      'tracker-panel-dashboard'
+    ].forEach(id=>{
       const panel=document.getElementById(id);
       if(panel && panel.parentElement!==content){
         content.appendChild(panel);
@@ -5796,6 +5871,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',moveTrackerPanels);
   else moveTrackerPanels();
+  window.addEventListener('load',moveTrackerPanels,{once:true});
 })();
 </script>
 <style id="tracker-layout-dom-fix-v3-style">
@@ -5824,6 +5900,11 @@ document.addEventListener('DOMContentLoaded',()=>{
       .dark .wa-wali-kop .text-emerald-800{color:#065f46 !important;}
       .dark .wa-wali-kop .text-slate-500{color:#64748b !important;}
       .dark .wa-wali-kop .text-slate-400{color:#94a3b8 !important;}
+</style>
+<style id="rq-reset-history-v29-style">
+.rq-reset-level-btn,.rq-reset-all-hafalan-btn{min-height:36px;white-space:nowrap;}
+#trackingInputHistoryArchiveList{scrollbar-width:thin;}
+@media(max-width:640px){.rq-reset-level-btn,.rq-reset-all-hafalan-btn{flex:1 1 100%;}.rq-v31-level-all-check{flex:1 1 100%;justify-content:center;}}
 </style>
 <script>
 window.switchTrackerMenu=function(menu){
@@ -5866,13 +5947,13 @@ window.switchTrackerMenu=function(menu){
   }
   if(menu==='wa' && typeof window.generateTrackingReport==='function') window.generateTrackingReport();
   if(menu==='report' && typeof window.generateTrackingReport==='function') window.generateTrackingReport();
-  if(menu==='history' && typeof window.renderTrackingHistory==='function') window.renderTrackingHistory();
+  if(menu==='history' && typeof window.renderTrackingInputHistoryArchive==='function') window.renderTrackingInputHistoryArchive();
   window.scrollTo({top:0,behavior:'smooth'});
 };
 
-document.addEventListener('DOMContentLoaded',function(){
+if(!window.__rqV30SkipLegacyMenuInitial){document.addEventListener('DOMContentLoaded',function(){
   window.switchTrackerMenu('input');
-});
+});}
 </script>
 <script id="tracker-expand-safe-v16-js">
 (function(){
@@ -5963,8 +6044,16 @@ function scan(){
     const studentSelect=document.getElementById('trackingSantri');
     if(studentSelect)studentSelect.addEventListener('change',updateStudentClass);
     const root=document.getElementById('hafalanTrackerSections');
-    if(root){
-      new MutationObserver(function(){scan();}).observe(root,{childList:true});
+    if(root && !window.__rqExpandObserverV1){
+      /* PATCH v25: debounce render kartu.
+         Jangan scan ulang untuk setiap node yang dibuat saat render. */
+      let scanTimer=0;
+      const observer=new MutationObserver(function(){
+        clearTimeout(scanTimer);
+        scanTimer=setTimeout(function(){scan();},120);
+      });
+      observer.observe(root,{childList:true});
+      window.__rqExpandObserverV1=observer;
     }
   }
 
@@ -6329,6 +6418,67 @@ function renderOptions(){
     delete window.__trackingSuratDateDrafts[suratDateKey(name,juz,arah,level,surat)];
   }
 
+  function buildRecordIndex(name,juz,arah){
+    // Satu kali baca Local Storage untuk seluruh kartu, bukan filter berulang per surat.
+    const wanted=String(name||'');
+    const j=String(juz||'');
+    const a=String(arah||'');
+    const index=new Map();
+    records().forEach(r=>{
+      if(String(r.santri||'')!==wanted || String(r.juz||'')!==j || String(r.arah||'')!==a)return;
+      const key=norm(r.surat);
+      if(!key)return;
+      const end=Number(r.ayatSampai)||0;
+      const prev=index.get(key);
+      if(!prev) index.set(key,{max:end,last:r});
+      else{
+        if(end>prev.max)prev.max=end;
+        if(String(r.tanggal||'').localeCompare(String(prev.last?.tanggal||''))>0 ||
+           (String(r.tanggal||'')===String(prev.last?.tanggal||'') && Number(r.id||0)>Number(prev.last?.id||0))) prev.last=r;
+      }
+    });
+    return index;
+  }
+
+  function resetTrackingInputForm(){
+    ['trackingSurat','trackingAyatDari','trackingAyatSampai'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    const extra=document.getElementById('trackingAdditionalRows');if(extra)extra.innerHTML='';
+    try{window.restoreTrackingAssessment?.('bacaan','');window.restoreTrackingAssessment?.('hafalan','')}catch(e){}
+    const note=document.getElementById('trackingCatatan');if(note)note.value='';
+    try{window.updateTrackingProgress?.();window.updateTrackingMurojaahInfo?.()}catch(e){}
+  }
+  function clearDraftsFor(name,juz,arah,level){
+    const drafts=window.__trackingSuratDateDrafts||{};
+    const prefix=[String(name||''),String(juz||''),String(arah||''),String(level||'')].join('||')+'||';
+    Object.keys(drafts).forEach(k=>{if(k.startsWith(prefix))delete drafts[k];});
+  }
+  window.rqResetTrackingLevel=function(){
+    const name=String(document.getElementById('trackingSantri')?.value||'').trim(), c=context();
+    if(!name){toast('Pilih nama santri terlebih dahulu.','error');return;}
+    const list=suratList(c.juz,c.arah,c.level);
+    if(!list.length){toast(`Tidak ada surat pada Level ${c.level}.`,'error');return;}
+    if(!confirm(`Reset hafalan aktif ${name} untuk Juz ${c.juz}, Arah ${c.arah}, Level ${c.level}?\n\nData input aktif pada level ini akan hilang dari tracker. RIWAYAT INPUT TIDAK DIHAPUS.`))return;
+    const allowed=new Set(list.map(norm)), before=records.length;
+    records=records.filter(r=>!(String(r?.santri||'').trim()===name&&String(r?.juz||'')===String(c.juz)&&String(r?.arah||'')===String(c.arah)&&Number(r?.level||0)===Number(c.level)&&allowed.has(norm(r?.surat))));
+    save(); clearDraftsFor(name,c.juz,c.arah,c.level);
+    try{const key='rq_tracking_level_checklist_v1',data=JSON.parse(localStorage.getItem(key)||'{}');if(data[name]?.[c.juz])data[name][c.juz][c.level]=false;localStorage.setItem(key,JSON.stringify(data));}catch(e){}
+    resetTrackingInputForm();
+    try{window.renderTrackingLevelChecklist?.();window.renderTrackingLevelSuratList?.();window.renderTrackingDashboard?.();window.renderTrackingHistory?.();window.renderHafalanTracker?.();window.renderTrackingPerSurat?.();window.generateTrackingWA?.();}catch(e){}
+    toast(`Reset Level ${c.level} selesai. ${before-records.length} data hafalan aktif dihapus. Riwayat Input tetap aman.`,'success');
+  };
+  window.rqResetAllTrackingHafalan=function(){
+    const name=String(document.getElementById('trackingSantri')?.value||'').trim();
+    if(!name){toast('Pilih nama santri terlebih dahulu.','error');return;}
+    const count=records.filter(r=>String(r?.santri||'').trim()===name).length;
+    if(!confirm(`RESET SEMUA HAFALAN AKTIF untuk ${name}?\n\nSemua input hafalan aktif santri ini akan dihapus dari tracker. RIWAYAT INPUT TIDAK DIHAPUS.`))return;
+    records=records.filter(r=>String(r?.santri||'').trim()!==name); save();
+    const drafts=window.__trackingSuratDateDrafts||{};Object.keys(drafts).forEach(k=>{if(k.startsWith(name+'||'))delete drafts[k];});
+    try{const key='rq_tracking_level_checklist_v1',data=JSON.parse(localStorage.getItem(key)||'{}');if(data[name])delete data[name];localStorage.setItem(key,JSON.stringify(data));}catch(e){}
+    resetTrackingInputForm();
+    try{window.renderTrackingLevelChecklist?.();window.renderTrackingLevelSuratList?.();window.renderTrackingDashboard?.();window.renderTrackingHistory?.();window.renderHafalanTracker?.();window.renderTrackingPerSurat?.();window.generateTrackingWA?.();}catch(e){}
+    toast(`Reset semua hafalan selesai. ${count} data hafalan aktif dihapus. Riwayat Input tetap aman.`,'success');
+  };
+
   function renderCards(){
     const box=document.getElementById('trackingLevelSuratList');
     if(!box)return;
@@ -6336,19 +6486,58 @@ function renderOptions(){
     const mainDate=document.getElementById('trackingTanggal')?.value||today();
     box.dataset.juz=c.juz; box.dataset.arah=c.arah; box.dataset.level=c.level;
     if(!list.length){
-      box.innerHTML=`<div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50"><div class="text-xs font-black text-emerald-800 dark:text-emerald-300">${Number(c.level)===8?'Ujian Tasmi\' Semua Surat Juz tersebut '+esc(c.juz):'Level '+esc(c.level)+' Juz '+esc(c.juz)}</div></div>`;
+      box.innerHTML=`<div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div><div class="text-xs font-black text-emerald-800 dark:text-emerald-300">${Number(c.level)===8?'Ujian Tasmi\' Semua Surat Juz tersebut '+esc(c.juz):'Level '+esc(c.level)+' Juz '+esc(c.juz)}</div><div class="text-[9px] font-bold text-slate-500 mt-1">Tidak ada kartu surat pada level ini, tetapi reset level tetap tersedia.</div></div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="rq-reset-level-btn px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black shadow-sm" onclick="window.rqResetTrackingLevel()"><i class="fa-solid fa-rotate-left mr-1"></i>Reset Level ${esc(c.level)}</button>
+            <button type="button" class="rq-reset-all-hafalan-btn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-black shadow-sm" onclick="window.rqResetAllTrackingHafalan()"><i class="fa-solid fa-trash-can mr-1"></i>Reset Semua Hafalan</button>
+          </div>
+        </div>
+      </div>`;
       return;
     }
-    box.innerHTML=`<div class="flex items-center justify-between gap-2 mb-2"><span class="text-[10px] font-black text-cyan-800 dark:text-cyan-300">Semua Surat Level ${esc(c.level)}</span><span class="text-[9px] font-bold text-slate-400">${list.length} surat</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${list.map((surat,i)=>{
-      const total=totalAyat(surat), max=maxSaved(name,surat,c.juz,c.arah), pct=total?Math.min(100,Math.round(max/total*100)):0;
-      const last=lastSaved(name,surat,c.juz,c.arah);
+    const recordIndex=buildRecordIndex(name,c.juz,c.arah);
+    const allDone=list.every(surat=>{
+      const total=totalAyat(surat), rec=recordIndex.get(norm(surat));
+      return total>0 && Number(rec?.max||0)>=total;
+    });
+    box.innerHTML=`<div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-3 p-2.5 rounded-xl border border-cyan-200 dark:border-cyan-800/70 bg-cyan-50 dark:bg-cyan-950/30">
+      <div><div class="text-[12px] font-black text-cyan-900 dark:text-cyan-100">Semua Surat Level ${esc(c.level)}</div><div class="text-[9px] font-bold text-cyan-700 dark:text-cyan-300">${list.length} surat · Input ayat dan ceklis selesai langsung di kartu surat.</div></div>
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="rq-v31-level-all-check flex items-center gap-2 cursor-pointer text-[10px] font-black text-cyan-900 dark:text-cyan-100 px-2 py-1.5 rounded-lg bg-white/70 dark:bg-slate-900/50">
+          <input type="checkbox" data-rq-v31-check-all="1" class="h-4 w-4 accent-emerald-500" ${allDone?'checked':''} />
+          <span>Selesai semua surat</span>
+        </label>
+        <button type="button" class="rq-reset-level-btn px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black shadow-sm" onclick="window.rqResetTrackingLevel()" title="Hapus hafalan aktif Level ${esc(c.level)} tanpa menghapus Riwayat Input"><i class="fa-solid fa-rotate-left mr-1"></i>Reset Level ${esc(c.level)}</button>
+        <button type="button" class="rq-reset-all-hafalan-btn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-black shadow-sm" onclick="window.rqResetAllTrackingHafalan()" title="Hapus semua hafalan aktif santri ini tanpa menghapus Riwayat Input"><i class="fa-solid fa-trash-can mr-1"></i>Reset Semua Hafalan</button>
+      </div>
+    </div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${list.map((surat,i)=>{
+      const total=totalAyat(surat), rec=recordIndex.get(norm(surat)), max=Number(rec?.max||0), pct=total?Math.min(100,Math.round(max/total*100)):0;
+      const last=rec?.last||null;
       const date=getSuratDateDraft(name,c.juz,c.arah,c.level,surat,last?.tanggal||mainDate);
-      const cls=pct>=100?'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50':pct>0?'bg-amber-50 dark:bg-amber-950/25 border-amber-200 dark:border-amber-900/50':'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700';
+      const cls=pct>=100?'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/70':pct>0?'bg-amber-50 dark:bg-amber-950/25 border-amber-200 dark:border-amber-800/70':'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700';
       const status=pct>=100?'Selesai':pct>0?`Ayat 1-${max}`:'Belum setor';
-      return `<div class="w-full p-3 rounded-xl border-2 ${cls} transition hover:border-emerald-400" data-rq-v31-card="${esc(surat)}"><button type="button" data-rq-v31-surat="${esc(surat)}" class="w-full text-left"><div class="flex items-center justify-between gap-2"><span class="text-xs font-black">${i+1}. ${esc(surat)}</span><span class="text-[9px] font-black">${pct}%</span></div><div class="text-[9px] text-slate-500 mt-1">${total} ayat · ${status}</div></button><div class="mt-2 pt-2 border-t border-slate-200/80 dark:border-slate-700/80"><label class="flex items-center gap-2 text-[8px] font-black text-slate-500 dark:text-slate-400"><i class="fa-regular fa-calendar"></i><span>Tanggal setoran</span><input type="date" value="${esc(date)}" data-rq-v31-date="${esc(surat)}" class="ml-auto w-[125px] px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[9px] font-black text-slate-700 dark:text-slate-200" aria-label="Tanggal setoran ${esc(surat)}"></label></div></div>`;
+      const inputValue=max>0?Math.min(max,total):'';
+      return `<div class="w-full p-3 rounded-xl border-2 ${cls} transition" data-rq-v31-card="${esc(surat)}" data-rq-v31-active="0">
+        <div class="flex items-start justify-between gap-2">
+          <button type="button" data-rq-v31-surat="${esc(surat)}" class="flex-1 min-w-0 text-left">
+            <div class="flex items-center justify-between gap-2"><span class="text-sm font-black rq-v31-surat-name">${i+1}. ${esc(surat)}</span><span class="text-xs font-black rq-v31-pct">${pct}%</span></div>
+            <div class="text-[10px] font-bold rq-v31-status mt-1">${total} ayat · ${status}</div>
+          </button>
+          <label class="shrink-0 flex items-center gap-1.5 cursor-pointer text-[9px] font-black rq-v31-complete-label" title="Tandai surat ini selesai setoran">
+            <input type="checkbox" data-rq-v31-complete="${esc(surat)}" class="h-4 w-4 accent-emerald-500" ${pct>=100?'checked':''}/>
+            <span>Selesai</span>
+          </label>
+        </div>
+        <div class="mt-3 grid grid-cols-[1fr_auto] gap-2 items-end">
+          <label class="block"><span class="block text-[9px] font-black mb-1 rq-v31-field-label">Ayat setoran</span><div class="flex items-center gap-1.5"><span class="text-xs font-black">1</span><span class="text-xs font-black">−</span><input type="number" min="1" max="${total}" value="${esc(inputValue)}" placeholder="${total}" data-rq-v31-ayat="${esc(surat)}" class="w-full min-h-[42px] px-3 rounded-xl border-2 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-sm font-black" aria-label="Sampai ayat ${esc(surat)}"><span class="text-[10px] font-black whitespace-nowrap">/ ${total}</span></div></label>
+          <label class="block"><span class="block text-[9px] font-black mb-1 rq-v31-field-label">Tanggal</span><input type="date" value="${esc(date)}" data-rq-v31-date="${esc(surat)}" class="w-[128px] min-h-[42px] px-2 rounded-xl border-2 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-[10px] font-black" aria-label="Tanggal setoran ${esc(surat)}"></label>
+        </div>
+        <div class="rq-v31-card-progress-track"><div class="rq-v31-card-bar" style="width:${pct}%"></div></div>
+      </div>`;
     }).join('')}</div>`;
   }
-
   function clearMainAyat(){
     const d=document.getElementById('trackingAyatDari'), s=document.getElementById('trackingAyatSampai');
     if(d)d.value=''; if(s)s.value='';
@@ -6440,14 +6629,29 @@ function renderOptions(){
     const out=[];
     const main=document.getElementById('trackingSurat'), d=document.getElementById('trackingAyatDari'), a=document.getElementById('trackingAyatSampai');
     const c=context(), name=String(document.getElementById('trackingSantri')?.value||'').trim(), mainDate=document.getElementById('trackingTanggal')?.value||today();
+    const activeCards=new Set();
+    document.querySelectorAll('#trackingLevelSuratList [data-rq-v31-card][data-rq-v31-active="1"]').forEach(card=>{
+      const surat=String(card.getAttribute('data-rq-v31-card')||'').trim();
+      if(!surat)return;
+      const total=totalAyat(surat);
+      const check=card.querySelector('[data-rq-v31-complete]');
+      const end=card.querySelector('[data-rq-v31-ayat]');
+      const dateInput=card.querySelector('[data-rq-v31-date]');
+      const sampai=check?.checked ? total : Number(end?.value||0);
+      const tanggal=String(dateInput?.value||mainDate);
+      activeCards.add(norm(surat));
+      out.push({surat,dari:1,sampai,tanggal});
+    });
     const mainSurat=String(main?.value||'').trim();
-    const mainDraftDate=mainSurat ? getSuratDateDraft(name,c.juz,c.arah,c.level,mainSurat,mainDate) : mainDate;
-    const mr={surat:mainSurat,dari:Number(d?.value||0),sampai:Number(a?.value||0),tanggal:mainDraftDate};
-    if(mr.surat||mr.dari||mr.sampai)out.push(mr);
+    // Jika kartu surat sedang aktif, gunakan nilai kartu dan jangan gandakan dari form utama.
+    if(mainSurat && !activeCards.has(norm(mainSurat))){
+      const mainDraftDate=mainSurat ? getSuratDateDraft(name,c.juz,c.arah,c.level,mainSurat,mainDate) : mainDate;
+      const mr={surat:mainSurat,dari:Number(d?.value||0),sampai:Number(a?.value||0),tanggal:mainDraftDate};
+      if(mr.surat||mr.dari||mr.sampai)out.push(mr);
+    }
     document.querySelectorAll('#trackingAdditionalRows .tracking-extra-row').forEach(row=>out.push({surat:String(row.querySelector('.extra-surat')?.value||'').trim(),dari:Number(row.querySelector('.extra-dari')?.value||0),sampai:Number(row.querySelector('.extra-sampai')?.value||0),tanggal:String(row.querySelector('.extra-tanggal')?.value||mainDate)}));
     return out;
   }
-
   function recordLevel(santri,juz,level,tanggal){
     if(!santri)return;
     const data=read(LEVEL_KEY,{}); data[santri]=data[santri]||{}; data[santri][juz]=data[santri][juz]||{}; data[santri][juz][level]=true; write(LEVEL_KEY,data);
@@ -6467,13 +6671,62 @@ function renderOptions(){
   // Ambil fungsi Simpan asli setelah seluruh patch lama yang bertabrakan sudah dibuang.
   const baseSave=window.saveTrackingSetoran;
 
+  function cListLength(juz,arah,level){ return suratList(juz,arah,level).length; }
+
+  function applyAssessmentToCompletedLevel(santri,c,penilaianBacaan,penilaianHafalan,catatan){
+    if(!santri || (!penilaianBacaan && !penilaianHafalan && !String(catatan||'').trim())) return 0;
+    const list=suratList(c.juz,c.arah,c.level);
+    if(!list.length) return 0;
+    const rows=read(RECORD_KEY,[]);
+    if(!Array.isArray(rows) || !rows.length) return 0;
+    let changed=0;
+    for(const surat of list){
+      const total=totalAyat(surat);
+      const candidates=rows.filter(r=>String(r?.santri||'').trim()===santri && String(r?.juz||'')===String(c.juz) && String(r?.arah||'')===String(c.arah) && norm(r?.surat)===norm(surat) && Number(r?.ayatSampai||0)>=total);
+      if(!candidates.length) return 0;
+    }
+    for(const surat of list){
+      const candidates=rows.filter(r=>String(r?.santri||'').trim()===santri && String(r?.juz||'')===String(c.juz) && String(r?.arah||'')===String(c.arah) && norm(r?.surat)===norm(surat) && Number(r?.ayatSampai||0)>=totalAyat(surat));
+      candidates.sort((a,b)=>String(b?.tanggal||'').localeCompare(String(a?.tanggal||'')) || Number(b?.id||0)-Number(a?.id||0));
+      const rec=candidates[0];
+      if(!rec) continue;
+      if(penilaianBacaan) rec.penilaianBacaan=penilaianBacaan;
+      if(penilaianHafalan) rec.penilaianHafalan=penilaianHafalan;
+      rec.kualitas=penilaianHafalan || penilaianBacaan || rec.kualitas || '';
+      if(String(catatan||'').trim()) rec.catatan=catatan;
+      changed++;
+    }
+    if(changed) write(RECORD_KEY,rows);
+    return changed;
+  }
+
   function save(){
     const rows=readRows();
-    if(!rows.length){toast('Pilih surat dan isi rentang ayat terlebih dahulu.','error');return;}
     const santri=String(document.getElementById('trackingSantri')?.value||'').trim();
-    const tanggalDefault=document.getElementById('trackingTanggal')?.value||new Date().toISOString().slice(0,10);
     const c=context();
+    const noteEl=document.getElementById('trackingCatatan');
+    const pbEl=document.getElementById('trackingPenilaianBacaan');
+    const phEl=document.getElementById('trackingPenilaianHafalan');
+    const selectedNote=noteEl?.value||'';
+    const selectedPB=pbEl?.value||'';
+    const selectedPH=phEl?.value||'';
+    const assessmentOnly=rows.length===1 && rows[0]?.surat && !Number(rows[0]?.dari||0) && !Number(rows[0]?.sampai||0) && (selectedPB || selectedPH || String(selectedNote).trim());
+    if(assessmentOnly && santri){
+      const updated=applyAssessmentToCompletedLevel(santri,c,selectedPB,selectedPH,selectedNote);
+      if(updated===cListLength(c.juz,c.arah,c.level)){
+        clearAfterSave();
+        try{window.renderTrackingLevelSuratList?.();window.renderTrackingHistory?.();window.renderTrackingInputHistoryArchive?.();window.updateTrackingMurojaahInfo?.();}catch(e){}
+        toast(`Penilaian berhasil disimpan untuk ${updated} surat yang sudah selesai pada Level ${c.level}. Riwayat input tetap tersimpan di Menu Riwayat Input.`,'success');
+        return;
+      }
+    }
+    if(!rows.length){toast('Pilih surat dan isi rentang ayat terlebih dahulu.','error');return;}
+    if(rows.length===1 && rows[0]?.surat && !Number(rows[0]?.dari||0) && !Number(rows[0]?.sampai||0)){
+      toast('Level ini sudah memiliki setoran, tetapi belum ada rentang ayat baru. Pilih ayat yang akan disetor atau klik kartu surat yang akan dinilai.','error');
+      return;
+    }
     if(!santri){toast('Pilih nama santri terlebih dahulu.','error');return;}
+    const tanggalDefault=document.getElementById('trackingTanggal')?.value||new Date().toISOString().slice(0,10);
     const allowed=suratList(c.juz,c.arah,c.level), seen=new Set(), valid=[];
     for(let i=0;i<rows.length;i++){
       const r=rows[i], n=norm(r.surat), total=totalAyat(r.surat);
@@ -6502,8 +6755,11 @@ function renderOptions(){
         if(note)note.value=savedNote;if(pb)pb.value=savedPB;if(ph)ph.value=savedPH;
         const before=read(RECORD_KEY,[]).length;
         baseSave();
-        const after=read(RECORD_KEY,[]).length;
+        const afterRows=read(RECORD_KEY,[]);
+        const after=afterRows.length;
         if(after<=before)throw new Error('Data tidak bertambah setelah fungsi simpan dijalankan.');
+        const newest=afterRows.slice().sort((x,y)=>Number(y?.id||0)-Number(x?.id||0))[0];
+        archiveTrackingRecord(newest);
         saved++;
         recordLevel(santri,c.juz,c.level,rowDate);
         clearSuratDateDraft(santri,c.juz,c.arah,c.level,r.surat);
@@ -6527,7 +6783,7 @@ function renderOptions(){
     try{window.refreshSantriTargetSettings?.()}catch(e){}
     try{window.refreshSantriTargetSummary?.()}catch(e){}
     try{window.refreshTrackingLevelChecklistProgress?.()}catch(e){}
-    toast(`${saved} setoran berhasil disimpan.`,'success');
+    toast(`${saved} setoran berhasil disimpan. Lihat Menu Riwayat Input, Tracker Surat Persantri, atau Dashboard Laporan Persantri.`,'success');
   }
 
   // Ekspor hanya fungsi yang memang harus mengatur input setoran.
@@ -7024,21 +7280,9 @@ function renderOptions(){
   window.renderWaWaliSantriReport=function(){init();renderPreview();};
   window.copyWaWaliSantriReport=copy;
   window.sendWaWaliSantriReport=send;
-  function hookSwitch(){
-    const original=window.switchTrackerMenu;if(typeof original!=='function'||original.__waWaliWrapped)return;
-    function wrapped(menu){
-      if(menu!=='wa-wali')return original(menu);
-      ['input','hafalan','history','wa-wali'].forEach(k=>{
-        const p=document.getElementById('tracker-panel-'+k),b=document.getElementById('trackerMenu-'+k);
-        if(p){p.dataset.panelHidden=k==='wa-wali'?'0':'1';p.style.display=k==='wa-wali'?'block':'none';}
-        if(b){b.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(k==='wa-wali')b.classList.add('bg-white','text-emerald-900','shadow');else b.classList.add('text-emerald-50','hover:bg-emerald-700');}
-      });
-      document.body.classList.remove('tracker-hafalan-active');
-      init();renderPreview();window.scrollTo({top:0,behavior:'smooth'});
-    }
-    wrapped.__waWaliWrapped=true;window.switchTrackerMenu=wrapped;
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init();hookSwitch();});else{init();hookSwitch();}
+  /* Laporan WA Wali hanya menyiapkan panel dan renderer. Perpindahan menu
+     ditangani oleh dispatcher final tunggal agar tidak ada wrapper berantai. */
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{init();});else{init();}
 })();
 </script>
 
@@ -7166,67 +7410,6 @@ function renderOptions(){
 
 \n
 
-
-<script id="tracker-menu-stability-v1">
-(function(){
-  'use strict';
-
-  const panelMap={
-    'input':'tracker-panel-input',
-    'hafalan':'tracker-panel-hafalan',
-    'capaian':'tracker-panel-capaian',
-    'bacaan':'tracker-panel-bacaan',
-    'history':'tracker-panel-history',
-    'wa-wali':'tracker-panel-wa-wali',
-    'wa-kondisi':'tracker-panel-wa-kondisi'
-  };
-
-  function normalize(menu){
-    const target=panelMap[menu]||null;
-    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{
-      const active=target && p.id===target;
-      p.dataset.panelHidden=active?'0':'1';
-      p.style.display=active?'block':'none';
-    });
-
-    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{
-      const active=btn.id===('trackerMenu-'+menu);
-      btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';
-      if(active){
-        btn.classList.add('bg-white','text-emerald-900','shadow');
-      }else{
-        btn.classList.add('text-emerald-50','hover:bg-emerald-700');
-      }
-    });
-  }
-
-  function install(){
-    const current=window.switchTrackerMenu;
-    if(typeof current!=='function')return;
-    if(current.__stableMenuWrapper)return;
-
-    function stable(menu){
-      const result=current(menu);
-      normalize(menu);
-      return result;
-    }
-    stable.__stableMenuWrapper=true;
-    window.switchTrackerMenu=stable;
-
-    // The original app starts at Input Setoran. Keep that behavior,
-    // but make sure only that menu is visibly active.
-    setTimeout(()=>normalize('input'),0);
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',install);
-  }else{
-    install();
-  }
-
-  window.__normalizeTrackerMenu=normalize;
-})();
-</script>
 
 <!-- =========================================================
      LOCAL STORAGE ONLY
@@ -7364,29 +7547,6 @@ function renderOptions(){
 })();
 </script>
 
-<script id="wa-menu-final-direct-bind-v1">
-(function(){
-  'use strict';
-  function bind(){
-    // Restore the application's original menu dispatcher. The WA modules now
-    // open their own panels directly, avoiding a chain of nested wrappers.
-    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
-      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
-    }
-    const personal=document.getElementById('trackerMenu-wa-wali');
-    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
-      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
-    }
-    const kelas=document.getElementById('trackerMenu-wa-kelas');
-    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
-      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
-  else setTimeout(bind,150);
-  window.addEventListener('load',()=>setTimeout(bind,150));
-})();
-</script>
 </body>
 
 <script id="sync-information-menu-stability-v1">
@@ -7719,8 +7879,6 @@ function renderOptions(){
 
   function openMenu(){
     if(!build())return;
-    const original=window.__rqOriginalSwitchTrackerMenu;
-    if(typeof original==='function')original(MENU);
     document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{p.style.display=p.id===PANEL?'block':'none';p.dataset.panelHidden=p.id===PANEL?'0':'1'});
     document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{btn.className='tracker-menu-btn px-3 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap';if(btn.id===BTN)btn.classList.add('bg-white','text-emerald-900','shadow');else btn.classList.add('text-emerald-50','hover:bg-emerald-700')});
     populate(); renderPreview(); window.scrollTo({top:0,behavior:'smooth'});
@@ -7729,15 +7887,8 @@ function renderOptions(){
   window.__openWaKelasLevelPanel = openMenu;
 
   function install(){
-    if(!window.__rqOriginalSwitchTrackerMenu)window.__rqOriginalSwitchTrackerMenu=window.switchTrackerMenu;
-    const current=window.switchTrackerMenu;
-    if(typeof current==='function'&&!current.__waKelasWrapped){
-      const wrapped=function(menu){
-        if(menu===MENU){openMenu();return;}
-        return current.apply(this,arguments);
-      };
-      wrapped.__waKelasWrapped=true; window.switchTrackerMenu=wrapped;
-    }
+    /* Hanya siapkan tombol/panel. Tidak membungkus switchTrackerMenu agar
+       tidak membuat rantai dispatcher saat menu lain berpindah. */
     build();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
@@ -7937,23 +8088,10 @@ function renderOptions(){
 
   window.__openWaWaliPersonalPanel = showPanel;
 
-  function installSwitchGuard(){
-    const current=window.switchTrackerMenu;
-    if(typeof current!=='function' || current.__waWaliFinalFix) return;
-    const wrapped=function(menu){
-      if(menu===MENU){
-        ensure();
-        return showPanel();
-      }
-      return current.apply(this,arguments);
-    };
-    wrapped.__waWaliFinalFix=true;
-    window.switchTrackerMenu=wrapped;
-  }
-
   function init(){
+    /* Panel/button tetap disiapkan di sini. Perpindahan menu dikendalikan
+       oleh dispatcher final tunggal di bagian paling akhir file. */
     ensure();
-    installSwitchGuard();
   }
 
   if(document.readyState==='loading'){
@@ -7965,29 +8103,6 @@ function renderOptions(){
 })();
 </script>
 
-<script id="wa-menu-final-direct-bind-v1b">
-(function(){
-  'use strict';
-  function bind(){
-    // Restore the application's original menu dispatcher. The WA modules now
-    // open their own panels directly, avoiding a chain of nested wrappers.
-    if(typeof window.__rqOriginalSwitchTrackerMenu==='function'){
-      window.switchTrackerMenu=window.__rqOriginalSwitchTrackerMenu;
-    }
-    const personal=document.getElementById('trackerMenu-wa-wali');
-    if(personal && typeof window.__openWaWaliPersonalPanel==='function'){
-      personal.onclick=function(e){e.preventDefault();window.__openWaWaliPersonalPanel();};
-    }
-    const kelas=document.getElementById('trackerMenu-wa-kelas');
-    if(kelas && typeof window.__openWaKelasLevelPanel==='function'){
-      kelas.onclick=function(e){e.preventDefault();window.__openWaKelasLevelPanel();};
-    }
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,150));
-  else setTimeout(bind,150);
-  window.addEventListener('load',()=>setTimeout(bind,150));
-})();
-</script>
 <script id="rq-input-universal-sync-v2">
 (function(){
   'use strict';
@@ -8512,29 +8627,6 @@ function renderOptions(){
   document.addEventListener('change',e=>{if(e.target?.id==='trackingSantri')setTimeout(window.renderTrackingDashboardPersantri,0);});
 })();
 </script>
-<script id="rq-dashboard-persantri-v1-dispatch">
-(function(){
-  'use strict';
-  function install(){
-    const old=window.switchTrackerMenu;
-    if(typeof old!=='function'||old.__rqDashboardWrapped)return;
-    function wrapped(menu){
-      if(menu==='dashboard'){
-        document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(p=>{p.style.display='none';p.dataset.panelHidden='1';});
-        const p=document.getElementById('tracker-panel-dashboard');if(p){p.style.display='block';p.dataset.panelHidden='0';}
-        document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(btn=>{btn.classList.remove('bg-white','text-emerald-900','shadow');btn.classList.remove('text-emerald-50','hover:bg-emerald-700');if(btn.id==='trackerMenu-dashboard')btn.classList.add('bg-white','text-emerald-900','shadow');else btn.classList.add('text-emerald-50','hover:bg-emerald-700');});
-        window.renderTrackingDashboardPersantri();window.scrollTo({top:0,behavior:'smooth'});return;
-      }
-      return old(menu);
-    }
-    wrapped.__rqDashboardWrapped=true;wrapped.__rqDashboardOriginal=old;window.switchTrackerMenu=wrapped;
-  }
-  function ready(){setTimeout(install,20);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
-  window.addEventListener('load',()=>setTimeout(install,120));
-})();
-</script>
-
 <script id="rq-dashboard-layout-fix-v3">
 (function(){
   'use strict';
@@ -8635,91 +8727,6 @@ function renderOptions(){
 
 
 
-<script id="rq-wa-wali-click-final-v1">
-(function(){
-  'use strict';
-  const BTN_ID='trackerMenu-wa-wali';
-  const PANEL_ID='tracker-panel-wa-wali';
-
-  function hidePanels(){
-    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
-      p.style.setProperty('display','none','important');
-      p.style.setProperty('visibility','hidden','important');
-      p.style.setProperty('pointer-events','none','important');
-      p.dataset.panelHidden='1';
-    });
-  }
-
-  function activateButton(){
-    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(b){
-      b.classList.remove('bg-white','text-emerald-900','shadow');
-      b.classList.remove('text-emerald-50','hover:bg-emerald-700');
-      if(b.id===BTN_ID)b.classList.add('bg-white','text-emerald-900','shadow');
-      else b.classList.add('text-emerald-50','hover:bg-emerald-700');
-    });
-  }
-
-  function open(){
-    try{
-      let panel=document.getElementById(PANEL_ID);
-      if(!panel && typeof window.renderWaWaliSantriReport==='function'){
-        try{ window.renderWaWaliSantriReport(); }catch(err){ console.error('WA Wali render:',err); }
-        panel=document.getElementById(PANEL_ID);
-      }
-      if(!panel){
-        console.error('Panel Laporan WA Wali Santri tidak ditemukan.');
-        return false;
-      }
-      hidePanels();
-      panel.style.setProperty('display','block','important');
-      panel.style.setProperty('visibility','visible','important');
-      panel.style.setProperty('pointer-events','auto','important');
-      panel.dataset.panelHidden='0';
-      document.body.setAttribute('data-tracker-active-menu','wa-wali');
-      document.body.classList.remove('tracker-hafalan-active');
-      document.body.classList.remove('tracker-dashboard-active');
-      activateButton();
-      if(typeof window.renderWaWaliSantriReport==='function'){
-        try{window.renderWaWaliSantriReport();}catch(err){console.error('WA Wali report:',err);}
-      }
-      window.scrollTo({top:0,behavior:'smooth'});
-      return true;
-    }catch(err){
-      console.error('WA Wali click error:',err);
-      return false;
-    }
-  }
-
-  function bind(){
-    const nav=document.querySelector('#appHeader nav > div');
-    if(!nav)return;
-    const btn=document.getElementById(BTN_ID);
-    if(!btn)return;
-    btn.type='button';
-    btn.style.pointerEvents='auto';
-    btn.style.position='relative';
-    btn.style.zIndex='30';
-    btn.onclick=function(e){e.preventDefault();e.stopPropagation();open();};
-    if(btn.dataset.rqWaFinalBound!=='1'){
-      btn.addEventListener('click',function(e){
-        e.preventDefault();e.stopImmediatePropagation();open();
-      },true);
-      btn.dataset.rqWaFinalBound='1';
-    }
-    window.__openWaWaliPersonalPanel=open;
-  }
-
-  function init(){
-    bind();
-    setTimeout(bind,100);
-    setTimeout(bind,500);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
-  else init();
-  window.addEventListener('load',function(){setTimeout(bind,100);});
-  window.addEventListener('pageshow',function(){setTimeout(bind,100);});
-})();
-</script>
 </html>
 
 <style id="rq-final-menu-readability-v1">
@@ -8755,30 +8762,12 @@ function renderOptions(){
 </script>
 <script id="rq-dashboard-direct-open-v2">
 (function(){
+  /* Tombol Dashboard tetap memakai nama fungsi lama, tetapi semua perpindahan
+     panel sekarang melewati dispatcher final tunggal. */
   window.openDashboardPersantri=function(){
-    try{
-      document.body.setAttribute('data-tracker-active-menu','dashboard');
-      document.body.classList.add('tracker-dashboard-active');
-      var panels=document.querySelectorAll('#trackerPageContent > .tracker-menu-panel');
-      panels.forEach(function(p){p.dataset.panelHidden='1';p.style.setProperty('display','none','important');});
-      var panel=document.getElementById('tracker-panel-dashboard');
-      if(!panel){
-        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
-        panel=document.getElementById('tracker-panel-dashboard');
-      }
-      if(!panel)return;
-      panel.dataset.panelHidden='0';
-      panel.style.setProperty('display','block','important');
-      document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
-        btn.classList.remove('bg-white','text-emerald-900','shadow');
-        btn.classList.remove('text-emerald-50','hover:bg-emerald-700');
-        if(btn.id==='trackerMenu-dashboard') btn.classList.add('bg-white','text-emerald-900','shadow');
-        else btn.classList.add('text-emerald-50','hover:bg-emerald-700');
-      });
-      document.body.classList.remove('tracker-hafalan-active');
-      if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
-      window.scrollTo({top:0,behavior:'smooth'});
-    }catch(e){console.error('Dashboard Persantri open error:',e);}
+    if(typeof window.switchTrackerMenu==='function'){
+      window.switchTrackerMenu('dashboard');
+    }
   };
 })();
 </script>
@@ -8787,138 +8776,6 @@ function renderOptions(){
 body.tracker-dashboard-active #trackerSearchSidebar{display:none!important;}
 body.tracker-dashboard-active #trackerAppLayout{grid-template-columns:minmax(0,1fr)!important;}
 </style>
-<script id="rq-final-menu-dispatcher-v1">
-(function(){
-  'use strict';
-  function hideAll(){
-    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
-      p.style.display='none';
-      p.dataset.panelHidden='1';
-    });
-  }
-  function setButtons(menu){
-    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
-      btn.classList.remove('bg-white','text-emerald-900','shadow');
-      btn.classList.remove('text-emerald-50','hover:bg-emerald-700');
-      if(btn.id==='trackerMenu-'+menu){
-        btn.classList.add('bg-white','text-emerald-900','shadow');
-      }else{
-        btn.classList.add('text-emerald-50','hover:bg-emerald-700');
-      }
-    });
-  }
-  function showPanel(id){
-    var p=document.getElementById(id);
-    if(!p)return false;
-    p.style.display='block';
-    p.dataset.panelHidden='0';
-    return true;
-  }
-  function dispatch(menu){
-    try{
-      document.body.setAttribute('data-tracker-active-menu',String(menu||''));
-      document.body.classList.toggle('tracker-dashboard-active',menu==='dashboard');
-      if(menu!=='dashboard') document.body.classList.remove('tracker-dashboard-active');
-      if(typeof window.__rqSetPerSuratVisibility==='function') window.__rqSetPerSuratVisibility(menu);
-      document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
-      if(menu==='wa-wali'){
-        if(typeof window.__openWaWaliPersonalPanel==='function') window.__openWaWaliPersonalPanel();
-        else if(typeof window.renderWaWaliSantriReport==='function') window.renderWaWaliSantriReport();
-        hideAll();
-        showPanel('tracker-panel-wa-wali');
-        setButtons(menu);
-        return;
-      }
-      if(menu==='wa-kelas'){
-        if(typeof window.__openWaKelasLevelPanel==='function') window.__openWaKelasLevelPanel();
-        else if(typeof window.renderWaKelasReport==='function') window.renderWaKelasReport();
-        hideAll();
-        showPanel('tracker-panel-wa-kelas');
-        setButtons(menu);
-        return;
-      }
-      if(menu==='dashboard'){
-        hideAll();
-        if(!showPanel('tracker-panel-dashboard')){
-          if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
-          showPanel('tracker-panel-dashboard');
-        }
-        setButtons(menu);
-        if(typeof window.renderTrackingDashboardPersantri==='function') window.renderTrackingDashboardPersantri();
-        window.scrollTo({top:0,behavior:'smooth'});
-        return;
-      }
-      var panelMap={
-        input:'tracker-panel-input',
-        hafalan:'tracker-panel-hafalan',
-        capaian:'tracker-panel-capaian',
-        history:'tracker-panel-history',
-        bacaan:'tracker-panel-bacaan'
-      };
-      if(panelMap[menu]){
-        hideAll();
-        showPanel(panelMap[menu]);
-        setButtons(menu);
-        if(menu==='hafalan' && typeof window.renderHafalanTracker==='function') window.renderHafalanTracker();
-        if(menu==='capaian' && typeof window.renderCapaianLevelSantri==='function') window.renderCapaianLevelSantri();
-        if(menu==='history' && typeof window.renderTrackingHistory==='function') window.renderTrackingHistory();
-        if(menu==='bacaan' && typeof window.renderBacaanSantriMenu==='function') window.renderBacaanSantriMenu();
-        if(menu==='input'){
-          if(typeof window.renderTrackingPerSuratOptions==='function') window.renderTrackingPerSuratOptions();
-          if(typeof window.renderTrackingPerSurat==='function') window.renderTrackingPerSurat();
-        }
-        window.scrollTo({top:0,behavior:'smooth'});
-        return;
-      }
-      /* Menu lain yang memang dikelola sistem lama tetap memakai dispatcher asli. */
-      var base=window.__rqOriginalSwitchTrackerMenu;
-      if(typeof base==='function') base(menu);
-      hideAll();
-      var p=document.getElementById('tracker-panel-'+menu);
-      if(p){p.style.display='block';p.dataset.panelHidden='0';}
-      setButtons(menu);
-    }catch(err){
-      console.error('Final menu dispatcher error:',err);
-    }
-  }
-  function install(){
-    window.switchTrackerMenu=dispatch;
-    window.__rqFinalMenuDispatcherInstalled=true;
-    /* Pastikan menu Input tidak hilang saat pertama kali halaman dibuka.
-       Beberapa script lama menjalankan switchTrackerMenu sebelum dispatcher final terpasang. */
-    const initialMenu=document.body.getAttribute('data-tracker-active-menu')||'input';
-    dispatch(initialMenu);
-    /* Jaga panel aktif tetap tampil jika script lama mengubah style display. */
-    if(!window.__rqMenuVisibilityGuardInstalled){
-      window.__rqMenuVisibilityGuardInstalled=true;
-      setInterval(function(){
-        const menu=document.body.getAttribute('data-tracker-active-menu')||'input';
-        const id=({input:'tracker-panel-input',hafalan:'tracker-panel-hafalan',capaian:'tracker-panel-capaian',history:'tracker-panel-history',bacaan:'tracker-panel-bacaan',dashboard:'tracker-panel-dashboard',data:'rqDataPanel'})[menu];
-        if(!id)return;
-        const panel=document.getElementById(id);
-        if(panel && (panel.dataset.panelHidden!=='0' || getComputedStyle(panel).display==='none')){
-          panel.dataset.panelHidden='0';
-          panel.style.setProperty('display','block','important');
-          if(menu==='data'){panel.style.setProperty('visibility','visible','important');panel.style.setProperty('pointer-events','auto','important');}
-        }
-      },500);
-    }
-    /* Pastikan dua menu dinamis tetap bisa dibuka meskipun script lama mencoba membungkus switchTrackerMenu. */
-    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
-      if(btn.id==='trackerMenu-wa-wali' || btn.id==='trackerMenu-wa-kelas'){
-        btn.onclick=function(e){e.preventDefault();dispatch(btn.id==='trackerMenu-wa-wali'?'wa-wali':'wa-kelas');};
-      }
-    });
-  }
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){setTimeout(install,0);});
-  }else{
-    setTimeout(install,0);
-  }
-  window.addEventListener('load',function(){setTimeout(install,0);});
-})();
-</script>
-
 <style id="rq-cara-penggunaan-mobile-v1">
 .rq-input-quick-btn{
   min-height:42px; display:flex; align-items:center; justify-content:center; gap:6px;
@@ -9872,7 +9729,1589 @@ function patchImport(){const orig=window.rqImport;if(typeof orig!=='function'||o
 function toastLocal(msg,type){if(typeof window.showToast==='function')window.showToast(msg,type||'error');else alert(msg)}
 function watchFileName(){const f=document.getElementById('rqImportFile');if(!f||f.__rqHistoryWatch)return;f.__rqHistoryWatch=true;f.addEventListener('change',()=>{window.__rqLastImportFileName=f.files?.[0]?.name||'-';analyzeFile(f.files?.[0])});}
 function init(){if(!ensureUi())return;patchFilePicker();patchImport();watchFileName()}
-const obs=new MutationObserver(()=>{if(document.getElementById('rqDataPanel')){init()}});obs.observe(document.documentElement,{childList:true,subtree:true});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,120),{once:true});else setTimeout(init,120);window.addEventListener('load',()=>setTimeout(init,180));
+let obs=null;
+function watchDataPanel(){
+  if(document.getElementById('rqDataPanel')){init();return;}
+  if(obs)return;
+  obs=new MutationObserver(()=>{
+    if(document.getElementById('rqDataPanel')){
+      try{obs.disconnect()}catch(e){}
+      obs=null;
+      init();
+    }
+  });
+  obs.observe(document.getElementById('trackerPageContent')||document.body,{childList:true,subtree:true});
+}
+watchDataPanel();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(watchDataPanel,120),{once:true});
+else setTimeout(watchDataPanel,120);
+window.addEventListener('load',()=>setTimeout(watchDataPanel,180));
+})();
+</script>
+
+<!-- PATCH v4: Input ayat langsung di kartu surat + ceklis selesai per surat/semua surat level + kontras mode malam. Tidak mengubah struktur data penyimpanan. -->
+<style id="rq-v31-card-input-v4-style">
+/* Form lama tetap ada untuk kompatibilitas fungsi simpan; pengguna menginput surat/ayat melalui kartu. */
+/* Sembunyikan hanya wrapper field Surat/Ayat lama.
+   Jangan menyembunyikan panel Input utama. */
+#tracker-panel-input > div:first-child > div:has(#rqInputSectionSurat),
+#tracker-panel-input > div:first-child > div:has(#rqInputSectionAyat){display:none!important}
+#trackingLevelSuratList .rq-v31-surat-name,
+#trackingLevelSuratList .rq-v31-pct,
+#trackingLevelSuratList .rq-v31-status,
+#trackingLevelSuratList .rq-v31-field-label,
+#trackingLevelSuratList .rq-v31-complete-label,
+#trackingLevelSuratList .rq-v31-level-all-check{color:#0f172a}
+html.dark #trackingLevelSuratList .rq-v31-surat-name,
+html.dark #trackingLevelSuratList .rq-v31-pct,
+html.dark #trackingLevelSuratList .rq-v31-status,
+html.dark #trackingLevelSuratList .rq-v31-field-label,
+html.dark #trackingLevelSuratList .rq-v31-complete-label,
+html.dark #trackingLevelSuratList .rq-v31-level-all-check{color:#f8fafc!important}
+#trackingLevelSuratList [data-rq-v31-card]{box-shadow:0 1px 2px rgba(15,23,42,.06)}
+html.dark #trackingLevelSuratList [data-rq-v31-card]{box-shadow:0 1px 3px rgba(0,0,0,.35)}
+#trackingLevelSuratList [data-rq-v31-ayat],
+#trackingLevelSuratList [data-rq-v31-date]{color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;background:#fff!important;caret-color:#0f172a!important}
+html.dark #trackingLevelSuratList [data-rq-v31-ayat],
+html.dark #trackingLevelSuratList [data-rq-v31-date]{color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;background:#0f172a!important;border-color:#475569!important;caret-color:#fff!important;color-scheme:dark}
+#trackingLevelSuratList input::placeholder{color:#64748b!important;opacity:1}
+html.dark #trackingLevelSuratList input::placeholder{color:#cbd5e1!important;opacity:1}
+html.dark #trackingLevelSuratList input[type="checkbox"]{accent-color:#34d399}
+html.dark #trackingLevelSuratList .bg-slate-50{background:#172033!important}
+html.dark #trackingLevelSuratList .bg-amber-50{background:#422006!important}
+html.dark #trackingLevelSuratList .bg-emerald-50{background:#052e24!important}
+html.dark #trackingLevelSuratList .border-slate-200{border-color:#475569!important}
+html.dark #trackingLevelSuratList .border-amber-200{border-color:#a16207!important}
+html.dark #trackingLevelSuratList .border-emerald-200{border-color:#047857!important}
+@media(max-width:640px){
+  #trackingLevelSuratList [data-rq-v31-date]{width:100%!important}
+}
+</style>
+<script id="rq-v31-card-input-v4">
+(function(){
+  'use strict';
+  if(window.__rqV31CardInputV4)return;
+  window.__rqV31CardInputV4=true;
+  const norm=v=>String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’`]/g,"'").replace(/[^a-z0-9]+/g,'');
+  const totalFor=surat=>{try{return Number(window.surahInfo?.(surat)?.ayat||0)}catch(e){return 0}};
+  function mark(card,active){if(card)card.dataset.rqV31Active=active?'1':'0'}
+  function syncMain(surat,sampai,date){
+    const main=document.getElementById('trackingSurat'),d=document.getElementById('trackingAyatDari'),a=document.getElementById('trackingAyatSampai'),t=document.getElementById('trackingTanggal');
+    if(main)main.value=surat||'';if(d)d.value='1';if(a)a.value=sampai?String(sampai):'';if(t&&date)t.value=date;
+    try{window.updateTrackingTanggalHari?.()}catch(e){}
+    const total=totalFor(surat),pct=total&&sampai?Math.max(0,Math.min(100,Math.round(Number(sampai)/total*100))):0;
+    const bar=document.getElementById('trackingProgressBar'),txt=document.getElementById('trackingProgressText'),det=document.getElementById('trackingProgressDetail');
+    if(bar)bar.style.width=pct+'%';if(txt)txt.textContent=pct+'%';if(det)det.textContent=surat?`Ayat 1-${sampai||'-'} dari ${total||'?'} ayat · Progress ${pct}%.`:'Pilih surat dan rentang ayat.';
+    try{window.updateTrackingMurojaahInfo?.()}catch(e){}
+  }
+  function refreshCardVisual(card){
+    if(!card)return;
+    const surat=card.getAttribute('data-rq-v31-card')||'', total=totalFor(surat), input=card.querySelector('[data-rq-v31-ayat]'), check=card.querySelector('[data-rq-v31-complete]');
+    let sampai=Number(input?.value||0);if(check?.checked)sampai=total;
+    const pct=total&&sampai?Math.max(0,Math.min(100,Math.round(sampai/total*100))):0;
+    const p=card.querySelector('.rq-v31-pct'),st=card.querySelector('.rq-v31-status'),bar=card.querySelector('.rq-v31-card-bar');
+    if(p)p.textContent=pct+'%';if(st)st.textContent=total+' ayat · '+(pct>=100?'Selesai':pct>0?`Ayat 1-${sampai}`:'Belum setor');
+    if(bar){bar.style.setProperty('width',pct+'%','important');bar.setAttribute('aria-valuenow',String(pct));bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax','100');}
+  }
+  function setAll(done){
+    const box=document.getElementById('trackingLevelSuratList');if(!box)return;
+    box.querySelectorAll('[data-rq-v31-card]').forEach(card=>{
+      const cb=card.querySelector('[data-rq-v31-complete]'),input=card.querySelector('[data-rq-v31-ayat]'),date=card.querySelector('[data-rq-v31-date]'),surat=card.getAttribute('data-rq-v31-card'),total=totalFor(surat);
+      if(cb)cb.checked=!!done;
+      if(done&&input)input.value=total?String(total):'';
+      mark(card,!!done);refreshCardVisual(card);
+      if(done)syncMain(surat,total,date?.value||'');
+    });
+    if(done)document.getElementById('trackingSurat')?.setAttribute('data-rq-v31-source','cards');
+  }
+  document.addEventListener('change',function(e){
+    const all=e.target?.closest?.('[data-rq-v31-check-all]');
+    if(all){setAll(!!all.checked);return}
+    const cb=e.target?.closest?.('[data-rq-v31-complete]');
+    const date=e.target?.closest?.('[data-rq-v31-date]');
+    if(cb){const card=cb.closest('[data-rq-v31-card]'),surat=card?.getAttribute('data-rq-v31-card')||'',total=totalFor(surat),input=card?.querySelector('[data-rq-v31-ayat]');if(cb.checked&&input)input.value=total?String(total):'';mark(card,true);refreshCardVisual(card);syncMain(surat,cb.checked?total:Number(input?.value||0),card?.querySelector('[data-rq-v31-date]')?.value||'');return}
+    if(date){const card=date.closest('[data-rq-v31-card]'),surat=card?.getAttribute('data-rq-v31-card')||'';if(card){mark(card,true);syncMain(surat,Number(card.querySelector('[data-rq-v31-ayat]')?.value||0),date.value||'');try{window.__trackingSuratDateDrafts&& (window.__trackingSuratDateDrafts[surat]=date.value||'')}catch(err){}}}
+  },true);
+  document.addEventListener('input',function(e){
+    const input=e.target?.closest?.('[data-rq-v31-ayat]');if(!input)return;
+    const card=input.closest('[data-rq-v31-card]');if(!card)return;
+    const total=totalFor(card.getAttribute('data-rq-v31-card')||'');let n=Math.max(0,Number(input.value||0));if(total&&n>total){n=total;input.value=String(total)}
+    const cb=card.querySelector('[data-rq-v31-complete]');if(cb)cb.checked=total>0&&n>=total;
+    mark(card,true);refreshCardVisual(card);syncMain(card.getAttribute('data-rq-v31-card')||'',n,card.querySelector('[data-rq-v31-date]')?.value||'');
+  },true);
+  // PENTING: jangan pasang click-handler global untuk kartu surat di sini.
+  // Handler pemilihan surat sudah dimiliki oleh core v31 pada #trackingLevelSuratList
+  // dan memanggil choose() yang menentukan apakah surat menjadi input utama atau baris tambahan.
+  // Handler capture global sebelumnya membuat click kartu mengisi trackingSurat lebih dulu,
+  // sehingga choose() mengira input utama sudah terisi lalu membuat Setoran Tambahan.
+  // Itu yang menyebabkan menu Input terasa bentrok/error.
+})();
+</script>
+
+
+
+<!-- PATCH v7: pengaman tampilan Menu Input.
+     Hanya menjaga panel Input tetap terlihat saat Menu Input memang aktif.
+     Tidak mengubah data, penyimpanan, event input, atau menu lain. -->
+<style id="rq-input-visibility-guard-v7-style">
+/* Jika Menu Input aktif, panel harus terlihat. Selector ini sengaja spesifik. */
+body[data-tracker-active-menu="input"] #trackerPageContent > #tracker-panel-input{
+  display:block!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+</style>
+<script id="rq-input-visibility-guard-v7">
+(function(){
+  'use strict';
+  var initialized=false;
+  var lastRequestedMenu='input';
+  var applying=false;
+
+  function inputPanel(){ return document.getElementById('tracker-panel-input'); }
+
+  function showInputOnly(){
+    var panel=inputPanel();
+    if(!panel)return;
+    applying=true;
+    document.body.setAttribute('data-tracker-active-menu','input');
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
+      var active=p===panel;
+      if(active){
+        p.dataset.panelHidden='0';
+        p.style.setProperty('display','block','important');
+        p.style.setProperty('visibility','visible','important');
+        p.style.setProperty('pointer-events','auto','important');
+      }
+    });
+    var btn=document.getElementById('trackerMenu-input');
+    if(btn){
+      btn.classList.remove('text-emerald-50','hover:bg-emerald-700');
+      btn.classList.add('bg-white','text-emerald-900','shadow');
+    }
+    applying=false;
+  }
+
+  function ensureInputVisible(){
+    var panel=inputPanel();
+    if(!panel)return;
+    var active=document.body.getAttribute('data-tracker-active-menu');
+    if(active!=='input')return;
+    var hidden=panel.dataset.panelHidden!=='0';
+    var display=getComputedStyle(panel).display;
+    var visibility=getComputedStyle(panel).visibility;
+    if(hidden || display==='none' || visibility==='hidden')showInputOnly();
+  }
+
+  function bind(){
+    if(initialized)return;
+    initialized=true;
+    /* Jangan memanggil switchTrackerMenu di sini karena beberapa wrapper lama
+       saling membungkus fungsi tersebut. Cukup pulihkan panel Input langsung. */
+    var p=inputPanel();
+    if(!p)return;
+    document.body.setAttribute('data-tracker-active-menu','input');
+    showInputOnly();
+
+    [0,300,1000].forEach(function(ms){
+      setTimeout(ensureInputVisible,ms);
+    });
+
+    /* Jangan memasang MutationObserver pada seluruh trackerPageContent.
+       Render kartu/menu mengubah banyak atribut secara beruntun dan observer lama
+       dapat memicu pemeriksaan berulang sehingga perpindahan menu terasa ngeleg.
+       Panel Input sudah diamankan oleh selector CSS + pemeriksaan ringan di bawah. */
+    window.__rqInputVisibilityObserverV7=null;
+
+    /* Jika kode lama meminta Menu Input secara eksplisit, jangan mengubah alurnya;
+       cukup pastikan panel tidak tersapu kembali setelah render. */
+    window.__rqEnsureInputVisibleV7=ensureInputVisible;
+  }
+
+  function start(){
+    if(document.getElementById('tracker-panel-input'))bind();
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(start,0);},{once:true});
+  else setTimeout(start,0);
+  window.addEventListener('load',function(){setTimeout(function(){
+    if(document.body.getAttribute('data-tracker-active-menu')==='input')ensureInputVisible();
+  },100);});
+})();
+</script>
+
+<!-- PATCH v8: rapikan kartu surat khusus layar laptop/desktop.
+     Hanya CSS tampilan; tidak mengubah data, event, perhitungan, atau alur simpan. -->
+<style id="rq-v31-card-layout-v8-style">
+/* Pada struktur Input lama, blok kartu surat berada di dalam grid 2 kolom
+   yang sama dengan Arah/Level. Buat blok kartu mengambil seluruh lebar agar
+   kartu surat tidak terjebak di satu kolom sempit. */
+@media (min-width:1024px){
+  #tracker-panel-input > div:first-child > div:has(#trackingLevelSuratList){
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+  #tracker-panel-input > div:first-child > div:has(#trackingLevelSuratList) > #trackingLevelSuratList{
+    width:100% !important;
+    min-width:0 !important;
+  }
+  #trackingLevelSuratList > div > div[data-rq-v31-card]{
+    min-width:0 !important;
+  }
+  #trackingLevelSuratList > div.grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:14px !important;
+    width:100% !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card]{
+    width:100% !important;
+    min-width:0 !important;
+    padding:14px !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) minmax(150px,0.8fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] [data-rq-v31-date]{
+    width:100% !important;
+    min-width:0 !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] [data-rq-v31-ayat]{
+    min-width:0 !important;
+    width:100% !important;
+  }
+}
+
+/* Layar yang lebih lebar diberi ruang sedikit lebih lega. */
+@media (min-width:1280px){
+  #trackingLevelSuratList > div.grid{gap:16px !important;}
+  #trackingLevelSuratList [data-rq-v31-card]{padding:16px !important;}
+}
+
+/* Tablet/mobile tetap memakai perilaku responsif lama. */
+@media (max-width:1023px){
+  #trackingLevelSuratList > div.grid{grid-template-columns:1fr !important;}
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) minmax(125px,0.8fr) !important;
+  }
+}
+@media (max-width:640px){
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:1fr !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] [data-rq-v31-date]{width:100% !important;}
+}
+</style>
+
+<!-- PATCH v9: luruskan area kartu surat dengan lebar penuh kolom Form Input pada laptop/desktop. -->
+<style id="rq-v31-card-layout-v9-style">
+@media (min-width:1024px){
+  /* Baris Arah + Level + kartu surat adalah grid 2 kolom.
+     Kartu surat harus mengambil 2 kolom sekaligus, selebar Arah + Level. */
+  #tracker-panel-input > div.xl\\:col-span-2 > div.grid.grid-cols-1.sm\\:grid-cols-2:has(#trackingLevelSuratList){
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  /* Container cyan di dalam baris tersebut juga harus memenuhi seluruh lebar. */
+  #tracker-panel-input > div.xl\\:col-span-2 > div.grid.grid-cols-1.sm\\:grid-cols-2:has(#trackingLevelSuratList) > div:has(#trackingLevelSuratList){
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Daftar kartu menggunakan seluruh lebar container. */
+  #trackingLevelSuratList{
+    width:100% !important;
+    min-width:0 !important;
+  }
+  #trackingLevelSuratList > div.grid{
+    width:100% !important;
+    min-width:0 !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:16px !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card]{
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    padding:16px !important;
+  }
+
+  /* Ayat dan tanggal dibuat proporsional di dalam kartu yang lebih lebar. */
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) minmax(170px,0.8fr) !important;
+    gap:14px !important;
+    align-items:end !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] [data-rq-v31-ayat],
+  #trackingLevelSuratList [data-rq-v31-card] [data-rq-v31-date]{
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+  }
+}
+
+@media (min-width:1440px){
+  #trackingLevelSuratList > div.grid{gap:18px !important;}
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) minmax(190px,0.8fr) !important;
+  }
+}
+</style>
+
+<!-- PATCH v10: final professional layout for the Arah/Level + Surat cards area.
+     CSS ONLY. No data, event, calculation, storage, or save logic is changed. -->
+<style id="rq-v31-card-layout-v10-style">
+@media (min-width:1024px){
+  /* The actual DOM places Arah, Level and the cyan Surat container as
+     three children of the same 2-column grid. Make the Surat container
+     span BOTH columns so its left/right edges align with Arah + Level. */
+  #tracker-panel-input .grid.grid-cols-1.sm\\:grid-cols-2.gap-3:has(#trackingArah):has(#trackingLevelSuratList) > div:has(#trackingLevelSuratList){
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+  }
+
+  /* The list itself fills the cyan container. */
+  #tracker-panel-input #trackingLevelSuratList{
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Header of the level card: keep title and "all done" control balanced. */
+  #tracker-panel-input #trackingLevelSuratList > div:first-child{
+    width:100% !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Two comfortable cards across the full desktop width. */
+  #tracker-panel-input #trackingLevelSuratList > div.grid{
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:16px !important;
+    align-items:stretch !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card]{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    box-sizing:border-box !important;
+    padding:16px !important;
+    min-height:170px !important;
+    display:flex !important;
+    flex-direction:column !important;
+  }
+
+  /* Card heading stays on one clean row. */
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div:first-child{
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-surat-name{
+    min-width:0 !important;
+    line-height:1.25 !important;
+    overflow-wrap:anywhere !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-complete-label{
+    flex:0 0 auto !important;
+    white-space:nowrap !important;
+  }
+
+  /* Ayat and date get equal, usable columns instead of a tiny fixed date box. */
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    width:100% !important;
+    min-width:0 !important;
+    grid-template-columns:minmax(0,1fr) minmax(150px,1fr) !important;
+    gap:14px !important;
+    align-items:end !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid > label{
+    min-width:0 !important;
+    width:100% !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-ayat],
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-date]{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Keep the progress bar anchored at the bottom of equally tall cards. */
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div:last-child{
+    margin-top:auto !important;
+    width:100% !important;
+  }
+}
+
+@media (min-width:1440px){
+  #tracker-panel-input #trackingLevelSuratList > div.grid{gap:18px !important;}
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card]{padding:18px !important;min-height:180px !important;}
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) minmax(175px,1fr) !important;
+    gap:16px !important;
+  }
+}
+
+/* On smaller screens keep the existing responsive behavior, but make the
+   fields full width and readable. */
+@media (max-width:1023px){
+  #tracker-panel-input #trackingLevelSuratList > div.grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:12px !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) minmax(125px,1fr) !important;
+  }
+}
+@media (max-width:700px){
+  #tracker-panel-input #trackingLevelSuratList > div.grid{
+    grid-template-columns:1fr !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
+
+<!-- PATCH v11: FINAL UI cleanup for Surat cards. CSS ONLY. -->
+<style id="rq-v31-card-layout-v11-style">
+/* The Surat-card wrapper is the third child of the Arah/Level 2-column grid.
+   Target its actual parent directly; previous patches targeted the wrong DOM level. */
+@media (min-width:1024px){
+  #tracker-panel-input div:has(> #trackingLevelSuratList){
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+  }
+
+  #tracker-panel-input div:has(> #trackingLevelSuratList) > #trackingLevelSuratList{
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList > div:first-child{
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    padding:14px 16px !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList > div.grid{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:16px !important;
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    align-items:stretch !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList > div.grid > [data-rq-v31-card]{
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    padding:16px !important;
+    min-height:190px !important;
+    overflow:hidden !important;
+  }
+
+  /* Header: title can wrap, status/checkbox stay readable. */
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div:first-child{
+    display:flex !important;
+    align-items:flex-start !important;
+    justify-content:space-between !important;
+    gap:12px !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div:first-child > button{
+    flex:1 1 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-surat-name{
+    display:block !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    line-height:1.25 !important;
+    overflow-wrap:anywhere !important;
+    word-break:normal !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-complete-label{
+    flex:0 0 auto !important;
+    white-space:nowrap !important;
+    line-height:1.2 !important;
+  }
+
+  /* The input row is the main source of the previous visual collision. */
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    display:grid !important;
+    grid-template-columns:minmax(0,1.15fr) minmax(175px,.85fr) !important;
+    gap:16px !important;
+    width:100% !important;
+    min-width:0 !important;
+    align-items:end !important;
+    margin-top:16px !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid > label{
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-field-label{
+    display:block !important;
+    min-height:18px !important;
+    margin-bottom:6px !important;
+    line-height:1.2 !important;
+    white-space:nowrap !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-ayat]{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:44px !important;
+    box-sizing:border-box !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-date]{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:44px !important;
+    box-sizing:border-box !important;
+    padding-left:10px !important;
+    padding-right:10px !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div:last-child{
+    width:100% !important;
+    margin-top:auto !important;
+    padding-top:12px !important;
+  }
+}
+
+@media (min-width:1440px){
+  #tracker-panel-input #trackingLevelSuratList > div.grid{gap:18px !important;}
+  #tracker-panel-input #trackingLevelSuratList > div.grid > [data-rq-v31-card]{
+    padding:18px !important;
+    min-height:200px !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1.2fr) minmax(190px,.8fr) !important;
+    gap:18px !important;
+  }
+}
+
+/* Tablet */
+@media (min-width:700px) and (max-width:1023px){
+  #tracker-panel-input div:has(> #trackingLevelSuratList){
+    width:100% !important;
+    min-width:0 !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList > div.grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:12px !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) minmax(135px,.9fr) !important;
+    gap:10px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width:699px){
+  #tracker-panel-input div:has(> #trackingLevelSuratList){
+    width:100% !important;
+    min-width:0 !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList > div.grid{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+  #tracker-panel-input #trackingLevelSurat .rq-v31-field-label{
+    white-space:normal !important;
+  }
+}
+
+/* Dark-mode/Chrome dark-mode readability: explicit contrast for the card UI. */
+@media (prefers-color-scheme: dark){
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-surat-name,
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-pct,
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-status,
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-field-label,
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-complete-label,
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] span{
+    color:#f8fafc !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-ayat],
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-date]{
+    color:#0f172a !important;
+    background:#ffffff !important;
+  }
+}
+</style>
+
+<!-- PATCH v12: explicit BLACK TEXT for Surat-card UI. CSS ONLY. -->
+<style id="rq-v31-card-text-black-v12-style">
+/* Force readable black text in the Surat/Level card area.
+   This comes after all previous dark-mode rules, so Chrome dark mode cannot
+   recolor these labels back to white/washed-out text. */
+#tracker-panel-input #trackingLevelSuratList,
+#tracker-panel-input #trackingLevelSuratList *{
+  color:#111827 !important;
+}
+
+#tracker-panel-input #trackingLevelSuratList .rq-v31-surat-name,
+#tracker-panel-input #trackingLevelSuratList .rq-v31-pct,
+#tracker-panel-input #trackingLevelSuratList .rq-v31-status,
+#tracker-panel-input #trackingLevelSuratList .rq-v31-field-label,
+#tracker-panel-input #trackingLevelSuratList .rq-v31-complete-label,
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] span,
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] label,
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] button{
+  color:#111827 !important;
+}
+
+#tracker-panel-input #trackingLevelSuratList input,
+#tracker-panel-input #trackingLevelSuratList input::placeholder,
+#tracker-panel-input #trackingLevelSuratList select,
+#tracker-panel-input #trackingLevelSuratList textarea{
+  color:#111827 !important;
+  -webkit-text-fill-color:#111827 !important;
+}
+
+#tracker-panel-input #trackingLevelSuratList input::placeholder,
+#tracker-panel-input #trackingLevelSuratList textarea::placeholder{
+  opacity:1 !important;
+}
+
+/* Keep the checkbox itself native, but its accompanying text remains black. */
+#tracker-panel-input #trackingLevelSuratList input[type="checkbox"]{
+  accent-color:#10b981 !important;
+}
+
+/* Preserve the existing colored progress bar/background; only text is forced black. */
+@media (prefers-color-scheme: dark){
+  #tracker-panel-input #trackingLevelSuratList,
+  #tracker-panel-input #trackingLevelSuratList *{
+    color:#111827 !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList input,
+  #tracker-panel-input #trackingLevelSuratList input::placeholder,
+  #tracker-panel-input #trackingLevelSuratList select,
+  #tracker-panel-input #trackingLevelSuratList textarea{
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+    background:#ffffff !important;
+  }
+}
+</style>
+
+
+<!-- PATCH v15: Level completion lock + clean progress bar. Safe/event-driven, no self-triggering loop. -->
+<style id="rq-v31-level-complete-progress-v15-style">
+/* Progress bar: one clear track + one clear fill. */
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-progress-track{
+  width:100% !important;
+  height:8px !important;
+  min-height:8px !important;
+  margin-top:14px !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  display:block !important;
+  background:#e5e7eb !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:9999px !important;
+  box-sizing:border-box !important;
+}
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-bar{
+  display:block !important;
+  height:100% !important;
+  min-height:0 !important;
+  width:0%;
+  background:#10b981 !important;
+  border-radius:9999px !important;
+  transition:width .2s ease !important;
+}
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card][data-rq-v31-level-locked="1"]{
+  border-color:#10b981 !important;
+  box-shadow:0 0 0 1px rgba(16,185,129,.16) !important;
+}
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-complete]:disabled{
+  opacity:1 !important;
+  cursor:not-allowed !important;
+  filter:none !important;
+}
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card][data-rq-v31-level-locked="1"] .rq-v31-pct,
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card][data-rq-v31-level-locked="1"] .rq-v31-status{
+  color:#047857 !important;
+}
+@media (prefers-color-scheme:dark){
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-progress-track{
+    background:#e5e7eb !important;
+    border-color:#94a3b8 !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-bar{
+    background:#10b981 !important;
+  }
+}
+</style>
+<script id="rq-v31-level-complete-progress-v16-cancel-safe">
+(function(){
+  'use strict';
+  if(window.__rqV31LevelCompleteV16)return;
+  window.__rqV31LevelCompleteV16=true;
+  const KEY='rq_tracking_level_checklist_v1';
+  const read=()=>{try{const x=JSON.parse(localStorage.getItem(KEY)||'{}');return x&&typeof x==='object'?x:{}}catch(e){return {}}};
+  const write=x=>{try{localStorage.setItem(KEY,JSON.stringify(x));return true}catch(e){return false}};
+  const selectedName=()=>String(document.getElementById('trackingSantri')?.value||'').trim();
+  const context=()=>({juz:String(document.getElementById('trackingJuz')?.value||'30'),level:Number(document.getElementById('trackingLevel')?.value||1)});
+  const totalFor=surat=>{try{return Number(window.surahInfo?.(surat)?.ayat||0)}catch(e){return 0}};
+  const isLocked=(name,juz,level)=>!!(name&&read()?.[name]?.[String(juz)]?.[String(level)]);
+  const clearLevelDone=(name,juz,level)=>{
+    try{
+      const data=read();
+      if(data?.[name]?.[String(juz)]){
+        delete data[name][String(juz)][String(level)];
+        if(!Object.keys(data[name][String(juz)]).length)delete data[name][String(juz)];
+        if(!Object.keys(data[name]).length)delete data[name];
+      }
+      return write(data);
+    }catch(e){return false}
+  };
+  const askCancel=()=>window.confirm('Apakah Anda yakin ingin membatalkan status selesai Level ini?\n\nStatus selesai dan kunci ceklis akan dibatalkan. Data riwayat setoran yang sudah tersimpan TIDAK dihapus.');
+  const showDoneToast=()=>{
+    const msg='Level tersebut telah selesai. Untuk membatalkan, hilangkan ceklis Selesai lalu konfirmasi.';
+    try{if(typeof window.showToast==='function'){window.showToast(msg,'success');return;}}catch(e){}
+    try{alert(msg)}catch(e){}
+  };
+  function applyLock(showToast){
+    const box=document.getElementById('trackingLevelSuratList');
+    if(!box)return;
+    const c=context(), name=selectedName(), locked=isLocked(name,c.juz,c.level);
+    box.dataset.rqV31AppliedLock=locked?'1':'0';
+    box.querySelectorAll('[data-rq-v31-card]').forEach(card=>{
+      card.dataset.rqV31LevelLocked=locked?'1':'0';
+      const surat=card.getAttribute('data-rq-v31-card')||'';
+      const total=totalFor(surat);
+      const cb=card.querySelector('[data-rq-v31-complete]');
+      const input=card.querySelector('[data-rq-v31-ayat]');
+      const pct=card.querySelector('.rq-v31-pct');
+      const status=card.querySelector('.rq-v31-status');
+      const bar=card.querySelector('.rq-v31-card-bar');
+      if(locked){
+        if(cb && !cb.checked)cb.checked=true;
+        /* Penting: jangan disable checkbox. User harus bisa membatalkan. */
+        if(cb)cb.disabled=false;
+        if(input && total && String(input.value)!==String(total))input.value=String(total);
+        if(pct && pct.textContent!=='100%')pct.textContent='100%';
+        if(status && status.textContent!==total+' ayat · Selesai')status.textContent=total+' ayat · Selesai';
+        if(bar && bar.style.width!=='100%')bar.style.width='100%';
+      }else{
+        if(cb)cb.disabled=false;
+        if(bar){
+          const n=Math.max(0,Math.min(total,Number(input?.value||0)));
+          const p=total?Math.round(n/total*100):0;
+          bar.style.width=p+'%';
+        }
+      }
+    });
+    const all=box.querySelector('[data-rq-v31-check-all]');
+    if(all){
+      all.disabled=false;
+      all.checked=locked;
+    }
+    if(locked && showToast)showDoneToast();
+  }
+  function markLevelDone(){
+    const name=selectedName(), c=context();
+    if(!name)return false;
+    try{
+      const data=read();
+      data[name]=data[name]||{};
+      data[name][String(c.juz)]=data[name][String(c.juz)]||{};
+      data[name][String(c.juz)][String(c.level)]=true;
+      return write(data);
+    }catch(e){return false}
+  }
+  function schedule(showToast){clearTimeout(window.__rqV16LockTimer);window.__rqV16LockTimer=setTimeout(()=>applyLock(!!showToast),40);}
+  function refreshAfterCancel(){
+    try{window.renderTrackingLevelSuratList?.()}catch(e){}
+    try{window.refreshTrackingLevelChecklistProgress?.()}catch(e){}
+    schedule(false);
+  }
+  function bind(){
+    if(window.__rqV16Bound)return;
+    window.__rqV16Bound=true;
+    document.addEventListener('change',function(e){
+      const t=e.target;
+      if(!t)return;
+      if(t.matches('#trackingSantri,#trackingJuz,#trackingArah,#trackingLevel')){schedule(false);return;}
+
+      /* Batalkan status selesai Level dari checklist Level utama. */
+      if(t.matches('#trackingLevelChecklist input[type="checkbox"]') && !t.checked){
+        const c=context(), name=selectedName();
+        if(isLocked(name,c.juz,c.level)){
+          if(askCancel()){
+            clearLevelDone(name,c.juz,c.level);
+            /* Biarkan handler asli menyimpan false, lalu render ulang. */
+            setTimeout(refreshAfterCancel,0);
+          }else{
+            t.checked=true;
+            try{e.stopImmediatePropagation();}catch(err){}
+            setTimeout(()=>{try{window.renderTrackingLevelChecklist?.()}catch(err){};schedule(false)},0);
+          }
+        }
+        return;
+      }
+
+      /* Checkbox "Selesai setoran semua surat" */
+      if(t.matches('#trackingLevelSuratList [data-rq-v31-check-all]')){
+        const c=context(), name=selectedName();
+        if(!t.checked && isLocked(name,c.juz,c.level)){
+          if(askCancel()){
+            clearLevelDone(name,c.juz,c.level);
+            setTimeout(refreshAfterCancel,0);
+          }else{
+            t.checked=true;
+            setTimeout(()=>applyLock(false),0);
+          }
+          return;
+        }
+        if(t.checked){
+          if(markLevelDone())schedule(true);
+        }else schedule(false);
+        return;
+      }
+
+      /* Checkbox selesai per surat: saat Level terkunci, uncheck = minta konfirmasi. */
+      if(t.matches('#trackingLevelSuratList [data-rq-v31-complete]')){
+        const c=context(), name=selectedName();
+        if(!t.checked && isLocked(name,c.juz,c.level)){
+          if(askCancel()){
+            clearLevelDone(name,c.juz,c.level);
+            setTimeout(()=>{
+              try{window.renderTrackingLevelSuratList?.()}catch(err){}
+              try{window.refreshTrackingLevelChecklistProgress?.()}catch(err){}
+              schedule(false);
+            },0);
+          }else{
+            t.checked=true;
+            setTimeout(()=>applyLock(false),0);
+          }
+          return;
+        }
+        if(t.checked && !isLocked(name,c.juz,c.level)){
+          /* Satu surat selesai tidak otomatis mengunci seluruh Level. */
+          schedule(false);
+        }
+      }
+    },true);
+    /* PATCH v25: jangan mengamati subtree kartu surat.
+       Perubahan DOM progress/checkbox/input dapat memicu observer berulang.
+       Handler change + renderer menu sudah menangani sinkronisasi utama. */
+    window.__rqV16Observer=null;
+    schedule(false);
+  }
+  window.rqV16RefreshLevelCompletion=()=>schedule(false);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else setTimeout(bind,0);
+})();
+</script>
+
+<!-- PATCH v17: sembunyikan progress global lama, pertahankan progress aktif di setiap kartu surat. CSS/UI only. -->
+<style id="rq-v31-card-progress-v17-style">
+/* Progress global lama tetap ada di DOM agar fungsi core tidak rusak,
+   tetapi tidak ditampilkan karena progress per surat sekarang menjadi indikator utama. */
+#tracker-panel-input #trackingProgressContainer{
+  display:none !important;
+}
+
+/* Progress pada setiap kartu surat harus selalu terlihat dan mengikuti persen kartu. */
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-progress-track{
+  display:block !important;
+  width:100% !important;
+  height:9px !important;
+  min-height:9px !important;
+  margin-top:14px !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  background:#e5e7eb !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:9999px !important;
+  box-sizing:border-box !important;
+}
+
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-bar{
+  display:block !important;
+  height:100% !important;
+  min-height:7px !important;
+  background:#10b981 !important;
+  border-radius:9999px !important;
+  transition:width .2s ease !important;
+}
+
+/* Pastikan 0% benar-benar kosong, sedangkan 100% benar-benar hijau penuh. */
+#tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-bar[style*="width:0%"]{
+  min-width:0 !important;
+}
+
+@media (prefers-color-scheme:dark){
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-progress-track{
+    background:#334155 !important;
+    border-color:#64748b !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] .rq-v31-card-bar{
+    background:#10b981 !important;
+  }
+}
+</style>
+
+
+<!-- PATCH v18: progress kartu surat live/reactive. Hanya memperbaiki sinkronisasi visual progress. -->
+<!-- PATCH v19: FIX FINAL progress bar per surat. Tidak mengubah logika penyimpanan/input. -->
+<!-- PATCH v20: Rapikan input ayat & tanggal. CSS + tampilan tanggal hari/tanggal, tanpa mengubah penyimpanan. -->
+<style id="rq-v31-input-date-v20-style">
+@media (min-width:1024px){
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(250px,1.35fr) minmax(145px,.65fr) !important;
+    gap:14px !important;
+    align-items:start !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid > label{
+    min-width:0 !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-field-label{
+    font-size:13px !important;
+    font-weight:900 !important;
+    line-height:1.25 !important;
+    margin-bottom:8px !important;
+  }
+
+  /* Nomor ayat diberi ruang nyata agar angka tidak terpotong/tertutup spinner. */
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-ayat]{
+    flex:1 1 auto !important;
+    width:86px !important;
+    min-width:86px !important;
+    max-width:120px !important;
+    height:48px !important;
+    min-height:48px !important;
+    padding-left:12px !important;
+    padding-right:12px !important;
+    font-size:16px !important;
+    line-height:1.2 !important;
+    text-align:center !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Kolom tanggal diperkecil agar seimbang dengan ayat. */
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-date]{
+    width:145px !important;
+    max-width:145px !important;
+    min-width:145px !important;
+    height:48px !important;
+    min-height:48px !important;
+    padding-left:10px !important;
+    padding-right:8px !important;
+    font-size:13px !important;
+    font-weight:900 !important;
+    box-sizing:border-box !important;
+  }
+
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-date-day{
+    display:block !important;
+    margin-top:6px !important;
+    font-size:12px !important;
+    line-height:1.25 !important;
+    font-weight:900 !important;
+    color:#111827 !important;
+  }
+}
+
+@media (max-width:1023px){
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-field-label{
+    font-size:12px !important;
+    font-weight:900 !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-ayat]{
+    min-width:82px !important;
+    width:82px !important;
+    height:46px !important;
+    font-size:15px !important;
+    text-align:center !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-date]{
+    width:145px !important;
+    max-width:145px !important;
+    min-width:145px !important;
+    height:46px !important;
+    font-size:13px !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-date-day{
+    display:block !important;
+    margin-top:5px !important;
+    font-size:11px !important;
+    line-height:1.25 !important;
+    font-weight:900 !important;
+  }
+}
+
+@media (max-width:640px){
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:1fr !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList [data-rq-v31-date]{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+  }
+  #tracker-panel-input #trackingLevelSuratList .rq-v31-date-day{
+    font-size:12px !important;
+  }
+}
+</style>
+
+<script id="rq-v31-input-date-v20">
+(function(){
+  'use strict';
+  if(window.__rqV31InputDateV20)return;
+  window.__rqV31InputDateV20=true;
+
+  function formatDayDate(value){
+    if(!value)return '';
+    const p=String(value).split('-').map(Number);
+    if(p.length!==3 || !p[0] || !p[1] || !p[2])return '';
+    const d=new Date(p[0],p[1]-1,p[2]);
+    if(Number.isNaN(d.getTime()))return '';
+    try{
+      return new Intl.DateTimeFormat('id-ID',{
+        weekday:'long',day:'numeric',month:'long',year:'numeric'
+      }).format(d);
+    }catch(e){
+      return '';
+    }
+  }
+
+  function syncDateLabels(root){
+    const scope=root||document;
+    scope.querySelectorAll('#trackingLevelSuratList [data-rq-v31-date]').forEach(input=>{
+      const label=input.closest('label');
+      if(!label)return;
+      let out=label.querySelector('.rq-v31-date-day');
+      if(!out){
+        out=document.createElement('div');
+        out.className='rq-v31-date-day';
+        input.insertAdjacentElement('afterend',out);
+      }
+      out.textContent=formatDayDate(input.value);
+      out.style.display=input.value?'block':'none';
+    });
+  }
+
+  function boot(){
+    syncDateLabels(document);
+    document.addEventListener('change',function(e){
+      const input=e.target?.closest?.('#trackingLevelSuratList [data-rq-v31-date]');
+      if(input)syncDateLabels(input.closest('#trackingLevelSuratList')||document);
+    },true);
+    document.addEventListener('input',function(e){
+      const input=e.target?.closest?.('#trackingLevelSuratList [data-rq-v31-date]');
+      if(input)syncDateLabels(input.closest('#trackingLevelSuratList')||document);
+    },true);
+    window.rqV31RefreshDateLabels=()=>syncDateLabels(document);
+    setTimeout(()=>syncDateLabels(document),80);
+    setTimeout(()=>syncDateLabels(document),250);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+})();
+</script>
+
+
+<!-- PATCH v28: assessment click reliability + selected indicator + assessment-only save
+     untuk Level yang seluruh suratnya sudah selesai. Tidak mengubah alur setoran baru. -->
+<style id="rq-v28-assessment-reliable-style">
+#tracker-panel-input .tracking-assessment-option{
+  position:relative!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  user-select:none!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#tracker-panel-input .tracking-assessment-option.rq-assessment-selected{
+  border-color:#059669!important;
+  background:#ecfdf5!important;
+  box-shadow:0 0 0 3px rgba(16,185,129,.18),0 5px 14px rgba(5,150,105,.12)!important;
+}
+#tracker-panel-input .tracking-assessment-option.rq-assessment-selected::after{
+  content:'✓ TERPILIH';
+  position:absolute;
+  top:8px;right:9px;
+  padding:3px 7px;border-radius:999px;
+  padding-right:90px;
+  background:#059669;color:#fff;
+  font-size:8px;font-weight:900;letter-spacing:.03em;
+}
+html.dark #tracker-panel-input .tracking-assessment-option.rq-assessment-selected{
+  border-color:#34d399!important;background:#052e24!important;
+  box-shadow:0 0 0 3px rgba(52,211,153,.2),0 5px 14px rgba(0,0,0,.3)!important;
+}
+</style>
+<script id="rq-v28-assessment-reliable">
+(function(){
+  'use strict';
+  function selectedText(value){return String(value||'').split(' — ')[0].trim()||'Belum dipilih';}
+  function syncAssessmentVisual(type,value){
+    const selector='.tracking-assessment-option[data-type=\"'+type+'\"]';
+    document.querySelectorAll(selector).forEach(function(btn){
+      const selected=String(btn.dataset.value||'')===String(value||'');
+      btn.classList.toggle('rq-assessment-selected',selected);
+      btn.setAttribute('aria-pressed',selected?'true':'false');
+      btn.dataset.selected=selected?'1':'0';
+    });
+    const box=document.getElementById(type==='bacaan'?'trackingPenilaianBacaanOptions':'trackingPenilaianHafalanOptions');
+    if(box){
+      let info=box.querySelector('.rq-assessment-current');
+      if(!info){info=document.createElement('div');info.className='rq-assessment-current text-[10px] font-black text-emerald-700 dark:text-emerald-300 mt-1';box.parentElement.appendChild(info);}
+      info.textContent=value?'Terpilih: '+selectedText(value):'Belum memilih penilaian';
+    }
+  }
+  function choose(btn){
+    if(!btn || !btn.dataset.type)return;
+    const type=btn.dataset.type, value=btn.dataset.value||'';
+    const hidden=document.getElementById(type==='bacaan'?'trackingPenilaianBacaan':'trackingPenilaianHafalan');
+    if(hidden) hidden.value=value;
+    syncAssessmentVisual(type,value);
+  }
+  function bind(){
+    document.querySelectorAll('.tracking-assessment-option').forEach(function(btn){
+      btn.removeAttribute('onclick');
+      btn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();choose(btn);},false);
+    });
+    ['bacaan','hafalan'].forEach(function(type){
+      const hidden=document.getElementById(type==='bacaan'?'trackingPenilaianBacaan':'trackingPenilaianHafalan');
+      syncAssessmentVisual(type,hidden?.value||'');
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bind,{once:true}); else bind();
+  window.rqRefreshAssessmentVisual=bind;
+  const originalRestore=window.restoreTrackingAssessment;
+  if(typeof originalRestore==='function' && !originalRestore.__rqV28Wrapped){
+    const wrapped=function(type,value){originalRestore.apply(this,arguments);syncAssessmentVisual(type,value||'');};
+    wrapped.__rqV28Wrapped=true; wrapped.__original=originalRestore; window.restoreTrackingAssessment=wrapped;
+  }
+})();
+</script>
+
+<!-- PATCH v23: satu dispatcher menu final. Tidak membuat observer/timer global.
+     Tujuan: menghentikan benturan wrapper switchTrackerMenu lama tanpa mengubah
+     renderer/data tiap menu yang sudah ada. -->
+<!-- PATCH v25: LAG FIX - debounce observer kartu + hapus observer subtree level. -->
+<script id="rq-v23-menu-authoritative-dispatcher">
+(function(){
+  'use strict';
+  if(window.__rqV23MenuDispatcher)return;
+  window.__rqV23MenuDispatcher=true;
+
+  const panelMap={
+    input:'tracker-panel-input',
+    hafalan:'tracker-panel-hafalan',
+    capaian:'tracker-panel-capaian',
+    history:'tracker-panel-history',
+    bacaan:'tracker-panel-bacaan',
+    dashboard:'tracker-panel-dashboard',
+    'wa-wali':'tracker-panel-wa-wali',
+    'wa-kelas':'tracker-panel-wa-kelas',
+    'wa-kondisi':'tracker-panel-wa-kondisi'
+  };
+
+  let switchSeq=0;
+  let pendingFrame=0;
+
+  function setButtons(menu){
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
+      const active=btn.id==='trackerMenu-'+menu;
+      btn.classList.remove('bg-white','text-emerald-900','shadow','text-emerald-50','hover:bg-emerald-700');
+      btn.classList.add(active?'bg-white':'text-emerald-50');
+      if(active){btn.classList.add('text-emerald-900','shadow');}
+      else{btn.classList.add('hover:bg-emerald-700');}
+    });
+  }
+
+  function hideAll(){
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
+      p.dataset.panelHidden='1';
+      p.style.display='none';
+    });
+  }
+
+  function showPanel(id){
+    const p=document.getElementById(id);
+    if(!p)return false;
+    p.dataset.panelHidden='0';
+    p.style.display='block';
+    p.style.visibility='visible';
+    return true;
+  }
+
+  function render(menu,seq){
+    if(seq!==switchSeq)return;
+    if(document.body.getAttribute('data-tracker-active-menu')!==menu)return;
+    try{
+      if(menu==='input'){
+        window.renderTrackingPerSuratOptions?.();
+        window.renderTrackingPerSurat?.();
+      }else if(menu==='hafalan'){
+        window.renderHafalanTracker?.();
+      }else if(menu==='capaian'){
+        window.renderCapaianLevelSantri?.();
+      }else if(menu==='history'){
+        window.renderTrackingHistory?.();
+      }else if(menu==='bacaan'){
+        window.renderBacaanSantriMenu?.();
+      }else if(menu==='dashboard'){
+        window.renderTrackingDashboardPersantri?.();
+      }
+    }catch(err){console.error('Menu render:',err)}
+  }
+
+  function open(menu){
+    menu=String(menu||'input');
+    const seq=++switchSeq;
+    if(pendingFrame){try{cancelAnimationFrame(pendingFrame)}catch(e){} pendingFrame=0;}
+
+    document.body.setAttribute('data-tracker-active-menu',menu);
+    document.body.classList.toggle('tracker-dashboard-active',menu==='dashboard');
+    document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
+
+    /* Menu khusus yang punya renderer pembuka sendiri. */
+    if(menu==='data' && typeof window.openTrackerDataMenu==='function'){
+      window.openTrackerDataMenu();
+      return;
+    }
+    if(menu==='sync-info' && typeof window.openSyncInformation==='function'){
+      window.openSyncInformation();
+      return;
+    }
+    if(menu==='wa-wali' && typeof window.__openWaWaliPersonalPanel==='function'){
+      window.__openWaWaliPersonalPanel();
+      return;
+    }
+    if(menu==='wa-kelas' && typeof window.__openWaKelasLevelPanel==='function'){
+      window.__openWaKelasLevelPanel();
+      return;
+    }
+    if(menu==='wa-kondisi' && typeof window.openWaKondisiPersuratMenu==='function'){
+      window.openWaKondisiPersuratMenu();
+      return;
+    }
+
+    const id=panelMap[menu];
+    if(!id){return;}
+
+    /* Satu kali operasi hide/show. Tidak ada interval dan tidak ada observer. */
+    hideAll();
+    showPanel(id);
+    setButtons(menu);
+
+    /* Tampilkan panel dulu, baru jalankan renderer pada frame berikutnya. */
+    pendingFrame=requestAnimationFrame(function(){
+      pendingFrame=0;
+      render(menu,seq);
+    });
+
+    window.scrollTo({top:0,behavior:'auto'});
+  }
+
+  window.switchTrackerMenu=open;
+  window.__rqV23OpenMenu=open;
+  window.addEventListener('load',function(){ window.switchTrackerMenu=open; },{once:true});
+
+  /* Tombol statis memakai onclick inline; tombol dinamis juga memanggil
+     window.switchTrackerMenu, sehingga tidak perlu wrapper tambahan. */
+  function initial(){
+    if(window.__rqV30SkipLegacyMenuInitial)return;
+    const current=document.body.getAttribute('data-tracker-active-menu')||'input';
+    open(current);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initial,{once:true});
+  else initial();
+})();
+</script>
+
+<!-- PATCH v27: samakan kolom Tanggal dan kolom Ceklis pada seluruh kartu surat.
+     Hanya CSS layout; tidak mengubah data, event, perhitungan, atau alur simpan. -->
+<style id="rq-v31-card-column-align-v27">
+@media (min-width:641px){
+  /* Header kartu: area nama/progress fleksibel, area ceklis memiliki lebar tetap.
+     Dengan ini posisi ceklis konsisten pada semua kartu, walaupun nama surat berbeda. */
+  #trackingLevelSuratList [data-rq-v31-card] > div:first-child{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) 78px !important;
+    column-gap:10px !important;
+    align-items:start !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] > div:first-child > button{
+    min-width:0 !important;
+    width:100% !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] > div:first-child > .rq-v31-complete-label{
+    width:78px !important;
+    min-width:78px !important;
+    justify-self:end !important;
+    justify-content:flex-start !important;
+    white-space:nowrap !important;
+    margin-top:1px !important;
+  }
+
+  /* Area input bawah: kolom ayat fleksibel, kolom tanggal selalu sama lebarnya.
+     Lebar tanggal 145px menjaga semua tanggal berada pada satu garis kolom. */
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:minmax(0,1fr) 145px !important;
+    column-gap:12px !important;
+    align-items:end !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid > label:last-child{
+    width:145px !important;
+    min-width:145px !important;
+    justify-self:end !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] [data-rq-v31-date]{
+    display:block !important;
+    width:145px !important;
+    min-width:145px !important;
+    max-width:145px !important;
+    box-sizing:border-box !important;
+  }
+}
+
+@media (max-width:640px){
+  /* Mobile tetap satu kolom seperti sebelumnya. */
+  #trackingLevelSuratList [data-rq-v31-card] > div:first-child{
+    grid-template-columns:minmax(0,1fr) 78px !important;
+    column-gap:8px !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] > div:first-child > .rq-v31-complete-label{
+    width:78px !important;
+    min-width:78px !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid{
+    grid-template-columns:1fr !important;
+  }
+  #trackingLevelSuratList [data-rq-v31-card] > div.mt-3.grid > label:last-child,
+  #trackingLevelSuratList [data-rq-v31-card] [data-rq-v31-date]{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+  }
+}
+</style>
+
+<!-- PATCH v30: MENU SWITCH LAG FIX
+     Prinsip: pindah menu = hide/show ringan; renderer berat hanya dijalankan
+     bila menu belum pernah dirender pada versi data terbaru. Tidak mengubah
+     data, rumus, penyimpanan, atau fungsi renderer yang sudah ada. -->
+<script id="rq-v30-menu-switch-lag-fix">
+(function(){
+  'use strict';
+  if(window.__rqV30MenuLagFix)return;
+  window.__rqV30MenuLagFix=true;
+  window.__rqV30SkipLegacyMenuInitial=true;
+
+  const panelMap={
+    input:'tracker-panel-input',
+    hafalan:'tracker-panel-hafalan',
+    capaian:'tracker-panel-capaian',
+    history:'tracker-panel-history',
+    bacaan:'tracker-panel-bacaan',
+    dashboard:'tracker-panel-dashboard',
+    'wa-wali':'tracker-panel-wa-wali',
+    'wa-kelas':'tracker-panel-wa-kelas',
+    'wa-kondisi':'tracker-panel-wa-kondisi'
+  };
+
+  let dataVersion=0;
+  const renderedVersion=Object.create(null);
+  let renderTimer=0;
+  let renderToken=0;
+  let currentMenu='';
+
+  function markDirty(){ dataVersion++; }
+  window.__rqV30MarkMenuDirty=markDirty;
+
+  /* Semua perubahan data lokal yang relevan menandai renderer menu sebagai
+     perlu diperbarui. setItem tetap mengembalikan nilai/error asli. */
+  try{
+    const storage=window.localStorage;
+    const nativeSet=storage.setItem.bind(storage);
+    if(!storage.__rqV30Wrapped){
+      storage.setItem=function(key,value){
+        const result=nativeSet(key,value);
+        const k=String(key||'');
+        if(
+          k.indexOf('rq_tracking')===0 ||
+          k.indexOf('rq_history')===0 ||
+          k.indexOf('rq_hafalan')===0 ||
+          k.indexOf('rq_dashboard')===0 ||
+          k==='rq_santri_master' ||
+          k.indexOf('rq_bacaan')===0 ||
+          k.indexOf('rq_capaian')===0 ||
+          k.indexOf('rq_massal')===0
+        ) markDirty();
+        return result;
+      };
+      Object.defineProperty(storage,'__rqV30Wrapped',{value:true,configurable:true});
+    }
+  }catch(e){ console.warn('v30 storage hook:',e); }
+
+  function setButtons(menu){
+    document.querySelectorAll('#appHeader nav .tracker-menu-btn').forEach(function(btn){
+      const active=btn.id==='trackerMenu-'+menu;
+      btn.classList.remove('bg-white','text-emerald-900','shadow','text-emerald-50','hover:bg-emerald-700');
+      if(active)btn.classList.add('bg-white','text-emerald-900','shadow');
+      else btn.classList.add('text-emerald-50','hover:bg-emerald-700');
+    });
+  }
+
+  function hideAll(){
+    document.querySelectorAll('#trackerPageContent > .tracker-menu-panel').forEach(function(p){
+      if(p.dataset.panelHidden==='1' && p.style.display==='none')return;
+      p.dataset.panelHidden='1';
+      p.style.display='none';
+    });
+  }
+
+  function showPanel(menu){
+    const id=panelMap[menu];
+    const p=id?document.getElementById(id):null;
+    if(!p)return false;
+    p.dataset.panelHidden='0';
+    p.style.display='block';
+    p.style.visibility='visible';
+    return true;
+  }
+
+  function renderMenu(menu,token){
+    if(token!==renderToken || currentMenu!==menu)return;
+    if(renderedVersion[menu]===dataVersion)return;
+    const started=performance.now();
+    try{
+      if(menu==='input'){
+        window.renderTrackingPerSuratOptions?.();
+        window.renderTrackingPerSurat?.();
+      }else if(menu==='hafalan'){
+        window.renderHafalanTracker?.();
+      }else if(menu==='capaian'){
+        window.renderCapaianLevelSantri?.();
+      }else if(menu==='history'){
+        window.renderTrackingInputHistoryArchive?.();
+      }else if(menu==='bacaan'){
+        window.renderBacaanSantriMenu?.();
+      }else if(menu==='dashboard'){
+        window.renderTrackingDashboardPersantri?.();
+      }
+      renderedVersion[menu]=dataVersion;
+    }catch(err){
+      console.error('v30 menu render:',menu,err);
+    }
+    const elapsed=Math.round(performance.now()-started);
+    if(elapsed>80)console.info('[RQ v30] render menu',menu,elapsed+'ms');
+  }
+
+  function open(menu){
+    menu=String(menu||'input');
+    currentMenu=menu;
+    const token=++renderToken;
+    if(renderTimer){clearTimeout(renderTimer);renderTimer=0;}
+
+    /* Jalur khusus yang sudah memiliki opener sendiri. */
+    if(menu==='data' && typeof window.openTrackerDataMenu==='function'){
+      window.openTrackerDataMenu(); return;
+    }
+    if(menu==='sync-info' && typeof window.openSyncInformation==='function'){
+      window.openSyncInformation(); return;
+    }
+    if(menu==='wa-wali' && typeof window.__openWaWaliPersonalPanel==='function'){
+      window.__openWaWaliPersonalPanel(); return;
+    }
+    if(menu==='wa-kelas' && typeof window.__openWaKelasLevelPanel==='function'){
+      window.__openWaKelasLevelPanel(); return;
+    }
+    if(menu==='wa-kondisi' && typeof window.openWaKondisiPersuratMenu==='function'){
+      window.openWaKondisiPersuratMenu(); return;
+    }
+
+    document.body.setAttribute('data-tracker-active-menu',menu);
+    document.body.classList.toggle('tracker-dashboard-active',menu==='dashboard');
+    document.body.classList.toggle('tracker-hafalan-active',menu==='hafalan');
+    hideAll();
+    if(!showPanel(menu))return;
+    setButtons(menu);
+
+    /* Jangan menjalankan renderer berat di dalam event click.
+       Browser diberi satu frame untuk menampilkan menu lebih dulu. */
+    if(renderedVersion[menu]!==dataVersion){
+      renderTimer=setTimeout(function(){
+        renderTimer=0;
+        requestAnimationFrame(function(){renderMenu(menu,token);});
+      },40);
+    }
+    window.scrollTo({top:0,behavior:'auto'});
+  }
+
+  /* Ganti hanya dispatcher aktif; renderer asli tetap dipakai. */
+  window.switchTrackerMenu=open;
+  window.__rqV30OpenMenu=open;
+
+  /* Pilih santri mengubah isi beberapa menu, jadi invalidasi cache.
+     Renderer input lama tetap menjadi sumber kebenaran untuk form. */
+  document.addEventListener('change',function(e){
+    if(e.target?.id==='trackingSantri')markDirty();
+  },true);
+
+  /* Pastikan opener final lain yang dipanggil sesudah patch memakai jalur baru. */
+  window.addEventListener('load',function(){window.switchTrackerMenu=open;},{once:true});
+
+  /* Startup hanya sekali. Dispatcher v23 sebelumnya masih mempunyai initial()
+     yang sudah selesai lebih dulu; panggilan ini tidak merender dua kali karena
+     cache/version gate di atas. */
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){open(document.body.getAttribute('data-tracker-active-menu')||'input');},{once:true});
+  }else{
+    open(document.body.getAttribute('data-tracker-active-menu')||'input');
+  }
 })();
 </script>
